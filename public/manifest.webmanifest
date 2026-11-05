@@ -1,0 +1,56 @@
+{
+  "id": "/",
+  "name": "Photoizer CRM",
+  "short_name": "Photoizer",
+  "description": "Agenda de ensaios, clientes, pacotes e contratos para estúdios fotográficos.",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "start_url": "/agenda",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#f8f9fb",
+  "theme_color": "#1a73e8",
+  "categories": ["productivity", "business", "lifestyle"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Novo ensaio",
+      "short_name": "Novo",
+      "description": "Agendar um novo ensaio",
+      "url": "/agenda?action=new"
+    },
+    {
+      "name": "Agenda de hoje",
+      "short_name": "Hoje",
+      "description": "Abrir a agenda do dia",
+      "url": "/agenda?view=day"
+    },
+    {
+      "name": "Contratos",
+      "short_name": "Contratos",
+      "description": "Abrir a gestão de contratos",
+      "url": "/contratos"
+    }
+  ]
+}

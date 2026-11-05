@@ -1,0 +1,174 @@
+import { Check, Download, Film, ImageOff, PlayCircle, Trash2 } from 'lucide-react'
+
+import type { MidiaGaleria } from '@/domain/galleries'
+import { cn } from '@/shared/lib/cn'
+import { useMediaUrl } from '@/features/galleries/hooks/useMediaUrl'
+
+interface GalleryMediaGridProps {
+  midias: MidiaGaleria[]
+  selectedIds?: Set<string>
+  onToggle?: (id: string) => void
+  onRemove?: (midia: MidiaGaleria) => void
+  onDownload?: (midia: MidiaGaleria) => void
+  emptyLabel?: string
+  watermark?: boolean
+}
+
+export function GalleryMediaGrid({
+  midias,
+  selectedIds,
+  onToggle,
+  onRemove,
+  onDownload,
+  emptyLabel = 'Nenhuma mídia enviada ainda.',
+  watermark = false,
+}: GalleryMediaGridProps) {
+  if (midias.length === 0) {
+    return (
+      <div className="rounded-xl border border-dashed border-line bg-canvas/60 px-4 py-8 text-center">
+        <ImageOff className="mx-auto size-6 text-muted" />
+        <p className="mt-2 text-xs text-muted">{emptyLabel}</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+      {midias.map((midia) => (
+        <GalleryMediaTile
+          key={midia.id}
+          midia={midia}
+          selected={selectedIds?.has(midia.id) ?? false}
+          onToggle={onToggle}
+          onRemove={onRemove}
+          onDownload={onDownload}
+          watermark={watermark}
+        />
+      ))}
+    </div>
+  )
+}
+
+function GalleryMediaTile({
+  midia,
+  selected,
+  onToggle,
+  onRemove,
+  onDownload,
+  watermark,
+}: {
+  midia: MidiaGaleria
+  selected: boolean
+  onToggle?: (id: string) => void
+  onRemove?: (midia: MidiaGaleria) => void
+  onDownload?: (midia: MidiaGaleria) => void
+  watermark?: boolean
+}) {
+  const url = useMediaUrl(midia.arquivoKey)
+  const isVideo = midia.tipo === 'video'
+
+  return (
+    <div
+      className={cn(
+        'group relative overflow-hidden rounded-xl border bg-slate-100',
+        selected ? 'border-brand-500 ring-2 ring-brand-200' : 'border-line',
+      )}
+    >
+      <button
+        type="button"
+        onClick={() => onToggle?.(midia.id)}
+        disabled={!onToggle}
+        className={cn(
+          'relative block aspect-square w-full overflow-hidden text-left',
+          onToggle ? 'cursor-pointer' : 'cursor-default',
+        )}
+        aria-pressed={onToggle ? selected : undefined}
+      >
+        {url ? (
+          isVideo ? (
+            <video
+              src={url}
+              muted
+              playsInline
+              controls={false}
+              className="size-full object-cover"
+            />
+          ) : (
+            <img
+              src={url}
+              alt={midia.nomeArquivo}
+              loading="lazy"
+              className="size-full object-cover"
+            />
+          )
+        ) : (
+          <span className="grid size-full place-items-center text-muted">
+            {isVideo ? <Film className="size-6" /> : <ImageOff className="size-6" />}
+          </span>
+        )}
+
+        {watermark ? (
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 grid place-items-center overflow-hidden"
+          >
+            <span className="-rotate-12 text-[10px] font-bold uppercase tracking-[0.25em] text-white/45 drop-shadow">
+              prévia
+            </span>
+          </span>
+        ) : null}
+
+        {isVideo ? (
+          <span className="absolute bottom-1.5 left-1.5 inline-flex items-center gap-1 rounded-full bg-black/60 px-1.5 py-0.5 text-[9px] font-medium text-white">
+            <Film className="size-2.5" />
+            vídeo
+          </span>
+        ) : null}
+
+        {selected ? (
+          <span className="absolute right-1.5 top-1.5 grid size-5 place-items-center rounded-full bg-brand-600 text-white shadow">
+            <Check className="size-3" />
+          </span>
+        ) : null}
+      </button>
+
+      <div className="absolute inset-x-0 bottom-0 flex items-center gap-1 bg-gradient-to-t from-black/70 to-transparent px-1.5 pb-1 pt-4">
+        <span className="min-w-0 flex-1 truncate text-[9px] font-medium text-white/90">
+          {midia.nomeArquivo}
+        </span>
+        {isVideo && url ? (
+          <a
+            href={url}
+            target="_blank"
+            rel="noreferrer"
+            aria-label={`Pré-visualizar ${midia.nomeArquivo}`}
+            className="grid size-6 shrink-0 place-items-center rounded-full bg-white/90 text-purple-700 transition hover:bg-white"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <PlayCircle className="size-3" />
+          </a>
+        ) : null}
+        {onDownload ? (
+          <button
+            type="button"
+            onClick={() => onDownload(midia)}
+            aria-label={`Baixar ${midia.nomeArquivo}`}
+            className="grid size-6 shrink-0 place-items-center rounded-full bg-white/90 text-ink transition hover:bg-white"
+          >
+            <Download className="size-3" />
+          </button>
+        ) : null}
+        {onRemove ? (
+          <button
+            type="button"
+            onClick={() => onRemove(midia)}
+            aria-label={`Remover ${midia.nomeArquivo}`}
+            className="grid size-6 shrink-0 place-items-center rounded-full bg-white/90 text-red-600 transition hover:bg-white"
+          >
+            <Trash2 className="size-3" />
+          </button>
+        ) : null}
+      </div>
+    </div>
+  )
+}
