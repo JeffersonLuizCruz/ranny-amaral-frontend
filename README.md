@@ -4,7 +4,7 @@ CRM para estúdios fotográficos com agenda, clientes, pacotes, contratos, finan
 
 ## Como rodar
 
-O frontend consome a API real para **clientes**, **pacotes**, **agenda**, **contratos**, **galerias**, **modelos**, **estúdio** e **aceite público**. Suba o backend primeiro:
+O frontend consome a API real para **clientes**, **pacotes**, **agenda**, **contratos**, **galerias**, **financeiro**, **modelos**, **estúdio** e **aceite público**. Suba o backend primeiro:
 
 ```bash
 # em ../ranny-amaral-backend
@@ -26,10 +26,13 @@ Validação:
 ```bash
 npm run typecheck
 npm run lint
+npm test
 npm run build
 ```
 
-O CI (`.github/workflows/ci.yml`) executa `npm ci`, `npm run lint` e `npm run build`.
+O CI (`.github/workflows/ci.yml`) executa `npm ci`, `npm run lint`, `npm test` e `npm run build`.
+
+A suíte de testes usa **Vitest + Testing Library** e cobre validação de arquivos, cliente de upload, paginação, mapeadores e resumo financeiro.
 
 ## Integração com o backend
 
@@ -42,6 +45,9 @@ O CI (`.github/workflows/ci.yml`) executa `npm ci`, `npm run lint` e `npm run bu
 - `src/features/appointments/api/agendaApi.ts` — CRUD, status, pagamentos, listagem paginada e calendário por período.
 - `src/features/contracts/api/contratosApi.ts` — contratos, busca paginada, links de aceite e pagamentos.
 - `src/features/contracts/api/modelosApi.ts` e `estudioApi.ts` — modelos e configuração do estúdio.
+- `src/features/galleries/api/galeriasApi.ts` — galerias, mídias, seleção, extras e entrega.
+- `src/features/galleries/api/galeriaUploadApi.ts` — upload de fotos/vídeos com progresso.
+- `src/features/finance/api/financeiroApi.ts` e `financeStore.ts` — resumo financeiro mensal consolidado.
 - `src/integrations/acceptance/httpAdapter.ts` — aceite público via token.
 - `src/features/clients/store/clientStore.ts`, `packageStore.ts`, `appointmentStore.ts`, `contractStore.ts`, `templateStore.ts` e `studioStore.ts` — mantêm a interface pública usada pelas telas, mas carregam e gravam na API (sem `localStorage`).
 - `src/app/useBootstrapData.ts` — hidrata os dados do backend no boot.
@@ -49,7 +55,7 @@ O CI (`.github/workflows/ci.yml`) executa `npm ci`, `npm run lint` e `npm run bu
 
 A numeração (`CT-AAAA-0001`), o snapshot, as cláusulas resolvidas, o histórico, o protocolo de aceite (`ACE-AAAA-0001`) e os pagamentos agora são responsabilidade do backend.
 
-O módulo de galerias agora usa a API real; financeiro continua local nesta fase. A migração do financeiro será feita na próxima etapa.
+Os módulos de galerias e financeiro agora usam a API real; o navegador não calcula mais os valores financeiros.
 
 ## Módulos
 
@@ -106,8 +112,8 @@ aguardando_upload → em_selecao → selecao_enviada → em_edicao → pronta_en
 ## Limitações do protótipo
 
 - Sem autenticação.
-- As telas de clientes, pacotes e contratos usam paginação/busca server-side. No boot, loaders de compatibilidade ainda percorrem todas as páginas para alimentar pickers, galerias e financeiro; eles serão removidos quando esses módulos migrarem.
-- Galerias já usam a API real; financeiro ainda usa Zustand/localStorage.
+- As telas de clientes, pacotes e contratos usam paginação/busca server-side. No boot, loaders de compatibilidade ainda percorrem todas as páginas para alimentar pickers e outras telas; eles serão removidos quando os módulos restantes migrarem.
+- Galerias e financeiro já usam a API real.
 - Upload de fotos até 50 MB e vídeos até 500 MB, com progresso e URLs assinadas. O processamento de derivados é síncrono nesta versão.
 - A entrega baixa arquivos individualmente; ZIP e pós-processamento de vídeo ficam para a próxima fase.
 - O comprovante de pagamento é enviado direto ao MinIO com URLs pré-assinadas, progresso real e limite de 10 MB. O IndexedDB não é mais usado para comprovantes.

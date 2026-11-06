@@ -2,26 +2,21 @@ import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { CalendarDays, ChevronRight, Wallet } from 'lucide-react'
 
-import type { Cliente, PacoteFotografico } from '@/domain/types'
+import type { EntradaFinanceira } from '@/features/finance/api/financeiroApi'
 import { StatusBadge } from '@/features/appointments/components/StatusBadge'
 import { PagamentoStatusBadge } from '@/features/contracts/components/ContractStatusBadge'
-import type { FinanceEntry } from '@/features/finance/lib/summary'
 import { Button } from '@/shared/components/ui/Button'
 import { formatBRL } from '@/shared/lib/currency'
 import { formatTimeRange } from '@/shared/lib/date'
 
 interface FinanceAppointmentListProps {
-  entries: FinanceEntry[]
-  clientesById: Map<string, Cliente>
-  pacotesById: Map<string, PacoteFotografico>
+  entries: EntradaFinanceira[]
   onOpen: (appointmentId: string) => void
-  onConfirm: (entry: FinanceEntry) => void
+  onConfirm: (entry: EntradaFinanceira) => void
 }
 
 export function FinanceAppointmentList({
   entries,
-  clientesById,
-  pacotesById,
   onOpen,
   onConfirm,
 }: FinanceAppointmentListProps) {
@@ -39,23 +34,19 @@ export function FinanceAppointmentList({
 
       <div>
         {entries.map((entry) => {
-          const { appointment } = entry
-          const start = new Date(appointment.dataHoraInicio)
-          const cliente = appointment.clienteId
-            ? clientesById.get(appointment.clienteId)
-            : undefined
-          const nome = cliente?.nome ?? appointment.contato?.nome ?? 'Sem cliente'
-          const pacote = pacotesById.get(appointment.pacoteId)
-          const canConfirm = entry.entradaSituacao === 'pendente'
+          const start = new Date(entry.dataHoraInicio)
+          const nome = entry.clienteNome ?? 'Sem cliente'
+          const pacote = entry.pacoteNome ?? 'Pacote'
+          const canConfirm = entry.statusEntrada === 'pendente'
 
           return (
             <div
-              key={appointment.id}
+              key={entry.agendamentoId}
               className="flex items-center gap-2 border-t border-line px-4 py-3 first:border-t-0"
             >
               <button
                 type="button"
-                onClick={() => onOpen(appointment.id)}
+                onClick={() => onOpen(entry.agendamentoId)}
                 className="flex min-w-0 flex-1 items-center gap-3 rounded-xl text-left transition hover:bg-canvas/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
               >
                 <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-canvas ring-1 ring-line">
@@ -72,13 +63,13 @@ export function FinanceAppointmentList({
                     <span className="truncate text-sm font-semibold text-ink">
                       {nome}
                     </span>
-                    <StatusBadge status={appointment.status} />
+                    <StatusBadge status={entry.statusAgendamento} />
                   </span>
                   <span className="mt-0.5 block truncate text-[11px] text-muted">
-                    {pacote?.nome ?? 'Pacote'} ·{' '}
+                    {pacote} ·{' '}
                     {formatTimeRange(
-                      appointment.dataHoraInicio,
-                      appointment.dataHoraFim,
+                      entry.dataHoraInicio,
+                      entry.dataHoraFim,
                     )}
                   </span>
                   <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted sm:hidden">
@@ -86,10 +77,7 @@ export function FinanceAppointmentList({
                       {formatBRL(entry.valorTotal)}
                     </span>
                     <span aria-hidden="true">·</span>
-                    <PagamentoStatusBadge
-                      status={entry.entradaStatus}
-                      pagamento={entry.pagamento}
-                    />
+                    <PagamentoStatusBadge status={entry.statusEntrada} />
                   </span>
                 </span>
 
@@ -98,10 +86,7 @@ export function FinanceAppointmentList({
                     {formatBRL(entry.valorTotal)}
                   </span>
                   <span className="mt-1 flex justify-end">
-                    <PagamentoStatusBadge
-                      status={entry.entradaStatus}
-                      pagamento={entry.pagamento}
-                    />
+                    <PagamentoStatusBadge status={entry.statusEntrada} />
                   </span>
                   <span className="mt-0.5 block text-[10px] text-muted">
                     Saldo {formatBRL(entry.saldoRestante)} ·{' '}
@@ -114,7 +99,7 @@ export function FinanceAppointmentList({
                   {entry.valorExtras > 0 ? (
                     <span className="mt-0.5 block text-[10px] font-medium text-amber-700">
                       Extras {formatBRL(entry.valorExtras)} ·{' '}
-                      {entry.statusExtras === 'confirmado'
+                      {entry.statusExtras === 'pago'
                         ? 'pago'
                         : entry.statusExtras === 'isento'
                           ? 'isento'

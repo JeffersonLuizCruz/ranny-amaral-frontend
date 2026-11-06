@@ -1,12 +1,12 @@
 import type { LucideIcon } from 'lucide-react'
 import { CalendarCheck2, CheckCircle2, Clock3, Receipt } from 'lucide-react'
 
-import type { FinanceSummary } from '@/features/finance/lib/summary'
+import type { ResumoFinanceiroMensal } from '@/features/finance/api/financeiroApi'
 import { cn } from '@/shared/lib/cn'
 import { formatBRL } from '@/shared/lib/currency'
 
 interface FinanceSummaryCardsProps {
-  summary: FinanceSummary
+  summary: ResumoFinanceiroMensal
 }
 
 interface CardConfig {
