@@ -6,7 +6,6 @@ import type { Contrato } from '@/domain/contracts'
 import { useAppointmentStore } from '@/features/appointments/store/appointmentStore'
 import { useClientStore } from '@/features/clients/store/clientStore'
 import { buildContractDraftFromAppointment } from '@/features/contracts/lib/contractBuilder'
-import { nextContractNumber } from '@/features/contracts/lib/numbering'
 import { useContractStore } from '@/features/contracts/store/contractStore'
 import { useStudioStore } from '@/features/contracts/store/studioStore'
 import { useTemplateStore } from '@/features/contracts/store/templateStore'
@@ -27,11 +26,10 @@ function findDefaultTemplate(modeloId?: string) {
   )
 }
 
-function buildContractForAppointment(
+async function buildContractForAppointment(
   appointment: AgendamentoEnsaio,
-  numero: string,
   modeloId?: string,
-): Contrato | null {
+): Promise<Contrato | null> {
   const template = findDefaultTemplate(modeloId)
   if (!template) return null
 
@@ -47,7 +45,7 @@ function buildContractForAppointment(
     : undefined
 
   const draft = buildContractDraftFromAppointment({
-    numero,
+    numero: 'PREVIA',
     appointment,
     pacote,
     cliente,
@@ -58,23 +56,31 @@ function buildContractForAppointment(
   return useContractStore.getState().createContract(draft)
 }
 
-export function createBookingWithContract(draft: AgendamentoDraft): BookingResult {
+export async function createBookingWithContract(
+  draft: AgendamentoDraft,
+): Promise<BookingResult> {
   const appointmentStore = useAppointmentStore.getState()
-  const appointment = appointmentStore.createAppointment(draft)
-  const numero = nextContractNumber(useContractStore.getState().contratos)
-  const contract = buildContractForAppointment(appointment, numero)
+  const appointment = await appointmentStore.createAppointment(draft)
 
-  if (contract) {
-    appointmentStore.linkContract(appointment.id, contract.id)
+  try {
+    const contract = await buildContractForAppointment(appointment)
+
+    if (contract) {
+      appointmentStore.linkContract(appointment.id, contract.id)
+    }
+
+    return { appointment, contract }
+  } catch (error) {
+    // Compensa a criação parcial: sem contrato, o ensaio não deve ficar órfão.
+    await appointmentStore.deleteAppointment(appointment.id).catch(() => undefined)
+    throw error
   }
-
-  return { appointment, contract }
 }
 
-export function updateBookingWithContract(
+export async function updateBookingWithContract(
   id: string,
   draft: AgendamentoDraft,
-): BookingResult {
+): Promise<BookingResult> {
   const appointmentStore = useAppointmentStore.getState()
   const existing = appointmentStore.appointments.find((item) => item.id === id)
 
@@ -90,13 +96,12 @@ export function updateBookingWithContract(
     return { appointment: existing, contract, contractLocked: true }
   }
 
-  appointmentStore.updateAppointment(id, draft)
+  await appointmentStore.updateAppointment(id, draft)
   const appointment =
-    appointmentStore.appointments.find((item) => item.id === id) ?? existing
+    useAppointmentStore.getState().appointments.find((item) => item.id === id) ?? existing
 
   if (!contract) {
-    const numero = nextContractNumber(useContractStore.getState().contratos)
-    const created = buildContractForAppointment(appointment, numero)
+    const created = await buildContractForAppointment(appointment)
     if (created) appointmentStore.linkContract(appointment.id, created.id)
     return { appointment, contract: created }
   }
@@ -124,10 +129,9 @@ export function updateBookingWithContract(
     template,
   })
 
-  useContractStore.getState().updateContract(contract.id, contractDraft)
-  const updated =
-    useContractStore.getState().contratos.find((item) => item.id === contract.id) ??
-    contract
+  const updated = await useContractStore
+    .getState()
+    .updateContract(contract.id, contractDraft)
 
   return { appointment, contract: updated }
 }

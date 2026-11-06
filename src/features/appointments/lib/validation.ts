@@ -49,6 +49,7 @@ export type AppointmentFormErrors = Partial<
     | 'valorAcordado'
     | 'percentualEntrada'
     | 'valorEntrada'
+    | 'contatoNome'
     | 'contatoWhatsapp',
     string
   >
@@ -139,6 +140,11 @@ export function validateAppointmentForm(values: AppointmentFormValues): {
   const contatoWhatsapp = values.contatoWhatsapp.trim()
   if (contatoWhatsapp && !isValidWhatsApp(contatoWhatsapp)) {
     errors.contatoWhatsapp = 'Use um WhatsApp com DDD (10 ou 11 dígitos).'
+  }
+
+  const contatoNome = values.contatoNome.trim()
+  if (!values.clienteId && !contatoNome && !contatoWhatsapp) {
+    errors.contatoNome = 'Selecione um cliente ou informe um contato da reserva.'
   }
 
   const valor = parseCurrencyInput(values.valorAcordado)

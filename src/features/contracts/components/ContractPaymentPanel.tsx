@@ -11,6 +11,7 @@ import type { Contrato } from '@/domain/contracts'
 import { paymentProofStorage } from '@/integrations/paymentProof'
 import { Button } from '@/shared/components/ui/Button'
 import { formatBRL } from '@/shared/lib/currency'
+import { mensagemDeErro } from '@/shared/api/errors'
 import { useToastStore } from '@/shared/store/toastStore'
 import { PagamentoStatusBadge } from '@/features/contracts/components/ContractStatusBadge'
 import { useContractStore } from '@/features/contracts/store/contractStore'
@@ -34,27 +35,40 @@ export function ContractPaymentPanel({ contrato }: { contrato: Contrato }) {
   const canConfirm = contrato.statusPagamento === 'pendente'
   const hasProof = Boolean(pagamento.comprovante)
 
-  const handleConfirm = () => {
-    confirmPayment(contrato.id)
-    addToast('Pagamento confirmado. Ensaio atualizado.')
+  const handleConfirm = async () => {
+    try {
+      await confirmPayment(contrato.id)
+      addToast('Pagamento confirmado. Ensaio atualizado.')
+    } catch (error) {
+      addToast(mensagemDeErro(error))
+    }
   }
 
-  const handleReject = () => {
+  const handleReject = async () => {
     const motivo = window.prompt(
       'Motivo da rejeição do comprovante:',
       'Comprovante ilegível ou valor divergente.',
     )
     if (!motivo) return
 
-    rejectProof(contrato.id, motivo)
-    addToast('Comprovante rejeitado. O cliente pode reenviar.')
+    try {
+      await rejectProof(contrato.id, motivo)
+      addToast('Comprovante rejeitado. O cliente pode reenviar.')
+    } catch (error) {
+      addToast(mensagemDeErro(error))
+    }
   }
 
-  const handleExempt = () => {
+  const handleExempt = async () => {
     const confirmed = window.confirm('Marcar a entrada como isenta?')
     if (!confirmed) return
-    markPaymentExempt(contrato.id)
-    addToast('Entrada marcada como isenta.')
+
+    try {
+      await markPaymentExempt(contrato.id)
+      addToast('Entrada marcada como isenta.')
+    } catch (error) {
+      addToast(mensagemDeErro(error))
+    }
   }
 
   const handleViewProof = async () => {

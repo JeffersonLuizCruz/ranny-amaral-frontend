@@ -6,6 +6,7 @@ import type { FormaPagamentoSaldo } from '@/domain/payments'
 import type { AgendamentoEnsaio } from '@/domain/types'
 import { Button } from '@/shared/components/ui/Button'
 import { formatBRL } from '@/shared/lib/currency'
+import { mensagemDeErro } from '@/shared/api/errors'
 import { useToastStore } from '@/shared/store/toastStore'
 import { useContractStore } from '@/features/contracts/store/contractStore'
 import { FinalPaymentDialog } from '@/features/contracts/components/FinalPaymentDialog'
@@ -48,12 +49,17 @@ export function FinalPaymentPanel({
   const isento = status === 'isento'
   const liquidado = confirmado || isento
 
-  const handleExempt = () => {
+  const handleExempt = async () => {
     if (!contrato) return
     const ok = window.confirm('Marcar o saldo final como isento?')
     if (!ok) return
-    marcarPagamentoFinalIsento(contrato.id)
-    addToast('Saldo final marcado como isento.')
+
+    try {
+      await marcarPagamentoFinalIsento(contrato.id)
+      addToast('Saldo final marcado como isento.')
+    } catch (error) {
+      addToast(mensagemDeErro(error))
+    }
   }
 
   return (

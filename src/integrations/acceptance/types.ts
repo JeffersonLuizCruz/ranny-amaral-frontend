@@ -32,5 +32,5 @@ export interface ContractAcceptancePort {
     token: string,
     comprovante: ComprovantePagamento,
   ): Promise<SubmitProofResult>
-  cancel(linkId: string): Promise<void>
+  cancel(contractId: string, linkId: string): Promise<void>
 }

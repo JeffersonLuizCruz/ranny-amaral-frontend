@@ -70,27 +70,6 @@ export function PublicContractPage() {
     }
   }, [token])
 
-  useEffect(() => {
-    const handleStorage = (event: StorageEvent) => {
-      if (!event.key) return
-      if (
-        !event.key.startsWith('photoizer.crm.contracts') &&
-        !event.key.startsWith('photoizer.crm.acceptance')
-      ) {
-        return
-      }
-
-      void acceptanceAdapter.getByToken(token).then((result) => {
-        if (!result) return
-        setData(result)
-        setSuccess(null)
-      })
-    }
-
-    window.addEventListener('storage', handleStorage)
-    return () => window.removeEventListener('storage', handleStorage)
-  }, [token])
-
   const handleAccept = async (input: DadosAceiteInput, file?: File) => {
     setSubmitting(true)
     setFormError('')

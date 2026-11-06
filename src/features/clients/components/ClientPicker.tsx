@@ -15,6 +15,7 @@ import {
   type ClientFormValues,
 } from '@/features/clients/lib/validation'
 import { useClientStore } from '@/features/clients/store/clientStore'
+import { mensagemDeErro } from '@/shared/api/errors'
 
 interface ClientPickerProps {
   value: string
@@ -25,10 +26,13 @@ interface ClientPickerProps {
 export function ClientPicker({ value, onChange, error }: ClientPickerProps) {
   const clientes = useClientStore((state) => state.clientes)
   const createClient = useClientStore((state) => state.createClient)
+  const carregando = useClientStore((state) => state.carregando)
 
   const selected = clientes.find((cliente) => cliente.id === value)
   const [query, setQuery] = useState('')
   const [creating, setCreating] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [createError, setCreateError] = useState<string | null>(null)
   const [newValues, setNewValues] = useState<ClientFormValues>(() => createEmptyClientValues())
   const [newErrors, setNewErrors] = useState<ClientFormErrors>({})
 
@@ -60,18 +64,27 @@ export function ClientPicker({ value, onChange, error }: ClientPickerProps) {
     })
   }
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     const result = validateClientForm(newValues)
     if (!result.draft) {
       setNewErrors(result.errors)
       return
     }
 
-    const cliente = createClient(result.draft as ClienteDraft)
-    onChange(cliente.id)
-    setCreating(false)
-    setNewValues(createEmptyClientValues())
-    setNewErrors({})
+    setSaving(true)
+    setCreateError(null)
+
+    try {
+      const cliente = await createClient(result.draft as ClienteDraft)
+      onChange(cliente.id)
+      setCreating(false)
+      setNewValues(createEmptyClientValues())
+      setNewErrors({})
+    } catch (error) {
+      setCreateError(mensagemDeErro(error))
+    } finally {
+      setSaving(false)
+    }
   }
 
   if (selected) {
@@ -124,7 +137,7 @@ export function ClientPicker({ value, onChange, error }: ClientPickerProps) {
           <div className="max-h-52 space-y-1 overflow-y-auto">
             {filtered.length === 0 ? (
               <p className="px-2 py-3 text-center text-xs text-muted">
-                Nenhum cliente encontrado.
+                {carregando ? 'Carregando clientes…' : 'Nenhum cliente encontrado.'}
               </p>
             ) : (
               filtered.map((cliente) => (
@@ -232,9 +245,15 @@ export function ClientPicker({ value, onChange, error }: ClientPickerProps) {
             />
           </Field>
 
-          <Button type="button" size="sm" fullWidth onClick={handleCreate}>
+          {createError ? (
+            <p role="alert" className="text-xs font-medium text-red-600">
+              {createError}
+            </p>
+          ) : null}
+
+          <Button type="button" size="sm" fullWidth onClick={handleCreate} disabled={saving}>
             <Plus className="size-4" />
-            Salvar e selecionar cliente
+            {saving ? 'Salvando…' : 'Salvar e selecionar cliente'}
           </Button>
         </div>
       )}

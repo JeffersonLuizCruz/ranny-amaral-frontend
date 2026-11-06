@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { CalendarPlus, FileSignature, Search } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
@@ -12,6 +12,8 @@ import { PAGAMENTO_STATUS_META } from '@/domain/payments'
 import { Button } from '@/shared/components/ui/Button'
 import { EmptyState } from '@/shared/components/ui/EmptyState'
 import { inputClass } from '@/shared/components/ui/Field'
+import { Paginador } from '@/shared/components/ui/Paginador'
+import { useDebouncedValue } from '@/shared/lib/useDebouncedValue'
 import { cn } from '@/shared/lib/cn'
 import { useAgendaStore } from '@/features/agenda/store/agendaStore'
 import { useContractStore } from '@/features/contracts/store/contractStore'
@@ -29,27 +31,44 @@ const PAGAMENTO_ORDER: ContratoPagamentoStatus[] = [
 
 export function ContractsPage() {
   const contratos = useContractStore((state) => state.contratos)
+  const paginaContratos = useContractStore((state) => state.paginaContratos)
+  const carregandoPagina = useContractStore((state) => state.carregandoPagina)
+  const erro = useContractStore((state) => state.erro)
+  const carregarPaginaContratos = useContractStore((state) => state.carregarPaginaContratos)
   const openCreateDrawer = useAgendaStore((state) => state.openCreateDrawer)
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
   const [aceite, setAceite] = useState<AceiteFilter>('todos')
   const [pagamento, setPagamento] = useState<PagamentoFilter>('todos')
+  const [pagina, setPagina] = useState(0)
+  const [tamanho, setTamanho] = useState(12)
+  const queryDebounced = useDebouncedValue(query)
 
-  const filtered = useMemo(() => {
-    const term = query.trim().toLowerCase()
+  useEffect(() => {
+    void carregarPaginaContratos({
+      q: queryDebounced.trim() || undefined,
+      statusAceite: aceite === 'todos' ? undefined : aceite,
+      statusPagamento: pagamento === 'todos' ? undefined : pagamento,
+      pagina,
+      tamanho,
+    }).catch(() => undefined)
+  }, [aceite, carregarPaginaContratos, pagina, pagamento, queryDebounced, tamanho])
 
-    return contratos.filter((contrato) => {
-      if (aceite !== 'todos' && contrato.statusAceite !== aceite) return false
-      if (pagamento !== 'todos' && contrato.statusPagamento !== pagamento) return false
-      if (!term) return true
+  const items = paginaContratos?.itens ?? []
 
-      return (
-        contrato.numero.toLowerCase().includes(term) ||
-        contrato.snapshot.cliente.nome.toLowerCase().includes(term) ||
-        (contrato.snapshot.pacote?.nome.toLowerCase().includes(term) ?? false)
-      )
+  const recarregarPagina = () =>
+    carregarPaginaContratos({
+      q: queryDebounced.trim() || undefined,
+      statusAceite: aceite === 'todos' ? undefined : aceite,
+      statusPagamento: pagamento === 'todos' ? undefined : pagamento,
+      pagina,
+      tamanho,
     })
-  }, [aceite, contratos, pagamento, query])
+
+  const filtrosAtivos = useMemo(
+    () => aceite !== 'todos' || pagamento !== 'todos' || query.trim().length > 0,
+    [aceite, pagamento, query],
+  )
 
   return (
     <div className="p-4 sm:p-6">
@@ -58,7 +77,10 @@ export function ContractsPage() {
           <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" />
           <input
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => {
+              setQuery(event.target.value)
+              setPagina(0)
+            }}
             placeholder="Buscar por número, cliente ou pacote"
             className={cn(inputClass, 'pl-10')}
             aria-label="Buscar contrato"
@@ -84,7 +106,10 @@ export function ContractsPage() {
           <FilterChip
             active={aceite === 'todos'}
             label={`Todos (${contratos.length})`}
-            onClick={() => setAceite('todos')}
+            onClick={() => {
+              setAceite('todos')
+              setPagina(0)
+            }}
           />
           {ACEITE_STATUS_ORDER.map((item) => {
             const count = contratos.filter(
@@ -96,7 +121,10 @@ export function ContractsPage() {
                 active={aceite === item}
                 label={`${ACEITE_STATUS_META[item].label} (${count})`}
                 dot={ACEITE_STATUS_META[item].dot}
-                onClick={() => setAceite(item)}
+                onClick={() => {
+                  setAceite(item)
+                  setPagina(0)
+                }}
               />
             )
           })}
@@ -109,7 +137,10 @@ export function ContractsPage() {
           <FilterChip
             active={pagamento === 'todos'}
             label="Todos"
-            onClick={() => setPagamento('todos')}
+            onClick={() => {
+              setPagamento('todos')
+              setPagina(0)
+            }}
           />
           {PAGAMENTO_ORDER.map((item) => {
             const count = contratos.filter(
@@ -121,7 +152,10 @@ export function ContractsPage() {
                 active={pagamento === item}
                 label={`${PAGAMENTO_STATUS_META[item].label} (${count})`}
                 dot={PAGAMENTO_STATUS_META[item].dot}
-                onClick={() => setPagamento(item)}
+                onClick={() => {
+                  setPagamento(item)
+                  setPagina(0)
+                }}
               />
             )
           })}
@@ -129,18 +163,35 @@ export function ContractsPage() {
       </div>
 
       <div className="mt-4">
-        {filtered.length === 0 ? (
+        {erro ? (
+          <div className="mb-4 flex flex-col gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 sm:flex-row sm:items-center sm:justify-between">
+            <p>{erro}</p>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => {
+                void recarregarPagina().catch(() => undefined)
+              }}
+            >
+              Tentar novamente
+            </Button>
+          </div>
+        ) : null}
+
+        {carregandoPagina && !paginaContratos ? (
+          <p className="py-10 text-center text-sm text-muted">Carregando contratos…</p>
+        ) : items.length === 0 ? (
           <EmptyState
             icon={FileSignature}
             title={
-              contratos.length === 0
-                ? 'Nenhum contrato criado'
-                : 'Nenhum contrato encontrado'
+              filtrosAtivos
+                ? 'Nenhum contrato encontrado'
+                : 'Nenhum contrato criado'
             }
             description={
-              contratos.length === 0
-                ? 'Crie um ensaio para gerar o contrato automaticamente.'
-                : 'Ajuste a busca ou os filtros de aceite e pagamento.'
+              filtrosAtivos
+                ? 'Ajuste a busca ou os filtros de aceite e pagamento.'
+                : 'Crie um ensaio para gerar o contrato automaticamente.'
             }
             action={
               <Button
@@ -155,11 +206,27 @@ export function ContractsPage() {
             }
           />
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {filtered.map((contrato) => (
-              <ContractCard key={contrato.id} contrato={contrato} />
-            ))}
-          </div>
+          <>
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {items.map((contrato) => (
+                <ContractCard key={contrato.id} contrato={contrato} />
+              ))}
+            </div>
+            <Paginador
+              pagina={paginaContratos?.pagina ?? pagina}
+              tamanho={paginaContratos?.tamanho ?? tamanho}
+              totalItens={paginaContratos?.totalItens ?? 0}
+              totalPaginas={paginaContratos?.totalPaginas ?? 0}
+              temAnterior={paginaContratos?.temAnterior ?? false}
+              temProxima={paginaContratos?.temProxima ?? false}
+              carregando={carregandoPagina}
+              onPaginaChange={setPagina}
+              onTamanhoChange={(novoTamanho) => {
+                setTamanho(novoTamanho)
+                setPagina(0)
+              }}
+            />
+          </>
         )}
       </div>
     </div>

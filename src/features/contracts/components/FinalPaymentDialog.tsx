@@ -9,6 +9,7 @@ import { Button } from '@/shared/components/ui/Button'
 import { Field, inputClass, selectClass, textareaClass } from '@/shared/components/ui/Field'
 import { Modal } from '@/shared/components/ui/Modal'
 import { formatBRL, parseCurrencyInput } from '@/shared/lib/currency'
+import { mensagemDeErro } from '@/shared/api/errors'
 import { useToastStore } from '@/shared/store/toastStore'
 import { useAppointmentStore } from '@/features/appointments/store/appointmentStore'
 import { useContractStore } from '@/features/contracts/store/contractStore'
@@ -45,7 +46,7 @@ export function FinalPaymentDialog({
   const [observacoes, setObservacoes] = useState('')
   const [erro, setErro] = useState('')
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const valorRecebido = parseCurrencyInput(valor)
 
@@ -66,26 +67,30 @@ export function FinalPaymentDialog({
 
     const recebidoEmIso = dataRecebimento.toISOString()
 
-    if (contrato) {
-      registrarPagamentoFinal(contrato.id, {
-        valor: valorRecebido,
-        formaPagamento,
-        recebidoEm: recebidoEmIso,
-        observacoes: observacoes.trim() || undefined,
-      })
-    } else if (appointment) {
-      setPaymentFinal(appointment.id, {
-        valor: valorRecebido,
-        status: 'confirmado',
-        formaPagamento,
-        recebidoEm: recebidoEmIso,
-        recebidoPor: 'Equipe do estúdio',
-        observacoes: observacoes.trim() || undefined,
-      })
-    }
+    try {
+      if (contrato) {
+        registrarPagamentoFinal(contrato.id, {
+          valor: valorRecebido,
+          formaPagamento,
+          recebidoEm: recebidoEmIso,
+          observacoes: observacoes.trim() || undefined,
+        })
+      } else if (appointment) {
+        await setPaymentFinal(appointment.id, {
+          valor: valorRecebido,
+          status: 'confirmado',
+          formaPagamento,
+          recebidoEm: recebidoEmIso,
+          recebidoPor: 'Equipe do estúdio',
+          observacoes: observacoes.trim() || undefined,
+        })
+      }
 
-    addToast(`Saldo final de ${formatBRL(valorRecebido)} registrado.`)
-    onClose()
+      addToast(`Saldo final de ${formatBRL(valorRecebido)} registrado.`)
+      onClose()
+    } catch (error) {
+      setErro(mensagemDeErro(error))
+    }
   }
 
   return (

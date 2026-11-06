@@ -1,187 +1,228 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
 
 import type {
-  PagamentoEntrada,
-  PagamentoSaldo,
-  PagamentoStatus,
-} from '@/domain/payments'
-import { createSeedData } from '@/domain/seed'
-import type { AgendamentoDraft, AgendamentoEnsaio, AgendamentoStatus } from '@/domain/types'
-import { createId } from '@/shared/lib/id'
+  AgendamentoDraft,
+  AgendamentoEnsaio,
+  AgendamentoStatus,
+} from '@/domain/types'
+import type { PagamentoEntrada, PagamentoSaldo, PagamentoStatus } from '@/domain/payments'
+import {
+  alterarStatusAgendamento,
+  atualizarAgendamento,
+  atualizarPagamentoEntrada,
+  atualizarPagamentoFinal,
+  criarAgendamento,
+  excluirAgendamento,
+  listarAgendamentos,
+} from '@/features/appointments/api/agendaApi'
+import { mensagemDeErro } from '@/shared/api/errors'
 
-function normalizeAppointment(appointment: AgendamentoEnsaio): AgendamentoEnsaio {
-  return {
-    ...appointment,
-    pagamentoFinal:
-      appointment.pagamentoFinal ??
-      ({
-        valor: appointment.saldoRestante,
-        status: appointment.saldoRestante > 0 ? 'pendente' : 'isento',
-      } satisfies PagamentoSaldo),
-  }
+/**
+ * Vínculo vindo do contrato local (transição).
+ *
+ * Enquanto o módulo de contratos ainda vive no navegador, o backend não conhece
+ * `contratoId`, `clienteId` nem os pagamentos espelhados. No boot, o app
+ * reconcilia esse vínculo nos agendamentos recém-carregados da API.
+ */
+export interface VinculoContrato {
+  contratoId: string
+  agendamentoId: string
+  clienteId?: string
+  status: AgendamentoStatus
+  pagamentoEntrada?: PagamentoEntrada
+  pagamentoFinal?: PagamentoSaldo
 }
-
-const STORAGE_KEY = 'photoizer.crm.appointments.v2'
 
 interface AppointmentState {
   appointments: AgendamentoEnsaio[]
-  createAppointment: (draft: AgendamentoDraft) => AgendamentoEnsaio
-  updateAppointment: (id: string, draft: AgendamentoDraft) => void
-  deleteAppointment: (id: string) => void
-  updateStatus: (id: string, status: AgendamentoStatus) => void
-  setDepositStatus: (id: string, status: PagamentoStatus) => void
-  setPaymentEntrada: (id: string, pagamento: PagamentoEntrada) => void
-  setPaymentFinal: (id: string, pagamento: PagamentoSaldo) => void
+  carregando: boolean
+  carregado: boolean
+  erro: string | null
+  carregarAgendamentos: () => Promise<void>
+  createAppointment: (draft: AgendamentoDraft) => Promise<AgendamentoEnsaio>
+  updateAppointment: (id: string, draft: AgendamentoDraft) => Promise<void>
+  deleteAppointment: (id: string) => Promise<void>
+  updateStatus: (id: string, status: AgendamentoStatus) => Promise<void>
+  setDepositStatus: (id: string, status: PagamentoStatus) => Promise<void>
+  setPaymentEntrada: (id: string, pagamento: PagamentoEntrada) => Promise<void>
+  setPaymentFinal: (id: string, pagamento: PagamentoSaldo) => Promise<void>
   linkContract: (id: string, contratoId: string) => void
   linkGallery: (id: string, galeriaId: string) => void
   linkClient: (id: string, clienteId: string) => void
-  restoreDemoData: () => void
+  aplicarVinculos: (vinculos: VinculoContrato[]) => void
+  /** Mantido para o botão de demonstração: recarrega do servidor. */
+  restoreDemoData: () => Promise<void>
 }
 
-const seed = createSeedData()
+function ordenar(appointments: AgendamentoEnsaio[]): AgendamentoEnsaio[] {
+  return [...appointments].sort(
+    (a, b) => new Date(a.dataHoraInicio).getTime() - new Date(b.dataHoraInicio).getTime(),
+  )
+}
 
-export const useAppointmentStore = create<AppointmentState>()(
-  persist(
-    (setState) => ({
-      appointments: seed.appointments,
+function substituir(
+  appointments: AgendamentoEnsaio[],
+  atualizado: AgendamentoEnsaio,
+): AgendamentoEnsaio[] {
+  return ordenar(
+    appointments.map((appointment) =>
+      appointment.id === atualizado.id ? atualizado : appointment,
+    ),
+  )
+}
 
-      createAppointment: (draft) => {
-        const timestamp = new Date().toISOString()
-        const appointment: AgendamentoEnsaio = normalizeAppointment({
-          ...draft,
-          id: createId('apt'),
-          createdAt: timestamp,
-          updatedAt: timestamp,
-        })
+function patchLocal(
+  appointments: AgendamentoEnsaio[],
+  id: string,
+  patch: Partial<AgendamentoEnsaio>,
+): AgendamentoEnsaio[] {
+  return appointments.map((appointment) =>
+    appointment.id === id
+      ? { ...appointment, ...patch, updatedAt: new Date().toISOString() }
+      : appointment,
+  )
+}
 
-        setState((state) => ({ appointments: [...state.appointments, appointment] }))
-        return appointment
-      },
+/**
+ * Store da agenda com estado de servidor.
+ *
+ * Mantém a interface usada por contratos, financeiro, galerias e agenda, mas
+ * agora carrega e persiste via API. Vínculos que ainda não existem no backend
+ * (`contratoId`, `galeriaId`) continuam locais até a migração dos respectivos
+ * módulos.
+ */
+export const useAppointmentStore = create<AppointmentState>()((set, get) => ({
+  appointments: [],
+  carregando: false,
+  carregado: false,
+  erro: null,
 
-      updateAppointment: (id, draft) => {
-        setState((state) => ({
-          appointments: state.appointments.map((appointment) =>
-            appointment.id === id
-              ? { ...appointment, ...draft, updatedAt: new Date().toISOString() }
-              : appointment,
-          ),
-        }))
-      },
+  carregarAgendamentos: async () => {
+    set({ carregando: true, erro: null })
+    try {
+      const appointments = await listarAgendamentos()
+      set({ appointments: ordenar(appointments), carregado: true })
+    } catch (error) {
+      set({ erro: mensagemDeErro(error) })
+      throw error
+    } finally {
+      set({ carregando: false })
+    }
+  },
 
-      deleteAppointment: (id) => {
-        setState((state) => ({
-          appointments: state.appointments.filter((appointment) => appointment.id !== id),
-        }))
-      },
+  createAppointment: async (draft) => {
+    try {
+      const criado = await criarAgendamento(draft)
+      set((state) => ({ appointments: ordenar([...state.appointments, criado]), erro: null }))
+      return criado
+    } catch (error) {
+      set({ erro: mensagemDeErro(error) })
+      throw error
+    }
+  },
 
-      updateStatus: (id, status) => {
-        setState((state) => ({
-          appointments: state.appointments.map((appointment) =>
-            appointment.id === id
-              ? { ...appointment, status, updatedAt: new Date().toISOString() }
-              : appointment,
-          ),
-        }))
-      },
+  updateAppointment: async (id, draft) => {
+    try {
+      const atualizado = await atualizarAgendamento(id, draft)
+      set((state) => ({ appointments: substituir(state.appointments, atualizado), erro: null }))
+    } catch (error) {
+      set({ erro: mensagemDeErro(error) })
+      throw error
+    }
+  },
 
-      setDepositStatus: (id, status) => {
-        setState((state) => ({
-          appointments: state.appointments.map((appointment) => {
-            if (appointment.id !== id) return appointment
+  deleteAppointment: async (id) => {
+    try {
+      await excluirAgendamento(id)
+      set((state) => ({
+        appointments: state.appointments.filter((appointment) => appointment.id !== id),
+        erro: null,
+      }))
+    } catch (error) {
+      set({ erro: mensagemDeErro(error) })
+      throw error
+    }
+  },
 
-            const confirmado = status === 'confirmado'
-            return normalizeAppointment({
-              ...appointment,
-              pagamentoEntrada: {
-                ...appointment.pagamentoEntrada,
-                status,
-                confirmadoEm: confirmado ? new Date().toISOString() : undefined,
-                confirmadoPor: confirmado ? 'Equipe do estúdio' : undefined,
-                rejeicao: undefined,
-                comprovante:
-                  status === 'isento'
-                    ? undefined
-                    : appointment.pagamentoEntrada.comprovante,
-              },
-              updatedAt: new Date().toISOString(),
-            })
-          }),
-        }))
-      },
+  updateStatus: async (id, status) => {
+    try {
+      const atualizado = await alterarStatusAgendamento(id, status)
+      set((state) => ({ appointments: substituir(state.appointments, atualizado), erro: null }))
+    } catch (error) {
+      set({ erro: mensagemDeErro(error) })
+      throw error
+    }
+  },
 
-      setPaymentEntrada: (id, pagamento) => {
-        setState((state) => ({
-          appointments: state.appointments.map((appointment) =>
-            appointment.id === id
-              ? normalizeAppointment({
-                  ...appointment,
-                  pagamentoEntrada: pagamento,
-                  updatedAt: new Date().toISOString(),
-                })
-              : appointment,
-          ),
-        }))
-      },
+  setDepositStatus: async (id, status) => {
+    const appointment = get().appointments.find((item) => item.id === id)
+    if (!appointment) return
 
-      setPaymentFinal: (id, pagamento) => {
-        setState((state) => ({
-          appointments: state.appointments.map((appointment) =>
-            appointment.id === id
-              ? normalizeAppointment({
-                  ...appointment,
-                  pagamentoFinal: pagamento,
-                  updatedAt: new Date().toISOString(),
-                })
-              : appointment,
-          ),
-        }))
-      },
+    try {
+      const atualizado = await atualizarPagamentoEntrada(id, {
+        ...appointment.pagamentoEntrada,
+        status,
+      })
+      set((state) => ({ appointments: substituir(state.appointments, atualizado), erro: null }))
+    } catch (error) {
+      set({ erro: mensagemDeErro(error) })
+      throw error
+    }
+  },
 
-      linkContract: (id, contratoId) => {
-        setState((state) => ({
-          appointments: state.appointments.map((appointment) =>
-            appointment.id === id
-              ? { ...appointment, contratoId, updatedAt: new Date().toISOString() }
-              : appointment,
-          ),
-        }))
-      },
+  setPaymentEntrada: async (id, pagamento) => {
+    try {
+      const atualizado = await atualizarPagamentoEntrada(id, pagamento)
+      set((state) => ({ appointments: substituir(state.appointments, atualizado), erro: null }))
+    } catch (error) {
+      set({ erro: mensagemDeErro(error) })
+      throw error
+    }
+  },
 
-      linkGallery: (id, galeriaId) => {
-        setState((state) => ({
-          appointments: state.appointments.map((appointment) =>
-            appointment.id === id
-              ? { ...appointment, galeriaId, updatedAt: new Date().toISOString() }
-              : appointment,
-          ),
-        }))
-      },
+  setPaymentFinal: async (id, pagamento) => {
+    try {
+      const atualizado = await atualizarPagamentoFinal(id, pagamento)
+      set((state) => ({ appointments: substituir(state.appointments, atualizado), erro: null }))
+    } catch (error) {
+      set({ erro: mensagemDeErro(error) })
+      throw error
+    }
+  },
 
-      linkClient: (id, clienteId) => {
-        setState((state) => ({
-          appointments: state.appointments.map((appointment) =>
-            appointment.id === id
-              ? { ...appointment, clienteId, updatedAt: new Date().toISOString() }
-              : appointment,
-          ),
-        }))
-      },
+  linkContract: (id, contratoId) => {
+    set((state) => ({ appointments: patchLocal(state.appointments, id, { contratoId }) }))
+  },
 
-      restoreDemoData: () => {
-        setState({ appointments: createSeedData().appointments })
-      },
-    }),
-    {
-      name: STORAGE_KEY,
-      version: 3,
-      migrate: (persisted) => {
-        const state = persisted as { appointments?: AgendamentoEnsaio[] } | undefined
+  linkGallery: (id, galeriaId) => {
+    set((state) => ({ appointments: patchLocal(state.appointments, id, { galeriaId }) }))
+  },
+
+  linkClient: (id, clienteId) => {
+    set((state) => ({ appointments: patchLocal(state.appointments, id, { clienteId }) }))
+  },
+
+  aplicarVinculos: (vinculos) => {
+    const porAgendamento = new Map(vinculos.map((vinculo) => [vinculo.agendamentoId, vinculo]))
+    set((state) => ({
+      appointments: state.appointments.map((appointment) => {
+        const vinculo = porAgendamento.get(appointment.id)
+        if (!vinculo) return appointment
         return {
-          appointments: (state?.appointments ?? []).map(normalizeAppointment),
+          ...appointment,
+          contratoId: vinculo.contratoId,
+          clienteId: vinculo.clienteId ?? appointment.clienteId,
+          status:
+            appointment.status === 'realizado' ? appointment.status : vinculo.status,
+          pagamentoEntrada: vinculo.pagamentoEntrada ?? appointment.pagamentoEntrada,
+          pagamentoFinal: vinculo.pagamentoFinal ?? appointment.pagamentoFinal,
+          updatedAt: new Date().toISOString(),
         }
-      },
-      partialize: (state) => ({ appointments: state.appointments }),
-    },
-  ),
-)
+      }),
+    }))
+  },
+
+  restoreDemoData: async () => {
+    await get().carregarAgendamentos()
+  },
+}))

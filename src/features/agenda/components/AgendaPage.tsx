@@ -3,12 +3,15 @@ import { X } from 'lucide-react'
 import { cn } from '@/shared/lib/cn'
 import { useActiveFilterCount, useFilteredAppointments } from '@/features/agenda/lib/filters'
 import { useAgendaStore } from '@/features/agenda/store/agendaStore'
+import { useAppointmentStore } from '@/features/appointments/store/appointmentStore'
 import { CalendarView } from '@/features/agenda/components/CalendarView'
 
 export function AgendaPage() {
   const appointments = useFilteredAppointments()
   const activeFilterCount = useActiveFilterCount()
   const clearFilters = useAgendaStore((state) => state.clearFilters)
+  const carregando = useAppointmentStore((state) => state.carregando)
+  const carregado = useAppointmentStore((state) => state.carregado)
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-surface">
@@ -36,7 +39,11 @@ export function AgendaPage() {
       ) : null}
 
       <div className="min-h-0 flex-1">
-        <CalendarView appointments={appointments} />
+        {carregando && !carregado ? (
+          <p className="py-10 text-center text-sm text-muted">Carregando agenda…</p>
+        ) : (
+          <CalendarView appointments={appointments} />
+        )}
       </div>
     </div>
   )

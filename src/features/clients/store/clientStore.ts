@@ -1,64 +1,123 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
 
-import { createSeedData } from '@/domain/seed'
 import type { Cliente, ClienteDraft } from '@/domain/types'
-import { createId } from '@/shared/lib/id'
+import {
+  atualizarCliente,
+  criarCliente,
+  excluirCliente,
+  listarClientes,
+  listarClientesPagina,
+} from '@/features/clients/api/clientesApi'
+import { mensagemDeErro } from '@/shared/api/errors'
+import type { Pagina } from '@/shared/api/types'
 
-const STORAGE_KEY = 'photoizer.crm.clients.v2'
+export interface FiltrosClientesPagina {
+  q?: string
+  pagina?: number
+  tamanho?: number
+}
 
 interface ClientState {
   clientes: Cliente[]
-  createClient: (draft: ClienteDraft) => Cliente
-  updateClient: (id: string, draft: ClienteDraft) => void
-  deleteClient: (id: string) => void
-  restoreDemoData: () => void
+  paginaClientes: Pagina<Cliente> | null
+  carregando: boolean
+  carregandoPagina: boolean
+  carregado: boolean
+  erro: string | null
+  carregarClientes: () => Promise<void>
+  carregarPaginaClientes: (filtros?: FiltrosClientesPagina) => Promise<void>
+  createClient: (draft: ClienteDraft) => Promise<Cliente>
+  updateClient: (id: string, draft: ClienteDraft) => Promise<void>
+  deleteClient: (id: string) => Promise<void>
+  /** Mantido para o botão de demonstração: recarrega do servidor. */
+  restoreDemoData: () => Promise<void>
 }
 
-const seed = createSeedData()
+function ordenar(clientes: Cliente[]): Cliente[] {
+  return [...clientes].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+}
 
-export const useClientStore = create<ClientState>()(
-  persist(
-    (setState) => ({
-      clientes: seed.clients,
+/**
+ * Store de clientes com estado de servidor.
+ *
+ * A interface pública (lista + ações) foi mantida para não quebrar as telas de
+ * agenda, contratos e galerias, mas os dados agora vêm da API e não são mais
+ * persistidos em localStorage. O backend é a fonte de verdade.
+ */
+export const useClientStore = create<ClientState>()((set, get) => ({
+  clientes: [],
+  paginaClientes: null,
+  carregando: false,
+  carregandoPagina: false,
+  carregado: false,
+  erro: null,
 
-      createClient: (draft) => {
-        const timestamp = new Date().toISOString()
-        const cliente: Cliente = {
-          ...draft,
-          id: createId('cli'),
-          createdAt: timestamp,
-          updatedAt: timestamp,
-        }
+  carregarClientes: async () => {
+    set({ carregando: true, erro: null })
+    try {
+      const clientes = await listarClientes()
+      set({ clientes: ordenar(clientes), carregado: true })
+    } catch (error) {
+      set({ erro: mensagemDeErro(error) })
+      throw error
+    } finally {
+      set({ carregando: false })
+    }
+  },
 
-        setState((state) => ({ clientes: [...state.clientes, cliente] }))
-        return cliente
-      },
+  carregarPaginaClientes: async (filtros = {}) => {
+    set({ carregandoPagina: true, erro: null })
+    try {
+      const paginaClientes = await listarClientesPagina(filtros)
+      set({ paginaClientes })
+    } catch (error) {
+      set({ erro: mensagemDeErro(error) })
+      throw error
+    } finally {
+      set({ carregandoPagina: false })
+    }
+  },
 
-      updateClient: (id, draft) => {
-        setState((state) => ({
-          clientes: state.clientes.map((cliente) =>
-            cliente.id === id
-              ? { ...cliente, ...draft, updatedAt: new Date().toISOString() }
-              : cliente,
-          ),
-        }))
-      },
+  createClient: async (draft) => {
+    try {
+      const cliente = await criarCliente(draft)
+      set((state) => ({ clientes: ordenar([...state.clientes, cliente]), erro: null }))
+      return cliente
+    } catch (error) {
+      set({ erro: mensagemDeErro(error) })
+      throw error
+    }
+  },
 
-      deleteClient: (id) => {
-        setState((state) => ({
-          clientes: state.clientes.filter((cliente) => cliente.id !== id),
-        }))
-      },
+  updateClient: async (id, draft) => {
+    try {
+      const atualizado = await atualizarCliente(id, draft)
+      set((state) => ({
+        clientes: ordenar(
+          state.clientes.map((cliente) => (cliente.id === id ? atualizado : cliente)),
+        ),
+        erro: null,
+      }))
+    } catch (error) {
+      set({ erro: mensagemDeErro(error) })
+      throw error
+    }
+  },
 
-      restoreDemoData: () => {
-        setState({ clientes: createSeedData().clients })
-      },
-    }),
-    {
-      name: STORAGE_KEY,
-      version: 2,
-      partialize: (state) => ({ clientes: state.clientes }),
-    },
-  ),
-)
+  deleteClient: async (id) => {
+    try {
+      await excluirCliente(id)
+      set((state) => ({
+        clientes: state.clientes.filter((cliente) => cliente.id !== id),
+        erro: null,
+      }))
+    } catch (error) {
+      set({ erro: mensagemDeErro(error) })
+      throw error
+    }
+  },
+
+  restoreDemoData: async () => {
+    await get().carregarClientes()
+  },
+}))

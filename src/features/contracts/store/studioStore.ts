@@ -1,36 +1,57 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
 
-import { createContractSeedData } from '@/domain/contractSeed'
 import type { EstudioConfig } from '@/domain/contracts'
+import { atualizarEstudio, obterEstudio } from '@/features/contracts/api/estudioApi'
+import { mensagemDeErro } from '@/shared/api/errors'
 
-const STORAGE_KEY = 'photoizer.crm.studio.v2'
+export const ESTUDIO_PADRAO: EstudioConfig = {
+  nome: 'Estúdio Fotográfico',
+  percentualEntradaPadrao: 30,
+  prazoPagamentoDias: 3,
+}
 
 interface StudioState {
   estudio: EstudioConfig
-  updateEstudio: (config: EstudioConfig) => void
-  restoreDemoData: () => void
+  carregando: boolean
+  carregado: boolean
+  erro: string | null
+  carregarEstudio: () => Promise<void>
+  updateEstudio: (config: EstudioConfig) => Promise<void>
+  /** Mantido para o botão de demonstração: recarrega do servidor. */
+  restoreDemoData: () => Promise<void>
 }
 
-const seed = createContractSeedData()
+/** Store da configuração única do estúdio, servida pelo backend. */
+export const useStudioStore = create<StudioState>()((set, get) => ({
+  estudio: ESTUDIO_PADRAO,
+  carregando: false,
+  carregado: false,
+  erro: null,
 
-export const useStudioStore = create<StudioState>()(
-  persist(
-    (setState) => ({
-      estudio: seed.studio,
+  carregarEstudio: async () => {
+    set({ carregando: true, erro: null })
+    try {
+      const estudio = await obterEstudio()
+      set({ estudio, carregado: true })
+    } catch (error) {
+      set({ erro: mensagemDeErro(error) })
+      throw error
+    } finally {
+      set({ carregando: false })
+    }
+  },
 
-      updateEstudio: (config) => {
-        setState({ estudio: config })
-      },
+  updateEstudio: async (config) => {
+    try {
+      const estudio = await atualizarEstudio(config)
+      set({ estudio, erro: null })
+    } catch (error) {
+      set({ erro: mensagemDeErro(error) })
+      throw error
+    }
+  },
 
-      restoreDemoData: () => {
-        setState({ estudio: createContractSeedData().studio })
-      },
-    }),
-    {
-      name: STORAGE_KEY,
-      version: 2,
-      partialize: (state) => ({ estudio: state.estudio }),
-    },
-  ),
-)
+  restoreDemoData: async () => {
+    await get().carregarEstudio()
+  },
+}))

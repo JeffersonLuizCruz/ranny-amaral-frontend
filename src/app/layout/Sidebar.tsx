@@ -17,8 +17,8 @@ import { useAgendaStore } from '@/features/agenda/store/agendaStore'
 import { AgendaFilters } from '@/features/agenda/components/AgendaFilters'
 import { MiniCalendar } from '@/features/agenda/components/MiniCalendar'
 import { useAppointmentStore } from '@/features/appointments/store/appointmentStore'
+import { aplicarVinculosDeContratos } from '@/app/applyContractLinks'
 import { useClientStore } from '@/features/clients/store/clientStore'
-import { useAcceptanceStore } from '@/features/contracts/store/acceptanceStore'
 import { useContractStore } from '@/features/contracts/store/contractStore'
 import { useStudioStore } from '@/features/contracts/store/studioStore'
 import { useTemplateStore } from '@/features/contracts/store/templateStore'
@@ -27,6 +27,7 @@ import { usePackageStore } from '@/features/packages/store/packageStore'
 import { Button, IconButton } from '@/shared/components/ui/Button'
 import { useInstallPrompt } from '@/shared/hooks/useInstallPrompt'
 import { cn } from '@/shared/lib/cn'
+import { mensagemDeErro } from '@/shared/api/errors'
 import { useToastStore } from '@/shared/store/toastStore'
 
 interface SidebarProps {
@@ -50,7 +51,6 @@ export function Sidebar({ onNavigate, onClose }: SidebarProps) {
   const restorePackages = usePackageStore((state) => state.restoreDemoData)
   const restoreAppointments = useAppointmentStore((state) => state.restoreDemoData)
   const restoreContracts = useContractStore((state) => state.restoreDemoData)
-  const restoreAcceptance = useAcceptanceStore((state) => state.restoreDemoData)
   const restoreTemplates = useTemplateStore((state) => state.restoreDemoData)
   const restoreStudio = useStudioStore((state) => state.restoreDemoData)
   const restoreGalleries = useGalleryStore((state) => state.restoreDemoData)
@@ -62,21 +62,28 @@ export function Sidebar({ onNavigate, onClose }: SidebarProps) {
     if (accepted) addToast('Aplicativo instalado com sucesso.')
   }
 
-  const handleRestore = () => {
+  const handleRestore = async () => {
     const confirmed = window.confirm(
-      'Substituir clientes, pacotes, ensaios e galerias atuais pelos dados de demonstração? Esta ação não pode ser desfeita.',
+      'Substituir a demonstração local de galerias e recarregar clientes, pacotes, agenda, contratos, modelos e estúdio do servidor? Esta ação não pode ser desfeita.',
     )
     if (!confirmed) return
 
-    restoreClients()
-    restorePackages()
-    restoreAppointments()
-    restoreContracts()
-    restoreAcceptance()
-    restoreTemplates()
-    restoreStudio()
-    restoreGalleries()
-    addToast('Dados de demonstração restaurados.')
+    try {
+      restoreGalleries()
+
+      await Promise.all([
+        restoreClients(),
+        restorePackages(),
+        restoreAppointments(),
+        restoreContracts(),
+        restoreTemplates(),
+        restoreStudio(),
+      ])
+      aplicarVinculosDeContratos()
+      addToast('Dados de demonstração restaurados.')
+    } catch (error) {
+      addToast(mensagemDeErro(error))
+    }
   }
 
   return (

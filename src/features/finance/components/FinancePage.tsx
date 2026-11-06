@@ -7,6 +7,7 @@ import { getMonthFinance } from '@/features/finance/lib/summary'
 import { Button } from '@/shared/components/ui/Button'
 import { EmptyState } from '@/shared/components/ui/EmptyState'
 import { useToastStore } from '@/shared/store/toastStore'
+import { mensagemDeErro } from '@/shared/api/errors'
 import { useAgendaStore } from '@/features/agenda/store/agendaStore'
 import { useAppointmentStore } from '@/features/appointments/store/appointmentStore'
 import { useCrmLookups } from '@/features/appointments/lib/lookups'
@@ -34,15 +35,19 @@ export function FinancePage() {
     [appointments, contratos, month, galerias],
   )
 
-  const handleConfirm = (entry: FinanceEntry) => {
-    if (entry.contrato) {
-      if (entry.contrato.statusPagamento !== 'pendente') return
-      confirmPayment(entry.contrato.id)
-    } else {
-      setDepositStatus(entry.appointment.id, 'confirmado')
-    }
+  const handleConfirm = async (entry: FinanceEntry) => {
+    try {
+      if (entry.contrato) {
+        if (entry.contrato.statusPagamento !== 'pendente') return
+        await confirmPayment(entry.contrato.id)
+      } else {
+        await setDepositStatus(entry.appointment.id, 'confirmado')
+      }
 
-    addToast('Entrada marcada como recebida.')
+      addToast('Entrada marcada como recebida.')
+    } catch (error) {
+      addToast(mensagemDeErro(error))
+    }
   }
 
   const handleCreate = () => {

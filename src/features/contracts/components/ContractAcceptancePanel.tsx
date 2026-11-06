@@ -14,8 +14,9 @@ import { inputClass } from '@/shared/components/ui/Field'
 import { cn } from '@/shared/lib/cn'
 import { whatsappLink } from '@/shared/lib/whatsapp'
 import { useToastStore } from '@/shared/store/toastStore'
-import { useAcceptanceStore } from '@/features/contracts/store/acceptanceStore'
+import { mensagemDeErro } from '@/shared/api/errors'
 import { useContractStore } from '@/features/contracts/store/contractStore'
+import { useLinksAceite } from '@/features/contracts/hooks/useLinksAceite'
 import { AceiteStatusBadge } from '@/features/contracts/components/ContractStatusBadge'
 import {
   acceptanceWhatsAppMessage,
@@ -32,20 +33,18 @@ function formatDateTime(value?: string): string {
 }
 
 export function ContractAcceptancePanel({ contrato }: { contrato: Contrato }) {
-  const solicitacoes = useAcceptanceStore((state) => state.solicitacoes)
+  const { links, recarregar } = useLinksAceite(contrato.id)
   const addToast = useToastStore((state) => state.addToast)
   const reopenContract = useContractStore((state) => state.reopenContract)
+  const recarregarContrato = useContractStore((state) => state.recarregarContrato)
   const [copied, setCopied] = useState(false)
 
   const solicitacao = useMemo(
     () =>
-      [...solicitacoes]
-        .filter((item) => item.contratoId === contrato.id)
-        .sort(
-          (a, b) =>
-            new Date(b.criadaEm).getTime() - new Date(a.criadaEm).getTime(),
-        )[0],
-    [contrato.id, solicitacoes],
+      [...links].sort(
+        (a, b) => new Date(b.criadaEm).getTime() - new Date(a.criadaEm).getTime(),
+      )[0],
+    [links],
   )
 
   const activeLink =
@@ -68,18 +67,23 @@ export function ContractAcceptancePanel({ contrato }: { contrato: Contrato }) {
       setCopied(true)
       addToast('Link do contrato copiado.')
       window.setTimeout(() => setCopied(false), 2000)
+      await Promise.all([
+        recarregar(),
+        recarregarContrato(contrato.id).catch(() => undefined),
+      ])
     } catch (error) {
-      addToast(
-        error instanceof Error
-          ? error.message
-          : 'Não foi possível copiar o link do contrato.',
-      )
+      addToast(mensagemDeErro(error))
     }
   }
 
-  const handleReopen = () => {
-    reopenContract(contrato.id)
-    addToast('Contrato reaberto como rascunho.')
+  const handleReopen = async () => {
+    try {
+      await reopenContract(contrato.id)
+      await recarregar()
+      addToast('Contrato reaberto como rascunho.')
+    } catch (error) {
+      addToast(mensagemDeErro(error))
+    }
   }
 
   const cancelLink = async () => {
@@ -89,10 +93,12 @@ export function ContractAcceptancePanel({ contrato }: { contrato: Contrato }) {
     }
 
     try {
-      await acceptanceAdapter.cancel(solicitacao.id)
+      await acceptanceAdapter.cancel(contrato.id, solicitacao.id)
+      await recarregar()
+      await recarregarContrato(contrato.id)
       addToast('Link cancelado. O contrato voltou para rascunho.')
-    } catch {
-      addToast('Não foi possível cancelar o link.')
+    } catch (error) {
+      addToast(mensagemDeErro(error))
     }
   }
 

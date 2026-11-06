@@ -20,6 +20,7 @@ import { EmptyState } from '@/shared/components/ui/EmptyState'
 import { inputClass } from '@/shared/components/ui/Field'
 import { cn } from '@/shared/lib/cn'
 import { useToastStore } from '@/shared/store/toastStore'
+import { mensagemDeErro } from '@/shared/api/errors'
 import { useContractStore } from '@/features/contracts/store/contractStore'
 import { useTemplateStore } from '@/features/contracts/store/templateStore'
 import { TemplateForm } from '@/features/contracts/components/TemplateForm'
@@ -57,20 +58,24 @@ export function TemplatesPage() {
     )
   }, [modelos, query])
 
-  const handleSubmit = (draft: ModeloContratoDraft) => {
-    if (editing) {
-      updateTemplate(editing.id, draft)
-      addToast('Modelo atualizado.')
-    } else {
-      createTemplate(draft)
-      addToast('Modelo criado.')
-    }
+  const handleSubmit = async (draft: ModeloContratoDraft) => {
+    try {
+      if (editing) {
+        await updateTemplate(editing.id, draft)
+        addToast('Modelo atualizado.')
+      } else {
+        await createTemplate(draft)
+        addToast('Modelo criado.')
+      }
 
-    setCreating(false)
-    setEditing(null)
+      setCreating(false)
+      setEditing(null)
+    } catch (error) {
+      addToast(mensagemDeErro(error))
+    }
   }
 
-  const handleDelete = (modelo: ModeloContrato) => {
+  const handleDelete = async (modelo: ModeloContrato) => {
     const linked = usage.get(modelo.id) ?? 0
     if (linked > 0) {
       addToast('Este modelo possui contratos vinculados. Arquive-o em vez de excluir.')
@@ -80,19 +85,32 @@ export function TemplatesPage() {
     const confirmed = window.confirm(`Excluir o modelo "${modelo.nome}"?`)
     if (!confirmed) return
 
-    deleteTemplate(modelo.id)
-    addToast('Modelo excluído.')
+    try {
+      await deleteTemplate(modelo.id)
+      addToast('Modelo excluído.')
+    } catch (error) {
+      addToast(mensagemDeErro(error))
+    }
   }
 
-  const handleDuplicate = (modelo: ModeloContrato) => {
-    const duplicado = duplicateTemplate(modelo.id)
-    if (!duplicado) return
-    addToast('Modelo duplicado.')
+  const handleDuplicate = async (modelo: ModeloContrato) => {
+    try {
+      await duplicateTemplate(modelo.id)
+      addToast('Modelo duplicado.')
+    } catch (error) {
+      addToast(mensagemDeErro(error))
+    }
   }
 
-  const handleToggle = (modelo: ModeloContrato) => {
-    toggleTemplateActive(modelo.id)
-    addToast(modelo.ativo ? 'Modelo arquivado.' : 'Modelo reativado.')
+  const handleToggle = async (modelo: ModeloContrato) => {
+    const estavaAtivo = modelo.ativo
+
+    try {
+      await toggleTemplateActive(modelo.id)
+      addToast(estavaAtivo ? 'Modelo arquivado.' : 'Modelo reativado.')
+    } catch (error) {
+      addToast(mensagemDeErro(error))
+    }
   }
 
   const formOpen = creating || Boolean(editing)

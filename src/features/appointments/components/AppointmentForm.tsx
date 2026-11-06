@@ -237,13 +237,14 @@ export function AppointmentForm({
       </Field>
 
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Contato da reserva" htmlFor="appointment-contact-name">
+        <Field label="Contato da reserva" htmlFor="appointment-contact-name" error={errors.contatoNome}>
           <input
             id="appointment-contact-name"
             value={values.contatoNome}
             onChange={(event) => update({ contatoNome: event.target.value })}
             placeholder="Nome de quem reservou"
             className={inputClass}
+            aria-invalid={Boolean(errors.contatoNome)}
           />
         </Field>
         <Field

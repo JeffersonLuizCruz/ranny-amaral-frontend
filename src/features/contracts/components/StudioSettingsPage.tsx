@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Check, Scale } from 'lucide-react'
 
 import type { EstudioConfig } from '@/domain/contracts'
 import { Button } from '@/shared/components/ui/Button'
 import { Field, inputClass, textareaClass } from '@/shared/components/ui/Field'
+import { mensagemDeErro } from '@/shared/api/errors'
 import { useToastStore } from '@/shared/store/toastStore'
 import { useStudioStore } from '@/features/contracts/store/studioStore'
 
@@ -15,12 +16,16 @@ export function StudioSettingsPage() {
   const [values, setValues] = useState<EstudioConfig>(() => ({ ...estudio }))
   const [error, setError] = useState('')
 
+  useEffect(() => {
+    setValues({ ...estudio })
+  }, [estudio])
+
   const update = (patch: Partial<EstudioConfig>) => {
     setValues((current) => ({ ...current, ...patch }))
     setError('')
   }
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     if (!values.nome.trim()) {
@@ -28,27 +33,31 @@ export function StudioSettingsPage() {
       return
     }
 
-    updateEstudio({
-      ...values,
-      percentualEntradaPadrao: Math.max(0, Math.min(100, Number(values.percentualEntradaPadrao) || 0)),
-      prazoPagamentoDias: values.prazoPagamentoDias
-        ? Math.max(0, Number(values.prazoPagamentoDias) || 0)
-        : undefined,
-      nome: values.nome.trim(),
-      razaoSocial: values.razaoSocial?.trim() || undefined,
-      cnpj: values.cnpj?.trim() || undefined,
-      endereco: values.endereco?.trim() || undefined,
-      cidade: values.cidade?.trim() || undefined,
-      estado: values.estado?.trim() || undefined,
-      email: values.email?.trim() || undefined,
-      telefone: values.telefone?.trim() || undefined,
-      responsavel: values.responsavel?.trim() || undefined,
-      site: values.site?.trim() || undefined,
-      foro: values.foro?.trim() || undefined,
-      chavePix: values.chavePix?.trim() || undefined,
-      instrucoesPagamento: values.instrucoesPagamento?.trim() || undefined,
-    })
-    addToast('Dados do estúdio atualizados.')
+    try {
+      await updateEstudio({
+        ...values,
+        percentualEntradaPadrao: Math.max(0, Math.min(100, Number(values.percentualEntradaPadrao) || 0)),
+        prazoPagamentoDias: values.prazoPagamentoDias
+          ? Math.max(0, Number(values.prazoPagamentoDias) || 0)
+          : undefined,
+        nome: values.nome.trim(),
+        razaoSocial: values.razaoSocial?.trim() || undefined,
+        cnpj: values.cnpj?.trim() || undefined,
+        endereco: values.endereco?.trim() || undefined,
+        cidade: values.cidade?.trim() || undefined,
+        estado: values.estado?.trim() || undefined,
+        email: values.email?.trim() || undefined,
+        telefone: values.telefone?.trim() || undefined,
+        responsavel: values.responsavel?.trim() || undefined,
+        site: values.site?.trim() || undefined,
+        foro: values.foro?.trim() || undefined,
+        chavePix: values.chavePix?.trim() || undefined,
+        instrucoesPagamento: values.instrucoesPagamento?.trim() || undefined,
+      })
+      addToast('Dados do estúdio atualizados.')
+    } catch (erro) {
+      setError(mensagemDeErro(erro))
+    }
   }
 
   return (

@@ -1,10 +1,11 @@
-import { localAcceptanceAdapter } from './localAdapter'
+import { httpAcceptanceAdapter } from './httpAdapter'
 
 /**
- * Troque por `httpAcceptanceAdapter` quando o backend estiver disponível.
- * O restante do frontend depende apenas desta interface.
+ * O aceite de contratos usa o backend real.
+ *
+ * A interface `ContractAcceptancePort` isola as telas dos endpoints concretos.
  */
-export const acceptanceAdapter = localAcceptanceAdapter
+export const acceptanceAdapter = httpAcceptanceAdapter
 
 export type {
   AcceptanceResult,

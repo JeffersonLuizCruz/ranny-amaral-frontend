@@ -1,107 +1,121 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
 
-import { createContractSeedData } from '@/domain/contractSeed'
-import type {
-  ModeloContrato,
-  ModeloContratoDraft,
-} from '@/domain/contracts'
-import { createId } from '@/shared/lib/id'
-
-const STORAGE_KEY = 'photoizer.crm.contract-templates.v2'
+import type { ModeloContrato, ModeloContratoDraft } from '@/domain/contracts'
+import {
+  alternarModeloAtivo,
+  atualizarModelo,
+  criarModelo,
+  duplicarModelo,
+  excluirModelo,
+  listarModelos,
+} from '@/features/contracts/api/modelosApi'
+import { mensagemDeErro } from '@/shared/api/errors'
 
 interface TemplateState {
   modelos: ModeloContrato[]
-  createTemplate: (draft: ModeloContratoDraft) => ModeloContrato
-  updateTemplate: (id: string, draft: ModeloContratoDraft) => void
-  deleteTemplate: (id: string) => void
-  duplicateTemplate: (id: string) => ModeloContrato | null
-  toggleTemplateActive: (id: string) => void
-  restoreDemoData: () => void
+  carregando: boolean
+  carregado: boolean
+  erro: string | null
+  carregarModelos: () => Promise<void>
+  createTemplate: (draft: ModeloContratoDraft) => Promise<ModeloContrato>
+  updateTemplate: (id: string, draft: ModeloContratoDraft) => Promise<void>
+  deleteTemplate: (id: string) => Promise<void>
+  duplicateTemplate: (id: string) => Promise<ModeloContrato>
+  toggleTemplateActive: (id: string) => Promise<void>
+  /** Mantido para o botão de demonstração: recarrega do servidor. */
+  restoreDemoData: () => Promise<void>
 }
 
-const seed = createContractSeedData()
+function ordenar(modelos: ModeloContrato[]): ModeloContrato[] {
+  return [...modelos].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+}
 
-export const useTemplateStore = create<TemplateState>()(
-  persist(
-    (setState, getState) => ({
-      modelos: seed.templates,
+/** Store de modelos de contrato com estado de servidor. */
+export const useTemplateStore = create<TemplateState>()((set, get) => ({
+  modelos: [],
+  carregando: false,
+  carregado: false,
+  erro: null,
 
-      createTemplate: (draft) => {
-        const timestamp = new Date().toISOString()
-        const modelo: ModeloContrato = {
-          ...draft,
-          id: createId('tpl'),
-          versao: 1,
-          createdAt: timestamp,
-          updatedAt: timestamp,
-        }
+  carregarModelos: async () => {
+    set({ carregando: true, erro: null })
+    try {
+      const modelos = await listarModelos()
+      set({ modelos: ordenar(modelos), carregado: true })
+    } catch (error) {
+      set({ erro: mensagemDeErro(error) })
+      throw error
+    } finally {
+      set({ carregando: false })
+    }
+  },
 
-        setState((state) => ({ modelos: [modelo, ...state.modelos] }))
-        return modelo
-      },
+  createTemplate: async (draft) => {
+    try {
+      const criado = await criarModelo(draft)
+      set((state) => ({ modelos: ordenar([...state.modelos, criado]), erro: null }))
+      return criado
+    } catch (error) {
+      set({ erro: mensagemDeErro(error) })
+      throw error
+    }
+  },
 
-      updateTemplate: (id, draft) => {
-        setState((state) => ({
-          modelos: state.modelos.map((modelo) =>
-            modelo.id === id
-              ? {
-                  ...modelo,
-                  ...draft,
-                  versao: modelo.versao + 1,
-                  updatedAt: new Date().toISOString(),
-                }
-              : modelo,
-          ),
-        }))
-      },
+  updateTemplate: async (id, draft) => {
+    try {
+      const atualizado = await atualizarModelo(id, draft)
+      set((state) => ({
+        modelos: ordenar(
+          state.modelos.map((modelo) => (modelo.id === id ? atualizado : modelo)),
+        ),
+        erro: null,
+      }))
+    } catch (error) {
+      set({ erro: mensagemDeErro(error) })
+      throw error
+    }
+  },
 
-      deleteTemplate: (id) => {
-        setState((state) => ({
-          modelos: state.modelos.filter((modelo) => modelo.id !== id),
-        }))
-      },
+  deleteTemplate: async (id) => {
+    try {
+      await excluirModelo(id)
+      set((state) => ({
+        modelos: state.modelos.filter((modelo) => modelo.id !== id),
+        erro: null,
+      }))
+    } catch (error) {
+      set({ erro: mensagemDeErro(error) })
+      throw error
+    }
+  },
 
-      duplicateTemplate: (id) => {
-        const original = getState().modelos.find((modelo) => modelo.id === id)
-        if (!original) return null
+  duplicateTemplate: async (id) => {
+    try {
+      const duplicado = await duplicarModelo(id)
+      set((state) => ({ modelos: ordenar([...state.modelos, duplicado]), erro: null }))
+      return duplicado
+    } catch (error) {
+      set({ erro: mensagemDeErro(error) })
+      throw error
+    }
+  },
 
-        const timestamp = new Date().toISOString()
-        const modelo: ModeloContrato = {
-          ...original,
-          id: createId('tpl'),
-          nome: `${original.nome} (cópia)`,
-          versao: 1,
-          createdAt: timestamp,
-          updatedAt: timestamp,
-          clausulas: original.clausulas.map((clausula) => ({
-            ...clausula,
-            id: createId('cl'),
-          })),
-        }
+  toggleTemplateActive: async (id) => {
+    try {
+      const atualizado = await alternarModeloAtivo(id)
+      set((state) => ({
+        modelos: ordenar(
+          state.modelos.map((modelo) => (modelo.id === id ? atualizado : modelo)),
+        ),
+        erro: null,
+      }))
+    } catch (error) {
+      set({ erro: mensagemDeErro(error) })
+      throw error
+    }
+  },
 
-        setState((state) => ({ modelos: [modelo, ...state.modelos] }))
-        return modelo
-      },
-
-      toggleTemplateActive: (id) => {
-        setState((state) => ({
-          modelos: state.modelos.map((modelo) =>
-            modelo.id === id
-              ? { ...modelo, ativo: !modelo.ativo, updatedAt: new Date().toISOString() }
-              : modelo,
-          ),
-        }))
-      },
-
-      restoreDemoData: () => {
-        setState({ modelos: createContractSeedData().templates })
-      },
-    }),
-    {
-      name: STORAGE_KEY,
-      version: 2,
-      partialize: (state) => ({ modelos: state.modelos }),
-    },
-  ),
-)
+  restoreDemoData: async () => {
+    await get().carregarModelos()
+  },
+}))

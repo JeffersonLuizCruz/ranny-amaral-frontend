@@ -7,6 +7,7 @@ import {
   Wallet,
   XCircle,
 } from 'lucide-react'
+import { useEffect } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
 import { galleryIntegration } from '@/integrations/gallery'
@@ -22,6 +23,7 @@ import {
   formatTimeRange,
 } from '@/shared/lib/date'
 import { useToastStore } from '@/shared/store/toastStore'
+import { mensagemDeErro } from '@/shared/api/errors'
 import { useContractStore } from '@/features/contracts/store/contractStore'
 import { ContractAcceptancePanel } from '@/features/contracts/components/ContractAcceptancePanel'
 import { ContractPreview } from '@/features/contracts/components/ContractPreview'
@@ -36,12 +38,28 @@ export function ContractDetailPage() {
   const { contratoId = '' } = useParams()
   const navigate = useNavigate()
   const contratos = useContractStore((state) => state.contratos)
+  const carregando = useContractStore((state) => state.carregando)
   const cancelContract = useContractStore((state) => state.cancelContract)
   const deleteContract = useContractStore((state) => state.deleteContract)
   const duplicateContract = useContractStore((state) => state.duplicateContract)
+  const recarregarContrato = useContractStore((state) => state.recarregarContrato)
   const addToast = useToastStore((state) => state.addToast)
 
   const contrato = contratos.find((item) => item.id === contratoId)
+
+  useEffect(() => {
+    if (!contrato) {
+      void recarregarContrato(contratoId).catch(() => undefined)
+    }
+  }, [contrato, contratoId, recarregarContrato])
+
+  if (!contrato && carregando) {
+    return (
+      <div className="p-4 sm:p-6">
+        <p className="py-10 text-center text-sm text-muted">Carregando contrato…</p>
+      </div>
+    )
+  }
 
   if (!contrato) {
     return (
@@ -70,37 +88,51 @@ export function ContractDetailPage() {
   const handleCopyLink = async () => {
     try {
       const link = await copyContractLink(contrato)
-      if (link) addToast('Link do contrato copiado.')
-      else addToast('Não foi possível gerar o link do contrato.')
+      if (link) {
+        addToast('Link do contrato copiado.')
+        await recarregarContrato(contrato.id).catch(() => undefined)
+      } else {
+        addToast('Não foi possível gerar o link do contrato.')
+      }
     } catch (error) {
-      addToast(
-        error instanceof Error
-          ? error.message
-          : 'Não foi possível copiar o link do contrato.',
-      )
+      addToast(mensagemDeErro(error))
     }
   }
 
-  const handleCancel = () => {
+  const handleCancel = async () => {
     const confirmed = window.confirm(`Cancelar o contrato ${contrato.numero}?`)
     if (!confirmed) return
-    cancelContract(contrato.id)
-    addToast('Contrato cancelado.')
+
+    try {
+      await cancelContract(contrato.id)
+      addToast('Contrato cancelado.')
+    } catch (error) {
+      addToast(mensagemDeErro(error))
+    }
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     const confirmed = window.confirm(`Excluir o rascunho ${contrato.numero}?`)
     if (!confirmed) return
-    deleteContract(contrato.id)
-    addToast('Contrato excluído.')
-    navigate('/contratos')
+
+    try {
+      await deleteContract(contrato.id)
+      addToast('Contrato excluído.')
+      navigate('/contratos')
+    } catch (error) {
+      addToast(mensagemDeErro(error))
+    }
   }
 
-  const handleDuplicate = () => {
-    const duplicado = duplicateContract(contrato.id)
-    if (!duplicado) return
-    addToast('Contrato duplicado como rascunho.')
-    navigate(`/contratos/${duplicado.id}`)
+  const handleDuplicate = async () => {
+    try {
+      const duplicado = await duplicateContract(contrato.id)
+      if (!duplicado) return
+      addToast('Contrato duplicado como rascunho.')
+      navigate(`/contratos/${duplicado.id}`)
+    } catch (error) {
+      addToast(mensagemDeErro(error))
+    }
   }
 
   return (

@@ -4,10 +4,22 @@ CRM para estúdios fotográficos com agenda, clientes, pacotes, contratos, finan
 
 ## Como rodar
 
+O frontend consome a API real para **clientes**, **pacotes**, **agenda**, **contratos**, **modelos**, **estúdio** e **aceite público**. Suba o backend primeiro:
+
+```bash
+# em ../ranny-amaral-backend
+docker compose -f docker-compose.dev.yml up -d
+./mvnw spring-boot:run
+```
+
+Depois, no frontend:
+
 ```bash
 npm install
 npm run dev
 ```
+
+O Vite faz proxy de `/api` para `http://localhost:8080` (veja `vite.config.ts`). Para apontar para outro host, defina `VITE_API_URL` (ex.: `http://localhost:8080/api/v1`).
 
 Validação:
 
@@ -16,6 +28,26 @@ npm run typecheck
 npm run lint
 npm run build
 ```
+
+O CI (`.github/workflows/ci.yml`) executa `npm ci`, `npm run lint` e `npm run build`.
+
+## Integração com o backend
+
+- `src/shared/api/httpClient.ts` — cliente HTTP único, baseURL `/api/v1`, tratamento do `ErrorResponse` do backend.
+- `src/shared/api/types.ts` e `src/shared/components/ui/Paginador.tsx` — envelope `Pagina<T>` e controle reutilizável de paginação.
+- `src/features/clients/api/clientesApi.ts` — CRUD e listagem paginada de clientes.
+- `src/features/packages/api/pacotesApi.ts` — CRUD, alternância de situação e listagem paginada dos pacotes.
+- `src/features/appointments/api/agendaApi.ts` — CRUD, status, pagamentos, listagem paginada e calendário por período.
+- `src/features/contracts/api/contratosApi.ts` — contratos, busca paginada, links de aceite e pagamentos.
+- `src/features/contracts/api/modelosApi.ts` e `estudioApi.ts` — modelos e configuração do estúdio.
+- `src/integrations/acceptance/httpAdapter.ts` — aceite público via token.
+- `src/features/clients/store/clientStore.ts`, `packageStore.ts`, `appointmentStore.ts`, `contractStore.ts`, `templateStore.ts` e `studioStore.ts` — mantêm a interface pública usada pelas telas, mas carregam e gravam na API (sem `localStorage`).
+- `src/app/useBootstrapData.ts` — hidrata os dados do backend no boot.
+- `src/app/applyContractLinks.ts` — reconcilia os vínculos de contrato nos agendamentos.
+
+A numeração (`CT-AAAA-0001`), o snapshot, as cláusulas resolvidas, o histórico, o protocolo de aceite (`ACE-AAAA-0001`) e os pagamentos agora são responsabilidade do backend.
+
+Galerias e financeiro continuam com stores locais nesta fase. A migração deles será feita nas próximas etapas.
 
 ## Módulos
 
@@ -59,10 +91,11 @@ aguardando_upload → em_selecao → selecao_enviada → em_edicao → pronta_en
 
 ## Mocks de backend
 
+- **Clientes, pacotes, agenda, contratos, modelos, estúdio e aceite** já usam a API real.
 - `src/integrations/gallery/localAdapter.ts`: adapter local de galeria.
 - `src/integrations/gallery/httpAdapter.ts`: stub para o backend real.
 - `VITE_GALLERY_ADAPTER=http` troca o adapter.
-- Metadados ficam no Zustand/localStorage; blobs de fotos e vídeos ficam no IndexedDB (`photoizer-crm`).
+- Metadados de galeria ficam no Zustand/localStorage; blobs de fotos e vídeos ficam no IndexedDB (`photoizer-crm`).
 - `src/integrations/storage/indexedDb.ts` centraliza o banco e evita conflito de versão com comprovantes.
 
 ## Rotas públicas
@@ -73,8 +106,10 @@ aguardando_upload → em_selecao → selecao_enviada → em_edicao → pronta_en
 
 ## Limitações do protótipo
 
-- Sem autenticação e sem backend real.
-- Arquivos ficam no IndexedDB do navegador; o link só funciona no mesmo navegador/perfil.
+- Sem autenticação.
+- As telas de clientes, pacotes e contratos usam paginação/busca server-side. No boot, loaders de compatibilidade ainda percorrem todas as páginas para alimentar pickers, galerias e financeiro; eles serão removidos quando esses módulos migrarem.
+- Galerias e financeiro ainda usam Zustand/localStorage; os demais módulos vêm do backend.
+- O arquivo do comprovante continua no IndexedDB do navegador do cliente; o backend guarda apenas os metadados. O upload real de mídia entra na fase de galerias/storage.
 - Download em ZIP não implementado; a entrega baixa os arquivos individualmente.
-- Expiração de links é simulada localmente.
+- Expiração de links de galeria é simulada localmente.
 - Sem envio automático de WhatsApp ou e-mail.

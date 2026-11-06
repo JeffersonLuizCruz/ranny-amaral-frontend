@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import type { AgendamentoDraft, AgendamentoStatus } from '@/domain/types'
 import { Drawer } from '@/shared/components/ui/Drawer'
 import { toDateKey } from '@/shared/lib/date'
+import { mensagemDeErro } from '@/shared/api/errors'
 import { useToastStore } from '@/shared/store/toastStore'
 import { useAgendaStore } from '@/features/agenda/store/agendaStore'
 import { useAppointmentStore } from '@/features/appointments/store/appointmentStore'
@@ -37,38 +38,42 @@ export function AppointmentDrawer() {
         ? 'Editar ensaio'
         : 'Detalhes do ensaio'
 
-  const handleSubmit = (draft: AgendamentoDraft) => {
-    if (drawer.mode === 'edit' && appointment) {
-      const result = updateBookingWithContract(appointment.id, draft)
+  const handleSubmit = async (draft: AgendamentoDraft) => {
+    try {
+      if (drawer.mode === 'edit' && appointment) {
+        const result = await updateBookingWithContract(appointment.id, draft)
 
-      if (result.contractLocked) {
-        addToast(
-          'Este ensaio já possui contrato enviado ou aceito. Cancele o contrato antes de alterar.',
-        )
-        return
-      }
+        if (result.contractLocked) {
+          addToast(
+            'Este ensaio já possui contrato enviado ou aceito. Cancele o contrato antes de alterar.',
+          )
+          return
+        }
 
-      addToast(result.contract ? 'Ensaio e contrato atualizados.' : 'Ensaio atualizado.')
-    } else {
-      const result = createBookingWithContract(draft)
-
-      if (result.contract) {
-        addToast('Ensaio criado. Contrato em rascunho.', {
-          actionLabel: 'Abrir contrato',
-          onAction: () => navigate(`/contratos/${result.contract?.id}`),
-          duration: 8_000,
-        })
+        addToast(result.contract ? 'Ensaio e contrato atualizados.' : 'Ensaio atualizado.')
       } else {
-        addToast('Ensaio criado, mas nenhum modelo de contrato ativo foi encontrado.')
-      }
-    }
+        const result = await createBookingWithContract(draft)
 
-    setSelectedDate(toDateKey(new Date(draft.dataHoraInicio)))
-    closeDrawer()
-    navigate('/agenda')
+        if (result.contract) {
+          addToast('Ensaio criado. Contrato em rascunho.', {
+            actionLabel: 'Abrir contrato',
+            onAction: () => navigate(`/contratos/${result.contract?.id}`),
+            duration: 8_000,
+          })
+        } else {
+          addToast('Ensaio criado, mas nenhum modelo de contrato ativo foi encontrado.')
+        }
+      }
+
+      setSelectedDate(toDateKey(new Date(draft.dataHoraInicio)))
+      closeDrawer()
+      navigate('/agenda')
+    } catch (error) {
+      addToast(mensagemDeErro(error))
+    }
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!appointment) return
 
     const contract = contracts.find((item) => item.agendamentoId === appointment.id)
@@ -78,16 +83,25 @@ export function AppointmentDrawer() {
       return
     }
 
-    if (contract) deleteContract(contract.id)
-    deleteAppointment(appointment.id)
-    addToast('Ensaio excluído.')
-    closeDrawer()
+    try {
+      if (contract) await deleteContract(contract.id)
+      await deleteAppointment(appointment.id)
+      addToast('Ensaio excluído.')
+      closeDrawer()
+    } catch (error) {
+      addToast(mensagemDeErro(error))
+    }
   }
 
-  const handleStatusChange = (status: AgendamentoStatus) => {
+  const handleStatusChange = async (status: AgendamentoStatus) => {
     if (!appointment) return
-    updateStatus(appointment.id, status)
-    addToast('Status atualizado.')
+
+    try {
+      await updateStatus(appointment.id, status)
+      addToast('Status atualizado.')
+    } catch (error) {
+      addToast(mensagemDeErro(error))
+    }
   }
 
   return (
