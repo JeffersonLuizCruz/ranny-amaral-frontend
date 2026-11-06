@@ -38,6 +38,7 @@ interface PagamentoEntradaDto {
   valor: number | null
   percentual: number | null
   status: PagamentoStatus | null
+  arquivoId: string | null
   comprovante: ComprovantePagamento | null
   rejeicao: ComprovanteRejeicao | null
   confirmadoEm: string | null
@@ -97,6 +98,7 @@ function toPagamentoEntrada(dto: PagamentoEntradaDto | null): PagamentoEntrada {
     valor: dto?.valor ?? 0,
     percentual: dto?.percentual ?? 0,
     status: dto?.status ?? 'pendente',
+    arquivoId: dto?.arquivoId ?? undefined,
     comprovante: dto?.comprovante ?? undefined,
     rejeicao: dto?.rejeicao ?? undefined,
     confirmadoEm: dto?.confirmadoEm ?? undefined,

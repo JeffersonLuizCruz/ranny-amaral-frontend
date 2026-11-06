@@ -4,7 +4,7 @@ CRM para estúdios fotográficos com agenda, clientes, pacotes, contratos, finan
 
 ## Como rodar
 
-O frontend consome a API real para **clientes**, **pacotes**, **agenda**, **contratos**, **modelos**, **estúdio** e **aceite público**. Suba o backend primeiro:
+O frontend consome a API real para **clientes**, **pacotes**, **agenda**, **contratos**, **galerias**, **modelos**, **estúdio** e **aceite público**. Suba o backend primeiro:
 
 ```bash
 # em ../ranny-amaral-backend
@@ -35,6 +35,8 @@ O CI (`.github/workflows/ci.yml`) executa `npm ci`, `npm run lint` e `npm run bu
 
 - `src/shared/api/httpClient.ts` — cliente HTTP único, baseURL `/api/v1`, tratamento do `ErrorResponse` do backend.
 - `src/shared/api/types.ts` e `src/shared/components/ui/Paginador.tsx` — envelope `Pagina<T>` e controle reutilizável de paginação.
+- `src/shared/upload/*` — hash SHA-256, upload direto ao storage com progresso, cancelamento e retry.
+- `src/features/contracts/api/comprovanteApi.ts` — fluxo de upload do comprovante público.
 - `src/features/clients/api/clientesApi.ts` — CRUD e listagem paginada de clientes.
 - `src/features/packages/api/pacotesApi.ts` — CRUD, alternância de situação e listagem paginada dos pacotes.
 - `src/features/appointments/api/agendaApi.ts` — CRUD, status, pagamentos, listagem paginada e calendário por período.
@@ -47,7 +49,7 @@ O CI (`.github/workflows/ci.yml`) executa `npm ci`, `npm run lint` e `npm run bu
 
 A numeração (`CT-AAAA-0001`), o snapshot, as cláusulas resolvidas, o histórico, o protocolo de aceite (`ACE-AAAA-0001`) e os pagamentos agora são responsabilidade do backend.
 
-Galerias e financeiro continuam com stores locais nesta fase. A migração deles será feita nas próximas etapas.
+O módulo de galerias agora usa a API real; financeiro continua local nesta fase. A migração do financeiro será feita na próxima etapa.
 
 ## Módulos
 
@@ -91,12 +93,9 @@ aguardando_upload → em_selecao → selecao_enviada → em_edicao → pronta_en
 
 ## Mocks de backend
 
-- **Clientes, pacotes, agenda, contratos, modelos, estúdio e aceite** já usam a API real.
-- `src/integrations/gallery/localAdapter.ts`: adapter local de galeria.
-- `src/integrations/gallery/httpAdapter.ts`: stub para o backend real.
-- `VITE_GALLERY_ADAPTER=http` troca o adapter.
-- Metadados de galeria ficam no Zustand/localStorage; blobs de fotos e vídeos ficam no IndexedDB (`photoizer-crm`).
-- `src/integrations/storage/indexedDb.ts` centraliza o banco e evita conflito de versão com comprovantes.
+- **Clientes, pacotes, agenda, contratos, galerias, modelos, estúdio e aceite** já usam a API real.
+- Galerias não usam mais Zustand persistido, localStorage ou IndexedDB.
+- O upload de fotos e vídeos é feito direto ao MinIO/S3 com URLs pré-assinadas, progresso e retomada.
 
 ## Rotas públicas
 
@@ -108,8 +107,11 @@ aguardando_upload → em_selecao → selecao_enviada → em_edicao → pronta_en
 
 - Sem autenticação.
 - As telas de clientes, pacotes e contratos usam paginação/busca server-side. No boot, loaders de compatibilidade ainda percorrem todas as páginas para alimentar pickers, galerias e financeiro; eles serão removidos quando esses módulos migrarem.
-- Galerias e financeiro ainda usam Zustand/localStorage; os demais módulos vêm do backend.
-- O arquivo do comprovante continua no IndexedDB do navegador do cliente; o backend guarda apenas os metadados. O upload real de mídia entra na fase de galerias/storage.
+- Galerias já usam a API real; financeiro ainda usa Zustand/localStorage.
+- Upload de fotos até 50 MB e vídeos até 500 MB, com progresso e URLs assinadas. O processamento de derivados é síncrono nesta versão.
+- A entrega baixa arquivos individualmente; ZIP e pós-processamento de vídeo ficam para a próxima fase.
+- O comprovante de pagamento é enviado direto ao MinIO com URLs pré-assinadas, progresso real e limite de 10 MB. O IndexedDB não é mais usado para comprovantes.
+- O download do comprovante pelo staff usa URL assinada temporária; a rota será protegida na fase de autenticação.
 - Download em ZIP não implementado; a entrega baixa os arquivos individualmente.
 - Expiração de links de galeria é simulada localmente.
 - Sem envio automático de WhatsApp ou e-mail.

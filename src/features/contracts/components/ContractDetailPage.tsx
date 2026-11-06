@@ -10,7 +10,6 @@ import {
 import { useEffect } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
-import { galleryIntegration } from '@/integrations/gallery'
 import { financeIntegration } from '@/integrations/finance'
 import { whatsappReminders } from '@/integrations/whatsapp'
 import { Badge } from '@/shared/components/ui/Badge'
@@ -305,7 +304,7 @@ export function ContractDetailPage() {
               <IntegrationRow
                 icon={FileSignature}
                 label="Galeria e entrega"
-                enabled={galleryIntegration.enabled}
+                enabled
               />
               <IntegrationRow
                 icon={FileSignature}

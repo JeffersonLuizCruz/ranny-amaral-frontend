@@ -1,7 +1,8 @@
 import type { Contrato, DadosAceiteInput } from '@/domain/contracts'
-import type { ComprovantePagamento } from '@/domain/payments'
+import { enviarComprovante } from '@/features/contracts/api/comprovanteApi'
 import { toContrato, toSolicitacao } from '@/features/contracts/api/contratosApi'
 import { ApiError, http } from '@/shared/api/httpClient'
+import type { UploadOptions } from '@/shared/upload/types'
 import type {
   AcceptanceResult,
   ContractAcceptancePort,
@@ -10,15 +11,6 @@ import type {
 
 type ContratoDto = Parameters<typeof toContrato>[0]
 type SolicitacaoDto = Parameters<typeof toSolicitacao>[0]
-
-function comprovantePayload(comprovante: ComprovantePagamento) {
-  return {
-    arquivoKey: comprovante.arquivoKey,
-    nomeArquivo: comprovante.nomeArquivo,
-    mimeType: comprovante.mimeType,
-    tamanho: comprovante.tamanho,
-  }
-}
 
 /**
  * Adapter HTTP do aceite público.
@@ -56,19 +48,12 @@ export const httpAcceptanceAdapter: ContractAcceptancePort = {
     await http.post(`/public/contratos/${token}/visualizar`)
   },
 
-  async accept(
-    token,
-    input: DadosAceiteInput,
-    comprovante?: ComprovantePagamento,
-  ): Promise<AcceptanceResult> {
+  async accept(token, input: DadosAceiteInput): Promise<AcceptanceResult> {
     const resposta = await http.post<{
       protocolo: string
       contrato: ContratoDto
       solicitacao: SolicitacaoDto
-    }>(`/public/contratos/${token}/aceite`, {
-      ...input,
-      comprovante: comprovante ? comprovantePayload(comprovante) : null,
-    })
+    }>(`/public/contratos/${token}/aceite`, input)
 
     const contrato: Contrato = toContrato(resposta.contrato)
     return {
@@ -78,15 +63,15 @@ export const httpAcceptanceAdapter: ContractAcceptancePort = {
     }
   },
 
-  async submitProof(token, comprovante): Promise<SubmitProofResult> {
-    const resposta = await http.post<{
-      contrato: ContratoDto
-      solicitacao: SolicitacaoDto
-    }>(`/public/contratos/${token}/comprovante`, comprovantePayload(comprovante))
-
+  async submitProof(
+    token,
+    file: File,
+    options: UploadOptions = {},
+  ): Promise<SubmitProofResult> {
+    const resultado = await enviarComprovante(token, file, options)
     return {
-      contrato: toContrato(resposta.contrato),
-      solicitacao: toSolicitacao(resposta.solicitacao),
+      contrato: resultado.contrato,
+      solicitacao: resultado.solicitacao,
     }
   },
 

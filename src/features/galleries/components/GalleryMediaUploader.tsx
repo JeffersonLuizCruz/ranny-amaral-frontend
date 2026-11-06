@@ -1,34 +1,29 @@
 import { useRef, useState } from 'react'
 import { Loader2, Upload } from 'lucide-react'
 
-import type { MidiaGaleria } from '@/domain/galleries'
 import { Button } from '@/shared/components/ui/Button'
+import { UploadProgress } from '@/shared/components/ui/UploadProgress'
 import { useToastStore } from '@/shared/store/toastStore'
-import { createId } from '@/shared/lib/id'
-import {
-  mediaTipoFromFile,
-  saveGalleryMedia,
-  validateMediaFile,
-} from '@/integrations/gallery/mediaStorage'
+import type { UploadProgress as UploadProgressValue } from '@/shared/upload/types'
 import { useGalleryStore } from '@/features/galleries/store/galleryStore'
+import {
+  MEDIA_ACCEPT,
+  mediaTipoFromFile,
+  validateMediaFile,
+} from '@/features/galleries/lib/mediaFile'
 
 interface GalleryMediaUploaderProps {
   galleryId: string
-  edited?: boolean
   label?: string
 }
 
-export function GalleryMediaUploader({
-  galleryId,
-  edited = false,
-  label,
-}: GalleryMediaUploaderProps) {
-  const addMedia = useGalleryStore((state) => state.addMedia)
-  const addEditedMedia = useGalleryStore((state) => state.addEditedMedia)
+export function GalleryMediaUploader({ galleryId, label }: GalleryMediaUploaderProps) {
+  const uploadMidia = useGalleryStore((state) => state.uploadMidia)
   const addToast = useToastStore((state) => state.addToast)
   const inputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
-  const [progress, setProgress] = useState('')
+  const [currentName, setCurrentName] = useState('')
+  const [progress, setProgress] = useState<UploadProgressValue>()
 
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return
@@ -45,30 +40,16 @@ export function GalleryMediaUploader({
           continue
         }
 
-        setProgress(`Enviando ${index + 1} de ${files.length}…`)
-        const stored = await saveGalleryMedia(file)
-        const midia: MidiaGaleria = {
-          id: createId('mid'),
-          tipo: mediaTipoFromFile(file),
-          nomeArquivo: stored.nomeArquivo,
-          mimeType: stored.mimeType,
-          tamanho: stored.tamanho,
-          arquivoKey: stored.arquivoKey,
-          status: edited ? 'editada' : 'original',
-          uploadedAt: stored.enviadoEm,
-        }
-
-        if (edited) addEditedMedia(galleryId, midia)
-        else addMedia(galleryId, midia)
+        setCurrentName(file.name)
+        setProgress(undefined)
+        await uploadMidia(galleryId, file, mediaTipoFromFile(file), {
+          onProgress: setProgress,
+        })
         enviados += 1
       }
 
       if (enviados > 0) {
-        addToast(
-          edited
-            ? `${enviados} arquivo(s) editado(s) enviado(s).`
-            : `${enviados} mídia(s) enviada(s).`,
-        )
+        addToast(`${enviados} mídia(s) enviada(s) e processada(s).`)
       }
     } catch (error) {
       addToast(
@@ -76,7 +57,8 @@ export function GalleryMediaUploader({
       )
     } finally {
       setUploading(false)
-      setProgress('')
+      setCurrentName('')
+      setProgress(undefined)
       if (inputRef.current) inputRef.current.value = ''
     }
   }
@@ -86,7 +68,7 @@ export function GalleryMediaUploader({
       <input
         ref={inputRef}
         type="file"
-        accept="image/*,video/*"
+        accept={MEDIA_ACCEPT}
         multiple
         className="sr-only"
         onChange={(event) => void handleFiles(event.target.files)}
@@ -102,12 +84,14 @@ export function GalleryMediaUploader({
         ) : (
           <Upload className="size-4" />
         )}
-        {uploading ? progress || 'Enviando…' : label ?? 'Enviar mídias'}
+        {uploading ? currentName || 'Enviando…' : label ?? 'Enviar mídias'}
       </Button>
 
+      {progress ? <UploadProgress progress={progress} /> : null}
+
       <p className="mt-1.5 text-[10px] text-muted">
-        Fotos até 30 MB e vídeos até 500 MB. Os arquivos ficam salvos neste navegador
-        (mock local).
+        Fotos até 50 MB (JPEG/PNG/WebP) e vídeos até 500 MB (MP4/MOV). Upload direto
+        ao storage com progresso.
       </p>
     </div>
   )

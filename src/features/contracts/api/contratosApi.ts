@@ -26,6 +26,7 @@ interface PagamentoEntradaDto {
   valor: number | null
   percentual: number | null
   status: PagamentoStatus | null
+  arquivoId: string | null
   comprovante: ComprovantePagamento | null
   rejeicao: ComprovanteRejeicao | null
   confirmadoEm: string | null
@@ -165,6 +166,7 @@ export function toPagamentoEntrada(dto: PagamentoEntradaDto | null): PagamentoEn
     valor: dto?.valor ?? 0,
     percentual: dto?.percentual ?? 0,
     status: dto?.status ?? 'pendente',
+    arquivoId: dto?.arquivoId ?? undefined,
     comprovante: dto?.comprovante ?? undefined,
     rejeicao: dto?.rejeicao ?? undefined,
     confirmadoEm: dto?.confirmadoEm ?? undefined,
@@ -352,6 +354,14 @@ export async function listarContratos(): Promise<Contrato[]> {
 
 export async function buscarContrato(id: string): Promise<Contrato> {
   return toContrato(await http.get<ContratoDto>(`/contratos/${id}`))
+}
+
+export async function obterUrlComprovante(
+  id: string,
+): Promise<{ url: string; expiraEm: string }> {
+  return http.get<{ url: string; expiraEm: string }>(
+    `/contratos/${id}/pagamento/comprovante/url`,
+  )
 }
 
 export async function criarContrato(draft: ContratoDraft): Promise<Contrato> {

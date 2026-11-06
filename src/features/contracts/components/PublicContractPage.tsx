@@ -10,8 +10,8 @@ import type {
 } from '@/domain/contracts'
 import { acceptanceAdapter } from '@/integrations/acceptance'
 import type { AcceptanceResult } from '@/integrations/acceptance'
-import { paymentProofStorage } from '@/integrations/paymentProof'
 import { Button } from '@/shared/components/ui/Button'
+import type { UploadProgress } from '@/shared/upload/types'
 import { ContractDocument } from '@/features/contracts/components/ContractDocument'
 import { ContractStatusBadges } from '@/features/contracts/components/ContractStatusBadge'
 import { PublicAcceptanceForm } from '@/features/contracts/components/PublicAcceptanceForm'
@@ -34,6 +34,8 @@ export function PublicContractPage() {
   const [submittingProof, setSubmittingProof] = useState(false)
   const [formError, setFormError] = useState('')
   const [proofError, setProofError] = useState('')
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress | undefined>()
+  const [uploadController, setUploadController] = useState<AbortController | null>(null)
 
   useEffect(() => {
     let active = true
@@ -70,14 +72,64 @@ export function PublicContractPage() {
     }
   }, [token])
 
+  const enviarArquivoComprovante = async (file: File) => {
+    const controller = new AbortController()
+    setUploadController(controller)
+    setSubmittingProof(true)
+    setProofError('')
+    setUploadProgress({
+      fase: 'preparando',
+      enviado: 0,
+      total: file.size,
+      percentual: 0,
+      velocidadeBps: 0,
+    })
+
+    try {
+      const result = await acceptanceAdapter.submitProof(token, file, {
+        signal: controller.signal,
+        onProgress: setUploadProgress,
+      })
+      setSuccess((atual) =>
+        atual
+          ? { ...atual, contrato: result.contrato, solicitacao: result.solicitacao }
+          : atual,
+      )
+      setUploadProgress({
+        fase: 'concluido',
+        enviado: file.size,
+        total: file.size,
+        percentual: 100,
+        velocidadeBps: 0,
+      })
+    } catch (uploadError) {
+      if (controller.signal.aborted) {
+        setProofError('Envio cancelado. Você pode tentar novamente.')
+        setUploadProgress((atual) =>
+          atual ? { ...atual, fase: 'cancelado' } : undefined,
+        )
+      } else {
+        setProofError(
+          uploadError instanceof Error
+            ? uploadError.message
+            : 'Não foi possível enviar o comprovante.',
+        )
+        setUploadProgress((atual) => (atual ? { ...atual, fase: 'erro' } : undefined))
+      }
+    } finally {
+      setSubmittingProof(false)
+      setUploadController(null)
+    }
+  }
+
   const handleAccept = async (input: DadosAceiteInput, file?: File) => {
     setSubmitting(true)
     setFormError('')
 
     try {
-      const comprovante = file ? await paymentProofStorage.save(file) : undefined
-      const result = await acceptanceAdapter.accept(token, input, comprovante)
+      const result = await acceptanceAdapter.accept(token, input)
       setSuccess(result)
+      if (file) await enviarArquivoComprovante(file)
     } catch (acceptError) {
       setFormError(
         acceptError instanceof Error
@@ -90,29 +142,7 @@ export function PublicContractPage() {
   }
 
   const handleSubmitProof = async (file: File) => {
-    setSubmittingProof(true)
-    setProofError('')
-
-    try {
-      const comprovante = await paymentProofStorage.save(file)
-      const result = await acceptanceAdapter.submitProof(token, comprovante)
-      setSuccess({
-        protocolo:
-          result.solicitacao.dadosAceite?.protocolo ??
-          success?.protocolo ??
-          '',
-        contrato: result.contrato,
-        solicitacao: result.solicitacao,
-      })
-    } catch (proofSubmitError) {
-      setProofError(
-        proofSubmitError instanceof Error
-          ? proofSubmitError.message
-          : 'Não foi possível enviar o comprovante.',
-      )
-    } finally {
-      setSubmittingProof(false)
-    }
+    await enviarArquivoComprovante(file)
   }
 
   const contrato = success?.contrato ?? data?.contrato
@@ -194,6 +224,8 @@ export function PublicContractPage() {
               contrato={contrato}
               submitting={submittingProof}
               error={proofError}
+              progress={uploadProgress}
+              onCancel={uploadController ? () => uploadController.abort() : undefined}
               onSubmit={handleSubmitProof}
             />
           ) : null}

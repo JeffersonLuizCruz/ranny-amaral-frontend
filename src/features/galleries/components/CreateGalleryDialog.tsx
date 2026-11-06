@@ -55,17 +55,16 @@ export function CreateGalleryDialog({ open, onClose }: CreateGalleryDialogProps)
     })
   }, [appointments, contratos, galerias])
 
-  const handleCreate = (appointment: AgendamentoEnsaio) => {
-    const galeria = createGallery(appointment.id)
-    if (!galeria) {
+  const handleCreate = async (appointment: AgendamentoEnsaio) => {
+    try {
+      const galeria = await createGallery(appointment.id)
+      addToast('Galeria criada.')
+      setSelected(null)
+      onClose()
+      navigate(`/galerias/${galeria.id}`)
+    } catch {
       addToast('Não foi possível criar a galeria.')
-      return
     }
-
-    addToast('Galeria criada.')
-    setSelected(null)
-    onClose()
-    navigate(`/galerias/${galeria.id}`)
   }
 
   return (

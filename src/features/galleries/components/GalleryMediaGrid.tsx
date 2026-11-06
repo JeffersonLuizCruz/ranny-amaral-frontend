@@ -2,7 +2,6 @@ import { Check, Download, Film, ImageOff, PlayCircle, Trash2 } from 'lucide-reac
 
 import type { MidiaGaleria } from '@/domain/galleries'
 import { cn } from '@/shared/lib/cn'
-import { useMediaUrl } from '@/features/galleries/hooks/useMediaUrl'
 
 interface GalleryMediaGridProps {
   midias: MidiaGaleria[]
@@ -64,7 +63,8 @@ function GalleryMediaTile({
   onDownload?: (midia: MidiaGaleria) => void
   watermark?: boolean
 }) {
-  const url = useMediaUrl(midia.arquivoKey)
+  const url =
+    midia.thumbUrl ?? midia.webUrl ?? midia.editadaUrl ?? midia.originalUrl ?? null
   const isVideo = midia.tipo === 'video'
 
   return (

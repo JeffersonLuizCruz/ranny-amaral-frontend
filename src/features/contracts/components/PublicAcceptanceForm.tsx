@@ -13,6 +13,7 @@ import {
   type AcceptanceFormErrors,
   type AcceptanceFormValues,
 } from '@/features/contracts/lib/documentValidation'
+import { PROOF_ACCEPT, validateProofFile } from '@/features/contracts/lib/proofFile'
 
 interface PublicAcceptanceFormProps {
   contrato: Contrato
@@ -20,8 +21,6 @@ interface PublicAcceptanceFormProps {
   error?: string
   onSubmit: (input: DadosAceiteInput, comprovante?: File) => void
 }
-
-const MAX_PROOF_SIZE = 10 * 1024 * 1024
 
 export function PublicAcceptanceForm({
   contrato,
@@ -58,10 +57,11 @@ export function PublicAcceptanceForm({
       return
     }
 
-    if (file.size > MAX_PROOF_SIZE) {
+    const erro = validateProofFile(file)
+    if (erro) {
       setErrors((current) => ({
         ...current,
-        comprovante: 'O comprovante deve ter no máximo 10 MB.',
+        comprovante: erro,
       }))
       setProof(null)
       return
@@ -213,7 +213,7 @@ export function PublicAcceptanceForm({
                 <input
                   id="acceptance-proof"
                   type="file"
-                  accept="image/*,application/pdf"
+                  accept={PROOF_ACCEPT}
                   onChange={(event) => handleFileChange(event.target.files?.[0] ?? null)}
                   className="sr-only"
                 />

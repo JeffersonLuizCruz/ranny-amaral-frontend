@@ -17,6 +17,7 @@ export interface PagamentoEntrada {
   valor: number
   percentual: number
   status: PagamentoStatus
+  arquivoId?: string
   comprovante?: ComprovantePagamento
   rejeicao?: ComprovanteRejeicao
   confirmadoEm?: string

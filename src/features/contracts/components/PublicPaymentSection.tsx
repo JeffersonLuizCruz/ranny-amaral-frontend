@@ -3,22 +3,27 @@ import { CheckCircle2, Paperclip, Upload, Wallet } from 'lucide-react'
 
 import type { Contrato } from '@/domain/contracts'
 import { Button } from '@/shared/components/ui/Button'
+import { UploadProgress } from '@/shared/components/ui/UploadProgress'
 import { formatBRL } from '@/shared/lib/currency'
+import type { UploadProgress as UploadProgressValue } from '@/shared/upload/types'
 import { PagamentoStatusBadge } from '@/features/contracts/components/ContractStatusBadge'
+import { PROOF_ACCEPT, validateProofFile } from '@/features/contracts/lib/proofFile'
 
 interface PublicPaymentSectionProps {
   contrato: Contrato
   submitting: boolean
   error?: string
+  progress?: UploadProgressValue
+  onCancel?: () => void
   onSubmit: (file: File) => void
 }
-
-const MAX_PROOF_SIZE = 10 * 1024 * 1024
 
 export function PublicPaymentSection({
   contrato,
   submitting,
   error,
+  progress,
+  onCancel,
   onSubmit,
 }: PublicPaymentSectionProps) {
   const [file, setFile] = useState<File | null>(null)
@@ -34,8 +39,9 @@ export function PublicPaymentSection({
       setFile(null)
       return
     }
-    if (nextFile.size > MAX_PROOF_SIZE) {
-      setFileError('O comprovante deve ter no máximo 10 MB.')
+    const erro = validateProofFile(nextFile)
+    if (erro) {
+      setFileError(erro)
       setFile(null)
       return
     }
@@ -115,7 +121,7 @@ export function PublicPaymentSection({
             <input
               id="public-payment-proof"
               type="file"
-              accept="image/*,application/pdf"
+              accept={PROOF_ACCEPT}
               onChange={(event) => handleFileChange(event.target.files?.[0] ?? null)}
               className="sr-only"
             />
@@ -133,6 +139,8 @@ export function PublicPaymentSection({
               {fileError}
             </p>
           ) : null}
+
+          {progress ? <UploadProgress progress={progress} onCancel={onCancel} /> : null}
 
           {error ? (
             <p role="alert" className="mt-1.5 text-xs font-medium text-red-600">

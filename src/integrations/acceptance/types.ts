@@ -3,7 +3,7 @@ import type {
   DadosAceiteInput,
   SolicitacaoAceite,
 } from '@/domain/contracts'
-import type { ComprovantePagamento } from '@/domain/payments'
+import type { UploadOptions } from '@/shared/upload/types'
 
 export interface AcceptanceResult {
   protocolo: string
@@ -23,14 +23,11 @@ export interface ContractAcceptancePort {
     token: string,
   ): Promise<{ solicitacao: SolicitacaoAceite; contrato: Contrato } | null>
   markViewed(token: string): Promise<void>
-  accept(
-    token: string,
-    input: DadosAceiteInput,
-    comprovante?: ComprovantePagamento,
-  ): Promise<AcceptanceResult>
+  accept(token: string, input: DadosAceiteInput): Promise<AcceptanceResult>
   submitProof(
     token: string,
-    comprovante: ComprovantePagamento,
+    file: File,
+    options?: UploadOptions,
   ): Promise<SubmitProofResult>
   cancel(contractId: string, linkId: string): Promise<void>
 }

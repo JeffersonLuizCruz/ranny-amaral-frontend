@@ -3,12 +3,11 @@ import {
   Eye,
   FileCheck2,
   ShieldCheck,
-  Wallet,
   XCircle,
 } from 'lucide-react'
 
 import type { Contrato } from '@/domain/contracts'
-import { paymentProofStorage } from '@/integrations/paymentProof'
+import { obterUrlComprovante } from '@/features/contracts/api/contratosApi'
 import { Button } from '@/shared/components/ui/Button'
 import { formatBRL } from '@/shared/lib/currency'
 import { mensagemDeErro } from '@/shared/api/errors'
@@ -74,17 +73,18 @@ export function ContractPaymentPanel({ contrato }: { contrato: Contrato }) {
   const handleViewProof = async () => {
     if (!pagamento.comprovante) return
 
-    try {
-      const blob = await paymentProofStorage.get(pagamento.comprovante.arquivoKey)
-      if (!blob) {
-        addToast('Comprovante não encontrado neste navegador.')
-        return
-      }
+    const janela = window.open('about:blank', '_blank')
+    if (!janela) {
+      addToast('Permita pop-ups para visualizar o comprovante.')
+      return
+    }
 
-      const url = URL.createObjectURL(blob)
-      window.open(url, '_blank', 'noopener,noreferrer')
-      window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
+    try {
+      const { url } = await obterUrlComprovante(contrato.id)
+      janela.location.replace(url)
+      janela.opener = null
     } catch {
+      janela.close()
       addToast('Não foi possível abrir o comprovante.')
     }
   }
@@ -186,13 +186,6 @@ export function ContractPaymentPanel({ contrato }: { contrato: Contrato }) {
             </Button>
           ) : null}
         </div>
-      ) : null}
-
-      {paymentProofStorage.mode === 'local' ? (
-        <p className="mt-3 flex items-center gap-1.5 text-[10px] text-muted">
-          <Wallet className="size-3" />
-          Comprovante armazenado localmente neste navegador.
-        </p>
       ) : null}
     </section>
   )

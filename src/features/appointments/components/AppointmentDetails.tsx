@@ -92,10 +92,13 @@ export function AppointmentDetails({
     pacote ? ` de ${pacote.nome}` : ''
   }:`
 
-  const handleCreateGallery = () => {
-    const created = createGallery(appointment.id)
-    if (created) addToast('Galeria criada. Envie as mídias para liberar a seleção.')
-    else addToast('Não foi possível criar a galeria para este ensaio.')
+  const handleCreateGallery = async () => {
+    try {
+      await createGallery(appointment.id)
+      addToast('Galeria criada. Envie as mídias para liberar a seleção.')
+    } catch {
+      addToast('Não foi possível criar a galeria para este ensaio.')
+    }
   }
 
   const handleCopyContractLink = async () => {

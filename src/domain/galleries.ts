@@ -19,16 +19,23 @@ export interface MidiaGaleria {
   nomeArquivo: string
   mimeType: string
   tamanho: number
-  arquivoKey: string
+  arquivoKey?: string
   status: MidiaStatus
   originalId?: string
   uploadedAt: string
+  thumbUrl?: string
+  webUrl?: string
+  originalUrl?: string
+  editadaUrl?: string
+  processamentoStatus?: 'enviando' | 'processando' | 'disponivel' | 'falha' | 'removida'
+  erroProcessamento?: string
 }
 
 export type SelecaoStatus = 'rascunho' | 'enviada'
 
 export interface SelecaoGaleria {
   status: SelecaoStatus
+  protocolo?: string
   fotoIds: string[]
   videoIds: string[]
   fotosExtras: number
@@ -101,7 +108,15 @@ export interface GaleriaEnsaio {
   id: string
   agendamentoId: string
   contratoId?: string
+  clienteNome?: string
   status: GaleriaStatus
+  fotosInclusas?: number
+  videosInclusos?: number
+  valorFotoExtra?: number
+  totalFotos?: number
+  totalVideos?: number
+  fotosDisponiveis?: number
+  videosDisponiveis?: number
   tokenSelecao?: string
   prazoSelecaoEm?: string
   midias: MidiaGaleria[]

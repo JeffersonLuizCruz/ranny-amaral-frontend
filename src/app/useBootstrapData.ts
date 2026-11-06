@@ -6,6 +6,7 @@ import { useClientStore } from '@/features/clients/store/clientStore'
 import { useContractStore } from '@/features/contracts/store/contractStore'
 import { useStudioStore } from '@/features/contracts/store/studioStore'
 import { useTemplateStore } from '@/features/contracts/store/templateStore'
+import { useGalleryStore } from '@/features/galleries/store/galleryStore'
 import { usePackageStore } from '@/features/packages/store/packageStore'
 import { mensagemDeErro } from '@/shared/api/errors'
 import { useToastStore } from '@/shared/store/toastStore'
@@ -25,6 +26,7 @@ export function useBootstrapData() {
   const carregarContratos = useContractStore((state) => state.carregarContratos)
   const carregarModelos = useTemplateStore((state) => state.carregarModelos)
   const carregarEstudio = useStudioStore((state) => state.carregarEstudio)
+  const carregarGalerias = useGalleryStore((state) => state.carregarGalerias)
   const addToast = useToastStore((state) => state.addToast)
 
   useEffect(() => {
@@ -37,6 +39,7 @@ export function useBootstrapData() {
       carregarContratos(),
       carregarModelos(),
       carregarEstudio(),
+      carregarGalerias({ tamanho: 100 }),
     ])
       .then(() => {
         if (ativo) aplicarVinculosDeContratos()
@@ -54,6 +57,7 @@ export function useBootstrapData() {
     carregarClientes,
     carregarContratos,
     carregarEstudio,
+    carregarGalerias,
     carregarModelos,
     carregarPacotes,
   ])
