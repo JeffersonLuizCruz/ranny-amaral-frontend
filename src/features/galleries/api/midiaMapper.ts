@@ -16,6 +16,8 @@ export interface MidiaDto {
   webUrl: string | null
   originalUrl: string | null
   editadaUrl: string | null
+  editadaDisponivel: boolean
+  editadaProcessando: boolean
   createdAt: string
 }
 
@@ -26,12 +28,14 @@ export function toMidia(dto: MidiaDto): MidiaGaleria {
     nomeArquivo: dto.nomeOriginal,
     mimeType: dto.mimeType,
     tamanho: dto.tamanho,
-    status: dto.editadaUrl ? 'editada' : 'original',
+    status: dto.editadaDisponivel || dto.editadaUrl ? 'editada' : 'original',
     uploadedAt: dto.createdAt,
     thumbUrl: dto.thumbUrl ?? undefined,
     webUrl: dto.webUrl ?? undefined,
     originalUrl: dto.originalUrl ?? undefined,
     editadaUrl: dto.editadaUrl ?? undefined,
+    editadaDisponivel: dto.editadaDisponivel,
+    editadaProcessando: dto.editadaProcessando,
     processamentoStatus: dto.status as MidiaGaleria['processamentoStatus'],
     erroProcessamento: dto.erroProcessamento ?? undefined,
   }

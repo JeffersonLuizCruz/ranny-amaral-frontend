@@ -8,7 +8,7 @@ import type {
   SelecaoGaleria,
 } from '@/domain/galleries'
 import { toMidia, type MidiaDto } from '@/features/galleries/api/midiaMapper'
-import { http } from '@/shared/api/httpClient'
+import { http, apiUrl } from '@/shared/api/httpClient'
 import { toQuery } from '@/shared/api/query'
 import type { Pagina } from '@/shared/api/types'
 
@@ -26,6 +26,9 @@ interface GaleriaDto {
   totalVideos: number
   fotosDisponiveis: number
   videosDisponiveis: number
+  rawLiberado: boolean
+  rawLiberadoEm: string | null
+  rawLiberadoPor: string | null
   capaUrl: string | null
   createdAt: string
   updatedAt: string
@@ -182,6 +185,9 @@ function toGaleria(
     totalVideos: dto.totalVideos,
     fotosDisponiveis: dto.fotosDisponiveis,
     videosDisponiveis: dto.videosDisponiveis,
+    rawLiberado: dto.rawLiberado,
+    rawLiberadoEm: dto.rawLiberadoEm ?? undefined,
+    rawLiberadoPor: dto.rawLiberadoPor ?? undefined,
     tokenSelecao: linkSelecao?.token,
     prazoSelecaoEm: linkSelecao?.expiraEm,
     midias: [],
@@ -295,6 +301,14 @@ export async function revogarEntrega(galeriaId: string): Promise<void> {
   await http.post(`/galerias/${galeriaId}/entrega/revogar`)
 }
 
+export async function liberarRaw(galeriaId: string, por?: string): Promise<void> {
+  await http.post(`/galerias/${galeriaId}/entrega/liberar-raw`, { por })
+}
+
+export async function revogarRaw(galeriaId: string): Promise<void> {
+  await http.post(`/galerias/${galeriaId}/entrega/revogar-raw`)
+}
+
 export async function consultarGaleriaPublica(token: string): Promise<{
   link: LinkDto
   galeria: GaleriaEnsaio
@@ -339,8 +353,17 @@ export async function enviarSelecaoPublica(
 export async function baixarMidiaPublica(
   token: string,
   midiaId: string,
+  versao: 'editada' | 'original' = 'editada',
 ): Promise<{ url: string; expiraEm: string; nomeArquivo: string }> {
-  return http.post(`/public/galerias/${token}/download`, { midiaId })
+  return http.post(`/public/galerias/${token}/download`, { midiaId, versao })
+}
+
+/** URL do ZIP streaming; usada em navegacao direta para nao carregar em memoria. */
+export function urlZipPublico(
+  token: string,
+  versao: 'editada' | 'original',
+): string {
+  return apiUrl(`/public/galerias/${token}/download-zip?versao=${versao}`)
 }
 
 export type { GaleriaDto, LinkDto, MidiaDto }

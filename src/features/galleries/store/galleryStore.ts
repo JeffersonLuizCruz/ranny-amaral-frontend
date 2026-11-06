@@ -11,6 +11,7 @@ import {
   iniciarEdicao,
   isentarExtras,
   liberarEdicao,
+  liberarRaw,
   listarGalerias,
   listarMidias,
   marcarProntaEntrega,
@@ -19,10 +20,11 @@ import {
   reabrirSelecao,
   removerMidia,
   revogarEntrega,
+  revogarRaw,
   type GaleriaDetalhe,
   type GaleriasFiltros,
 } from '@/features/galleries/api/galeriasApi'
-import { enviarMidia } from '@/features/galleries/api/galeriaUploadApi'
+import { enviarMidia, enviarVersaoEditada, removerVersaoEditada } from '@/features/galleries/api/galeriaUploadApi'
 import type { UploadOptions } from '@/shared/upload/types'
 
 interface GalleryState {
@@ -43,6 +45,13 @@ interface GalleryState {
     tipo: 'foto' | 'video',
     options?: UploadOptions,
   ) => Promise<MidiaGaleria>
+  uploadVersaoEditada: (
+    id: string,
+    midiaId: string,
+    file: File,
+    options?: UploadOptions,
+  ) => Promise<MidiaGaleria>
+  removeVersaoEditada: (id: string, midiaId: string) => Promise<void>
   removeMedia: (id: string, midiaId: string) => Promise<void>
   publishSelection: (id: string) => Promise<string>
   reopenSelection: (id: string) => Promise<string>
@@ -53,6 +62,8 @@ interface GalleryState {
   markReadyForDelivery: (id: string) => Promise<void>
   publishDelivery: (id: string) => Promise<string>
   revokeDelivery: (id: string) => Promise<void>
+  releaseRaw: (id: string, por?: string) => Promise<void>
+  revokeRaw: (id: string) => Promise<void>
   restoreDemoData: () => Promise<void>
 }
 
@@ -125,6 +136,20 @@ export const useGalleryStore = create<GalleryState>()((set, get) => ({
     return midia
   },
 
+  uploadVersaoEditada: async (id, midiaId, file, options) => {
+    const midia = await enviarVersaoEditada(id, midiaId, file, options)
+    set((state) => ({
+      midias: state.midias.map((item) => (item.id === midia.id ? midia : item)),
+    }))
+    await get().carregarGaleria(id)
+    return midia
+  },
+
+  removeVersaoEditada: async (id, midiaId) => {
+    await removerVersaoEditada(id, midiaId)
+    await get().carregarGaleria(id)
+  },
+
   removeMedia: async (id, midiaId) => {
     await removerMidia(id, midiaId)
     set((state) => ({ midias: state.midias.filter((item) => item.id !== midiaId) }))
@@ -175,6 +200,16 @@ export const useGalleryStore = create<GalleryState>()((set, get) => ({
 
   revokeDelivery: async (id) => {
     await revogarEntrega(id)
+    await get().carregarGaleria(id)
+  },
+
+  releaseRaw: async (id, por) => {
+    await liberarRaw(id, por)
+    await get().carregarGaleria(id)
+  },
+
+  revokeRaw: async (id) => {
+    await revogarRaw(id)
     await get().carregarGaleria(id)
   },
 

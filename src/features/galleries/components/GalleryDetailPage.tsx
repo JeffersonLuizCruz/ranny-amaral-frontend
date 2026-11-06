@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -21,6 +21,7 @@ import { useGalleryStore } from '@/features/galleries/store/galleryStore'
 import { GalleryStatusBadge } from '@/features/galleries/components/GalleryStatusBadge'
 import { GalleryMediaGrid } from '@/features/galleries/components/GalleryMediaGrid'
 import { GalleryMediaUploader } from '@/features/galleries/components/GalleryMediaUploader'
+import { GalleryEditedVersionDialog } from '@/features/galleries/components/GalleryEditedVersionDialog'
 
 function formatDateTime(value?: string): string {
   if (!value) return '—'
@@ -46,11 +47,32 @@ export function GalleryDetailPage() {
   const markReadyForDelivery = useGalleryStore((state) => state.markReadyForDelivery)
   const publishDelivery = useGalleryStore((state) => state.publishDelivery)
   const revokeDelivery = useGalleryStore((state) => state.revokeDelivery)
+  const releaseRaw = useGalleryStore((state) => state.releaseRaw)
+  const revokeRaw = useGalleryStore((state) => state.revokeRaw)
   const addToast = useToastStore((state) => state.addToast)
+  const [editando, setEditando] = useState<MidiaGaleria | null>(null)
 
   useEffect(() => {
     void carregarGaleria(galeriaId).catch(() => undefined)
   }, [carregarGaleria, galeriaId])
+
+  const processando = midias.some(
+    (midia) => midia.processamentoStatus === 'processando' || midia.editadaProcessando,
+  )
+
+  useEffect(() => {
+    if (!processando) return
+    let tentativas = 0
+    const timer = window.setInterval(() => {
+      tentativas += 1
+      if (tentativas > 20) {
+        window.clearInterval(timer)
+        return
+      }
+      void carregarGaleria(galeriaId).catch(() => undefined)
+    }, 3000)
+    return () => window.clearInterval(timer)
+  }, [processando, carregarGaleria, galeriaId])
 
   if (carregando && !detalhe) {
     return <p className="p-10 text-center text-sm text-muted">Carregando galeria…</p>
@@ -81,6 +103,17 @@ export function GalleryDetailPage() {
   const videos = midias.filter((midia) => midia.tipo === 'video')
   const disponiveis = midias.filter((midia) => midia.processamentoStatus === 'disponivel')
   const podeEditarMidias = ['aguardando_upload', 'em_selecao'].includes(galeria.status)
+  const podeEditarVersao = [
+    'selecao_enviada',
+    'em_edicao',
+    'pronta_entrega',
+    'entregue',
+  ].includes(galeria.status)
+  const selecionadas = new Set(detalhe.selecao?.fotoIds ?? [])
+  const fotosSelecionadas = fotos.filter((midia) => selecionadas.has(midia.id))
+  const fotosEditadas = fotosSelecionadas.filter((midia) => midia.editadaDisponivel)
+  const fotosSemEdicao = fotosSelecionadas.length - fotosEditadas.length
+  const entregaBloqueada = !galeria.rawLiberado && fotosSemEdicao > 0
   const extrasPendentes = detalhe.extras?.status === 'pendente'
   const extrasQuitados =
     !detalhe.extras || ['pago', 'isento'].includes(detalhe.extras.status) || Boolean(detalhe.extras.liberacaoManual)
@@ -147,6 +180,9 @@ export function GalleryDetailPage() {
               <p className="mt-0.5 text-[11px] text-muted">
                 {fotos.length} fotos · {videos.length} vídeos · {disponiveis.length}{' '}
                 disponíveis
+                {fotosSelecionadas.length > 0
+                  ? ` · ${fotosEditadas.length}/${fotosSelecionadas.length} selecionadas editadas`
+                  : ''}
               </p>
             </div>
             {podeEditarMidias ? <GalleryMediaUploader galleryId={galeria.id} /> : null}
@@ -156,6 +192,7 @@ export function GalleryDetailPage() {
             <GalleryMediaGrid
               midias={midias}
               onRemove={podeEditarMidias ? (midia) => void remover(midia) : undefined}
+              onEdit={podeEditarVersao ? (midia) => setEditando(midia) : undefined}
             />
           </div>
         </section>
@@ -318,6 +355,7 @@ export function GalleryDetailPage() {
                       'Link de entrega publicado.',
                     )
                   }
+                  disabled={entregaBloqueada}
                 >
                   Publicar entrega
                 </Button>
@@ -352,6 +390,60 @@ export function GalleryDetailPage() {
               ? `Disponível até ${formatDateTime(galeria.entrega.expiraEm)}.`
               : 'Ainda não publicada. Marque como pronta e publique após os extras.'}
           </p>
+
+          {entregaBloqueada ? (
+            <p className="mt-2 rounded-xl bg-amber-50 px-3 py-2 text-[11px] text-amber-800 ring-1 ring-amber-200">
+              {fotosSemEdicao} foto(s) selecionada(s) sem versão editada. Envie as
+              versões ou libere os RAW antes de publicar a entrega.
+            </p>
+          ) : null}
+
+          <div className="mt-3 rounded-xl border border-line bg-canvas/60 p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="text-[11px] font-semibold text-ink">
+                  Arquivos originais (RAW)
+                </p>
+                <p className="mt-0.5 text-[11px] text-muted">
+                  {galeria.rawLiberado
+                    ? `Liberados por ${galeria.rawLiberadoPor ?? 'equipe'} em ${formatDateTime(galeria.rawLiberadoEm)}.`
+                    : 'Não liberados. O cliente recebe apenas as versões editadas.'}
+                </p>
+              </div>
+              {podeEditarVersao ? (
+                galeria.rawLiberado ? (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() =>
+                      void executar(() => revokeRaw(galeria.id), 'RAW revogado.')
+                    }
+                  >
+                    Revogar RAW
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => {
+                      const por = window.prompt(
+                        'Quem está liberando os RAW?',
+                        'Equipe do estúdio',
+                      )
+                      if (por !== null) {
+                        void executar(
+                          () => releaseRaw(galeria.id, por),
+                          'RAW liberado para download.',
+                        )
+                      }
+                    }}
+                  >
+                    Liberar RAW
+                  </Button>
+                )
+              ) : null}
+            </div>
+          </div>
         </section>
 
         <section className="rounded-2xl border border-line bg-surface p-4 shadow-card">
@@ -367,6 +459,15 @@ export function GalleryDetailPage() {
           </ul>
         </section>
       </div>
+
+      {editando ? (
+        <GalleryEditedVersionDialog
+          open
+          galeriaId={galeria.id}
+          midia={midias.find((midia) => midia.id === editando.id) ?? editando}
+          onClose={() => setEditando(null)}
+        />
+      ) : null}
     </div>
   )
 }

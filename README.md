@@ -1,6 +1,6 @@
 # Photoizer CRM
 
-CRM para estúdios fotográficos com agenda, clientes, pacotes, contratos, financeiro e galerias de ensaio.
+CRM para estúdios fotográficos com dashboard, agenda, clientes, pacotes, contratos, financeiro e galerias de ensaio.
 
 ## Como rodar
 
@@ -32,7 +32,7 @@ npm run build
 
 O CI (`.github/workflows/ci.yml`) executa `npm ci`, `npm run lint`, `npm test` e `npm run build`.
 
-A suíte de testes usa **Vitest + Testing Library** e cobre validação de arquivos, cliente de upload, paginação, mapeadores e resumo financeiro.
+A suíte de testes usa **Vitest + Testing Library** e cobre validação de arquivos, cliente de upload, paginação, mapeadores, resumo financeiro, ZIP e KPIs do dashboard.
 
 ## Integração com o backend
 
@@ -45,9 +45,10 @@ A suíte de testes usa **Vitest + Testing Library** e cobre validação de arqui
 - `src/features/appointments/api/agendaApi.ts` — CRUD, status, pagamentos, listagem paginada e calendário por período.
 - `src/features/contracts/api/contratosApi.ts` — contratos, busca paginada, links de aceite e pagamentos.
 - `src/features/contracts/api/modelosApi.ts` e `estudioApi.ts` — modelos e configuração do estúdio.
-- `src/features/galleries/api/galeriasApi.ts` — galerias, mídias, seleção, extras e entrega.
-- `src/features/galleries/api/galeriaUploadApi.ts` — upload de fotos/vídeos com progresso.
+- `src/features/galleries/api/galeriasApi.ts` — galerias, mídias, seleção, extras, RAW e entrega.
+- `src/features/galleries/api/galeriaUploadApi.ts` — upload de fotos/vídeos e versões editadas com progresso.
 - `src/features/finance/api/financeiroApi.ts` e `financeStore.ts` — resumo financeiro mensal consolidado.
+- `src/features/dashboard/api/dashboardApi.ts` — visão operacional agregada.
 - `src/integrations/acceptance/httpAdapter.ts` — aceite público via token.
 - `src/features/clients/store/clientStore.ts`, `packageStore.ts`, `appointmentStore.ts`, `contractStore.ts`, `templateStore.ts` e `studioStore.ts` — mantêm a interface pública usada pelas telas, mas carregam e gravam na API (sem `localStorage`).
 - `src/app/useBootstrapData.ts` — hidrata os dados do backend no boot.
@@ -59,6 +60,7 @@ Os módulos de galerias e financeiro agora usam a API real; o navegador não cal
 
 ## Módulos
 
+- **Dashboard:** visão do dia com próximos ensaios, pendências e resumo financeiro.
 - **Agenda:** ensaios, status, remarcações e detalhes do atendimento.
 - **Pacotes:** duração, valor de tabela, fotos/vídeos inclusos, valor da foto extra e promoção opcional.
 - **Contratos:** modelo, aceite por link público, entrada e saldo final.
@@ -94,12 +96,15 @@ aguardando_upload → em_selecao → selecao_enviada → em_edicao → pronta_en
 - Vídeos: exatamente a quantidade inclusa, sem vídeo extra.
 - Fotos acima do incluso geram pedido de extras.
 - A edição pode ser liberada manualmente pelo staff, com registro de motivo.
-- A entrega exige extras pagos ou isentos.
+- Cada foto selecionada pode receber uma **versão editada** (JPEG/PNG/WebP até 50 MB).
+- O staff pode **liberar os RAW** de forma explícita, auditada e revogável.
+- A publicação da entrega exige versão editada ou RAW liberado para cada foto selecionada.
+- A entrega baixa as versões editadas e/ou os RAW, individualmente ou em **ZIP streaming**.
 - Link de entrega: 90 dias, com downloads registrados.
 
 ## Mocks de backend
 
-- **Clientes, pacotes, agenda, contratos, galerias, modelos, estúdio e aceite** já usam a API real.
+- **Clientes, pacotes, agenda, contratos, galerias, financeiro, dashboard, modelos, estúdio e aceite** já usam a API real.
 - Galerias não usam mais Zustand persistido, localStorage ou IndexedDB.
 - O upload de fotos e vídeos é feito direto ao MinIO/S3 com URLs pré-assinadas, progresso e retomada.
 
@@ -107,17 +112,16 @@ aguardando_upload → em_selecao → selecao_enviada → em_edicao → pronta_en
 
 - `/assinar/:token` — aceite do contrato.
 - `/selecao/:token` — seleção de fotos e vídeos.
-- `/entrega/:token` — download da entrega editada.
+- `/entrega/:token` — download das versões editadas e, quando liberados, dos RAW.
 
 ## Limitações do protótipo
 
 - Sem autenticação.
 - As telas de clientes, pacotes e contratos usam paginação/busca server-side. No boot, loaders de compatibilidade ainda percorrem todas as páginas para alimentar pickers e outras telas; eles serão removidos quando os módulos restantes migrarem.
 - Galerias e financeiro já usam a API real.
-- Upload de fotos até 50 MB e vídeos até 500 MB, com progresso e URLs assinadas. O processamento de derivados é síncrono nesta versão.
-- A entrega baixa arquivos individualmente; ZIP e pós-processamento de vídeo ficam para a próxima fase.
+- Upload de fotos até 50 MB e vídeos até 500 MB, com progresso e URLs assinadas. O processamento de derivados roda em background com polling.
+- A entrega baixa arquivos individualmente ou em ZIP; pós-processamento de vídeo fica para a próxima fase.
 - O comprovante de pagamento é enviado direto ao MinIO com URLs pré-assinadas, progresso real e limite de 10 MB. O IndexedDB não é mais usado para comprovantes.
 - O download do comprovante pelo staff usa URL assinada temporária; a rota será protegida na fase de autenticação.
-- Download em ZIP não implementado; a entrega baixa os arquivos individualmente.
-- Expiração de links de galeria é simulada localmente.
+- A expiração dos links de galeria é validada pelo backend; a UI exibe o prazo e o estado.
 - Sem envio automático de WhatsApp ou e-mail.

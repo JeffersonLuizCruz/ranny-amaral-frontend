@@ -10,6 +10,7 @@ import { GalleryMediaGrid } from '@/features/galleries/components/GalleryMediaGr
 import {
   baixarMidiaPublica,
   consultarGaleriaPublica,
+  urlZipPublico,
 } from '@/features/galleries/api/galeriasApi'
 
 interface PublicDeliveryData {
@@ -17,6 +18,7 @@ interface PublicDeliveryData {
   midias: MidiaGaleria[]
   expiraEm?: string
   disponivel: boolean
+  rawLiberado: boolean
 }
 
 function formatDate(value?: string): string {
@@ -30,7 +32,7 @@ export function PublicDeliveryPage() {
   const [loading, setLoading] = useState(true)
   const [erro, setErro] = useState('')
   const [mensagem, setMensagem] = useState('')
-  const [baixando, setBaixando] = useState(false)
+  const [baixando, setBaixando] = useState<'editada' | 'original' | null>(null)
 
   useEffect(() => {
     let ativo = true
@@ -42,6 +44,7 @@ export function PublicDeliveryPage() {
           midias: resultado.midias,
           expiraEm: resultado.link.expiraEm,
           disponivel: resultado.entregaDisponivel,
+          rawLiberado: resultado.galeria.rawLiberado ?? false,
         })
       })
       .catch((error) => {
@@ -55,9 +58,9 @@ export function PublicDeliveryPage() {
     }
   }, [token])
 
-  const baixar = async (midia: MidiaGaleria) => {
+  const baixar = async (midia: MidiaGaleria, versao: 'editada' | 'original') => {
     try {
-      const { url } = await baixarMidiaPublica(token, midia.id)
+      const { url } = await baixarMidiaPublica(token, midia.id, versao)
       const anchor = document.createElement('a')
       anchor.href = url
       anchor.download = midia.nomeArquivo
@@ -73,19 +76,16 @@ export function PublicDeliveryPage() {
     }
   }
 
-  const baixarTodos = async () => {
-    if (!data) return
+  const baixarZip = (versao: 'editada' | 'original') => {
     setMensagem('')
-    setBaixando(true)
-    let total = 0
-    try {
-      for (const midia of data.midias) {
-        if (await baixar(midia)) total += 1
-      }
-      if (total > 0) setMensagem(`${total} arquivo(s) baixado(s).`)
-    } finally {
-      setBaixando(false)
-    }
+    setBaixando(versao)
+    const anchor = document.createElement('a')
+    anchor.href = urlZipPublico(token, versao)
+    anchor.download = versao === 'original' ? 'galeria-raw.zip' : 'galeria-editada.zip'
+    document.body.appendChild(anchor)
+    anchor.click()
+    anchor.remove()
+    window.setTimeout(() => setBaixando(null), 1500)
   }
 
   if (loading) {
@@ -112,6 +112,14 @@ export function PublicDeliveryPage() {
     )
   }
 
+  const editadas = data.midias.filter(
+    (midia) => midia.tipo === 'foto' && midia.editadaDisponivel,
+  )
+  const videos = data.midias.filter((midia) => midia.tipo === 'video')
+  const originais = data.rawLiberado
+    ? data.midias.filter((midia) => midia.tipo === 'foto')
+    : []
+
   return (
     <PublicShell>
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
@@ -126,12 +134,36 @@ export function PublicDeliveryPage() {
             {data.midias.length} arquivo(s) · disponível até {formatDate(data.expiraEm)}
           </p>
         </div>
-        {data.midias.length > 0 ? (
-          <Button onClick={() => void baixarTodos()} disabled={baixando}>
-            <Download className="size-4" />
-            {baixando ? 'Baixando…' : 'Baixar todos'}
-          </Button>
-        ) : null}
+        <div className="flex flex-wrap gap-2">
+          {editadas.length > 0 ? (
+            <Button
+              onClick={() => baixarZip('editada')}
+              disabled={baixando !== null}
+            >
+              <Download className="size-4" />
+              {baixando === 'editada' ? 'Preparando…' : 'Baixar editadas (.zip)'}
+            </Button>
+          ) : null}
+          {originais.length > 0 ? (
+            <Button
+              variant="secondary"
+              onClick={() => baixarZip('original')}
+              disabled={baixando !== null}
+            >
+              <Download className="size-4" />
+              {baixando === 'original' ? 'Preparando…' : 'Baixar RAW (.zip)'}
+            </Button>
+          ) : null}
+          {editadas.length === 0 && originais.length === 0 && videos.length > 0 ? (
+            <Button
+              onClick={() => baixarZip('original')}
+              disabled={baixando !== null}
+            >
+              <Download className="size-4" />
+              {baixando ? 'Preparando…' : 'Baixar vídeos (.zip)'}
+            </Button>
+          ) : null}
+        </div>
       </div>
 
       {mensagem ? (
@@ -140,19 +172,66 @@ export function PublicDeliveryPage() {
         </p>
       ) : null}
 
-      <section className="rounded-2xl border border-line bg-surface p-4 shadow-card">
-        <h2 className="flex items-center gap-2 text-sm font-semibold text-ink">
-          <Images className="size-4 text-brand-600" />
-          Arquivos editados
-        </h2>
-        <div className="mt-3">
-          <GalleryMediaGrid
-            midias={data.midias}
-            onDownload={(midia) => void baixar(midia)}
-            emptyLabel="Nenhum arquivo disponível."
-          />
-        </div>
-      </section>
+      <div className="space-y-4">
+        {editadas.length > 0 ? (
+          <section className="rounded-2xl border border-line bg-surface p-4 shadow-card">
+            <h2 className="flex items-center gap-2 text-sm font-semibold text-ink">
+              <Images className="size-4 text-brand-600" />
+              Fotos editadas
+            </h2>
+            <div className="mt-3">
+              <GalleryMediaGrid
+                midias={editadas}
+                onDownload={(midia) => void baixar(midia, 'editada')}
+                emptyLabel="Nenhuma foto editada disponível."
+              />
+            </div>
+          </section>
+        ) : null}
+
+        {videos.length > 0 ? (
+          <section className="rounded-2xl border border-line bg-surface p-4 shadow-card">
+            <h2 className="flex items-center gap-2 text-sm font-semibold text-ink">
+              <Images className="size-4 text-brand-600" />
+              Vídeos
+            </h2>
+            <div className="mt-3">
+              <GalleryMediaGrid
+                midias={videos}
+                onDownload={(midia) => void baixar(midia, 'original')}
+                emptyLabel="Nenhum vídeo disponível."
+              />
+            </div>
+          </section>
+        ) : null}
+
+        {originais.length > 0 ? (
+          <section className="rounded-2xl border border-line bg-surface p-4 shadow-card">
+            <h2 className="flex items-center gap-2 text-sm font-semibold text-ink">
+              <Images className="size-4 text-emerald-600" />
+              Arquivos originais (RAW)
+            </h2>
+            <p className="mt-1 text-[11px] text-muted">
+              Originais liberados pelo estúdio para download.
+            </p>
+            <div className="mt-3">
+              <GalleryMediaGrid
+                midias={originais}
+                onDownload={(midia) => void baixar(midia, 'original')}
+                emptyLabel="Nenhum original liberado."
+              />
+            </div>
+          </section>
+        ) : null}
+
+        {editadas.length === 0 && videos.length === 0 && originais.length === 0 ? (
+          <section className="rounded-2xl border border-line bg-surface p-4 shadow-card">
+            <p className="text-center text-xs text-muted">
+              Nenhum arquivo disponível para download.
+            </p>
+          </section>
+        ) : null}
+      </div>
     </PublicShell>
   )
 }

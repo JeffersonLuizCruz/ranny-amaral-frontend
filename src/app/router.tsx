@@ -9,6 +9,7 @@ import { ContractsPage } from '@/features/contracts/components/ContractsPage'
 import { PublicContractPage } from '@/features/contracts/components/PublicContractPage'
 import { StudioSettingsPage } from '@/features/contracts/components/StudioSettingsPage'
 import { TemplatesPage } from '@/features/contracts/components/TemplatesPage'
+import { DashboardPage } from '@/features/dashboard/components/DashboardPage'
 import { FinancePage } from '@/features/finance/components/FinancePage'
 import { GalleriesPage } from '@/features/galleries/components/GalleriesPage'
 import { GalleryDetailPage } from '@/features/galleries/components/GalleryDetailPage'
@@ -33,7 +34,7 @@ const router = createBrowserRouter([
     path: '/',
     element: <AppShell />,
     children: [
-      { index: true, element: <Navigate to="/agenda" replace /> },
+      { index: true, element: <DashboardPage /> },
       { path: 'agenda', element: <AgendaPage /> },
       { path: 'pacotes', element: <PackagesPage /> },
       { path: 'clientes', element: <ClientsPage /> },

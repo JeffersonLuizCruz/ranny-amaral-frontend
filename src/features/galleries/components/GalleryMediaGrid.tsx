@@ -1,4 +1,4 @@
-import { Check, Download, Film, ImageOff, PlayCircle, Trash2 } from 'lucide-react'
+import { Check, Download, Film, ImageOff, Loader2, Pencil, PlayCircle, Trash2 } from 'lucide-react'
 
 import type { MidiaGaleria } from '@/domain/galleries'
 import { cn } from '@/shared/lib/cn'
@@ -9,6 +9,7 @@ interface GalleryMediaGridProps {
   onToggle?: (id: string) => void
   onRemove?: (midia: MidiaGaleria) => void
   onDownload?: (midia: MidiaGaleria) => void
+  onEdit?: (midia: MidiaGaleria) => void
   emptyLabel?: string
   watermark?: boolean
 }
@@ -19,6 +20,7 @@ export function GalleryMediaGrid({
   onToggle,
   onRemove,
   onDownload,
+  onEdit,
   emptyLabel = 'Nenhuma mídia enviada ainda.',
   watermark = false,
 }: GalleryMediaGridProps) {
@@ -41,6 +43,7 @@ export function GalleryMediaGrid({
           onToggle={onToggle}
           onRemove={onRemove}
           onDownload={onDownload}
+          onEdit={onEdit}
           watermark={watermark}
         />
       ))}
@@ -54,6 +57,7 @@ function GalleryMediaTile({
   onToggle,
   onRemove,
   onDownload,
+  onEdit,
   watermark,
 }: {
   midia: MidiaGaleria
@@ -61,6 +65,7 @@ function GalleryMediaTile({
   onToggle?: (id: string) => void
   onRemove?: (midia: MidiaGaleria) => void
   onDownload?: (midia: MidiaGaleria) => void
+  onEdit?: (midia: MidiaGaleria) => void
   watermark?: boolean
 }) {
   const url =
@@ -130,9 +135,22 @@ function GalleryMediaTile({
             <Check className="size-3" />
           </span>
         ) : null}
+
+        {midia.editadaDisponivel ? (
+          <span className="absolute left-1.5 top-1.5 inline-flex items-center gap-1 rounded-full bg-emerald-600/90 px-1.5 py-0.5 text-[9px] font-semibold text-white shadow">
+            <Check className="size-2.5" />
+            editada
+          </span>
+        ) : null}
       </button>
 
       <div className="absolute inset-x-0 bottom-0 flex items-center gap-1 bg-gradient-to-t from-black/70 to-transparent px-1.5 pb-1 pt-4">
+        {midia.processamentoStatus === 'processando' || midia.editadaProcessando ? (
+          <Loader2
+            aria-label="Processando"
+            className="size-3 shrink-0 animate-spin text-white"
+          />
+        ) : null}
         <span className="min-w-0 flex-1 truncate text-[9px] font-medium text-white/90">
           {midia.nomeArquivo}
         </span>
@@ -147,6 +165,16 @@ function GalleryMediaTile({
           >
             <PlayCircle className="size-3" />
           </a>
+        ) : null}
+        {onEdit && !isVideo ? (
+          <button
+            type="button"
+            onClick={() => onEdit(midia)}
+            aria-label={`Editar versão de ${midia.nomeArquivo}`}
+            className="grid size-6 shrink-0 place-items-center rounded-full bg-white/90 text-purple-700 transition hover:bg-white"
+          >
+            <Pencil className="size-3" />
+          </button>
         ) : null}
         {onDownload ? (
           <button

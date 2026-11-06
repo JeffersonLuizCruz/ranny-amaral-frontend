@@ -1,14 +1,15 @@
-import { CalendarDays, Images, Menu, Package, Users } from 'lucide-react'
+import { CalendarDays, Images, LayoutDashboard, Menu, Package, Users } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 
 import { useAgendaStore } from '@/features/agenda/store/agendaStore'
 import { cn } from '@/shared/lib/cn'
 
 const ITEMS = [
-  { to: '/agenda', label: 'Agenda', icon: CalendarDays },
-  { to: '/pacotes', label: 'Pacotes', icon: Package },
-  { to: '/clientes', label: 'Clientes', icon: Users },
-  { to: '/galerias', label: 'Galerias', icon: Images },
+  { to: '/', label: 'Início', icon: LayoutDashboard, end: true },
+  { to: '/agenda', label: 'Agenda', icon: CalendarDays, end: false },
+  { to: '/pacotes', label: 'Pacotes', icon: Package, end: false },
+  { to: '/clientes', label: 'Clientes', icon: Users, end: false },
+  { to: '/galerias', label: 'Galerias', icon: Images, end: false },
 ]
 
 export function MobileBottomNav() {
@@ -19,7 +20,7 @@ export function MobileBottomNav() {
       aria-label="Navegação principal"
       className="print-hidden safe-bottom fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 backdrop-blur lg:hidden"
     >
-      <div className="mx-auto grid h-16 max-w-md grid-cols-5">
+      <div className="mx-auto grid h-16 max-w-md grid-cols-6">
         {ITEMS.map((item) => {
           const Icon = item.icon
 
@@ -27,6 +28,7 @@ export function MobileBottomNav() {
             <NavLink
               key={item.to}
               to={item.to}
+              end={item.end}
               className={({ isActive }) =>
                 cn(
                   'relative flex flex-col items-center justify-center gap-1 text-[10px] font-medium transition-colors',

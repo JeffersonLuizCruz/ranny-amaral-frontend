@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   mediaTipoFromFile,
+  validateEditedFile,
   validateMediaFile,
 } from '@/features/galleries/lib/mediaFile'
 
@@ -33,5 +34,22 @@ describe('mediaFile', () => {
 
   it('rejeita tipo desconhecido', () => {
     expect(validateMediaFile(arquivo(10, 'application/zip'))).toContain('JPEG')
+  })
+
+  it.each(['image/jpeg', 'image/png', 'image/webp'])(
+    'aceita versão editada em %s',
+    (tipo) => {
+      expect(validateEditedFile(arquivo(10, tipo))).toBeNull()
+    },
+  )
+
+  it.each([
+    ['application/pdf', 1024, 'JPEG'],
+    ['image/jpeg', 0, 'vazio'],
+    ['image/jpeg', 50 * 1024 * 1024 + 1, '50 MB'],
+  ])('rejeita versão editada %s (%i bytes)', (tipo, tamanho, mensagem) => {
+    expect(validateEditedFile(arquivo(tamanho as number, tipo as string))).toContain(
+      mensagem as string,
+    )
   })
 })

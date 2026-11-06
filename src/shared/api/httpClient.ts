@@ -65,6 +65,11 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   return corpo as T
 }
 
+/** URL absoluta/relativa para downloads diretos (ex.: ZIP streaming). */
+export function apiUrl(path: string): string {
+  return `${API_BASE_URL}${path}`
+}
+
 export const http = {
   get: <T>(path: string, init?: RequestInit) => request<T>(path, init),
 

@@ -27,6 +27,8 @@ export interface MidiaGaleria {
   webUrl?: string
   originalUrl?: string
   editadaUrl?: string
+  editadaDisponivel?: boolean
+  editadaProcessando?: boolean
   processamentoStatus?: 'enviando' | 'processando' | 'disponivel' | 'falha' | 'removida'
   erroProcessamento?: string
 }
@@ -84,6 +86,8 @@ export type EventoGaleriaTipo =
   | 'criada'
   | 'midia_enviada'
   | 'midia_removida'
+  | 'midia_editada'
+  | 'midia_editada_removida'
   | 'selecao_publicada'
   | 'selecao_reaberta'
   | 'selecao_enviada'
@@ -117,6 +121,9 @@ export interface GaleriaEnsaio {
   totalVideos?: number
   fotosDisponiveis?: number
   videosDisponiveis?: number
+  rawLiberado?: boolean
+  rawLiberadoEm?: string
+  rawLiberadoPor?: string
   tokenSelecao?: string
   prazoSelecaoEm?: string
   midias: MidiaGaleria[]

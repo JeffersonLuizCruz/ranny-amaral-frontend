@@ -4,6 +4,7 @@ import {
   Download,
   FileSignature,
   Images,
+  LayoutDashboard,
   Package,
   Plus,
   RotateCcw,
@@ -36,12 +37,13 @@ interface SidebarProps {
 }
 
 const NAV_ITEMS = [
-  { to: '/agenda', label: 'Agenda', icon: CalendarDays },
-  { to: '/pacotes', label: 'Pacotes', icon: Package },
-  { to: '/clientes', label: 'Clientes', icon: Users },
-  { to: '/contratos', label: 'Contratos', icon: FileSignature },
-  { to: '/galerias', label: 'Galerias', icon: Images },
-  { to: '/financeiro', label: 'Financeiro', icon: Wallet },
+  { to: '/', label: 'Início', icon: LayoutDashboard, end: true },
+  { to: '/agenda', label: 'Agenda', icon: CalendarDays, end: false },
+  { to: '/pacotes', label: 'Pacotes', icon: Package, end: false },
+  { to: '/clientes', label: 'Clientes', icon: Users, end: false },
+  { to: '/contratos', label: 'Contratos', icon: FileSignature, end: false },
+  { to: '/galerias', label: 'Galerias', icon: Images, end: false },
+  { to: '/financeiro', label: 'Financeiro', icon: Wallet, end: false },
 ]
 
 export function Sidebar({ onNavigate, onClose }: SidebarProps) {
@@ -126,6 +128,7 @@ export function Sidebar({ onNavigate, onClose }: SidebarProps) {
               <NavLink
                 key={item.to}
                 to={item.to}
+                end={item.end}
                 onClick={onNavigate}
                 className={({ isActive }) =>
                   cn(
