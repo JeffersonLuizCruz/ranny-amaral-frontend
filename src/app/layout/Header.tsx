@@ -1,6 +1,7 @@
-import { Menu } from 'lucide-react'
-import { useLocation } from 'react-router-dom'
+import { LogOut, Menu, UserRound } from 'lucide-react'
+import { useLocation, useNavigate } from 'react-router-dom'
 
+import { useAuthStore } from '@/features/auth/store/authStore'
 import { DateNavigation, ViewSwitcher } from '@/features/agenda/components/AgendaToolbar'
 import { useAgendaStore } from '@/features/agenda/store/agendaStore'
 import { IconButton } from '@/shared/components/ui/Button'
@@ -19,6 +20,9 @@ const PAGE_TITLES: Record<string, string> = {
 
 export function Header() {
   const location = useLocation()
+  const navigate = useNavigate()
+  const usuario = useAuthStore((state) => state.usuario)
+  const logout = useAuthStore((state) => state.logout)
   const selectedDate = useAgendaStore((state) => state.selectedDate)
   const view = useAgendaStore((state) => state.view)
   const setSidebarOpen = useAgendaStore((state) => state.setSidebarOpen)
@@ -65,6 +69,21 @@ export function Header() {
             </div>
           </div>
         ) : null}
+
+        <div className="ml-1 flex shrink-0 items-center gap-2 border-l border-line pl-2">
+          <span className="hidden items-center gap-1.5 text-xs font-medium text-muted sm:flex">
+            <UserRound className="size-4" />
+            {usuario?.nome ?? 'Conta'}
+          </span>
+          <IconButton
+            label="Sair"
+            onClick={() => {
+              void logout().finally(() => navigate('/login', { replace: true }))
+            }}
+          >
+            <LogOut className="size-4" />
+          </IconButton>
+        </div>
       </div>
 
       {isAgenda ? (

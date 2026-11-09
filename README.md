@@ -1,6 +1,6 @@
 # Photoizer CRM
 
-CRM para estúdios fotográficos com dashboard, agenda, clientes, pacotes, contratos, financeiro e galerias de ensaio.
+CRM para estúdios fotográficos com dashboard, agenda, clientes, pacotes, contratos, financeiro, galerias de ensaio e **autenticação com perfis de acesso**.
 
 ## Como rodar
 
@@ -21,6 +21,10 @@ npm run dev
 
 O Vite faz proxy de `/api` para `http://localhost:8080` (veja `vite.config.ts`). Para apontar para outro host, defina `VITE_API_URL` (ex.: `http://localhost:8080/api/v1`).
 
+### Acesso local
+
+O backend em perfil `dev` cria o admin `admin@rannyamaral.com.br` / `admin12345` (troca obrigatória no primeiro acesso). Depois o admin cria a Ranny em **Usuários** com o perfil `Gestor`.
+
 Validação:
 
 ```bash
@@ -30,13 +34,17 @@ npm test
 npm run build
 ```
 
-O CI (`.github/workflows/ci.yml`) executa `npm ci`, `npm run lint`, `npm test` e `npm run build`.
+O CI (`.github/workflows/ci.yml`) executa `npm ci`, `npm run lint`, `npm test`, `npm run build` e publica a imagem `amd64` no GHCR.
 
 A suíte de testes usa **Vitest + Testing Library** e cobre validação de arquivos, cliente de upload, paginação, mapeadores, resumo financeiro, ZIP e KPIs do dashboard.
 
 ## Integração com o backend
 
-- `src/shared/api/httpClient.ts` — cliente HTTP único, baseURL `/api/v1`, tratamento do `ErrorResponse` do backend.
+- `src/shared/api/httpClient.ts` — cliente HTTP único, baseURL `/api/v1`, `credentials: include`, tratamento do `ErrorResponse` e refresh automático em `401`.
+- `src/shared/api/session.ts` — access token em memória e renovação via cookie `HttpOnly`.
+- `src/features/auth/store/authStore.ts` — login, logout, bootstrap e troca de senha.
+- `src/features/auth/components/*` — login, troca obrigatória e guards (`RequireAuth`, `RequireAdmin`).
+- `src/features/users/components/UsersPage.tsx` — criação, reset de senha e ativação (apenas `ADMIN`).
 - `src/shared/api/types.ts` e `src/shared/components/ui/Paginador.tsx` — envelope `Pagina<T>` e controle reutilizável de paginação.
 - `src/shared/upload/*` — hash SHA-256, upload direto ao storage com progresso, cancelamento e retry.
 - `src/features/contracts/api/comprovanteApi.ts` — fluxo de upload do comprovante público.
@@ -60,6 +68,7 @@ Os módulos de galerias e financeiro agora usam a API real; o navegador não cal
 
 ## Módulos
 
+- **Login e usuários:** autenticação JWT, troca obrigatória de senha, criação/reset por admin e perfis `Admin`/`Gestor`.
 - **Dashboard:** visão do dia com próximos ensaios, pendências e resumo financeiro.
 - **Agenda:** ensaios, status, remarcações e detalhes do atendimento.
 - **Pacotes:** duração, valor de tabela, fotos/vídeos inclusos, valor da foto extra e promoção opcional.
@@ -106,22 +115,25 @@ aguardando_upload → em_selecao → selecao_enviada → em_edicao → pronta_en
 
 - **Clientes, pacotes, agenda, contratos, galerias, financeiro, dashboard, modelos, estúdio e aceite** já usam a API real.
 - Galerias não usam mais Zustand persistido, localStorage ou IndexedDB.
-- O upload de fotos e vídeos é feito direto ao MinIO/S3 com URLs pré-assinadas, progresso e retomada.
+- O upload de fotos e vídeos é feito direto ao Garage/S3 com URLs pré-assinadas, progresso e retomada.
 
-## Rotas públicas
+## Rotas
 
-- `/assinar/:token` — aceite do contrato.
-- `/selecao/:token` — seleção de fotos e vídeos.
-- `/entrega/:token` — download das versões editadas e, quando liberados, dos RAW.
+- `/login` — autenticação.
+- `/trocar-senha` — troca obrigatória no primeiro acesso.
+- `/usuarios` — gestão de usuários (somente `ADMIN`).
+- `/assinar/:token` — aceite do contrato (público).
+- `/selecao/:token` — seleção de fotos e vídeos (público).
+- `/entrega/:token` — download das versões editadas e RAW (público).
 
 ## Limitações do protótipo
 
-- Sem autenticação.
+- Auth com JWT, mas sem MFA e sem reset por e-mail (senha temporária exibida uma vez pelo admin).
 - As telas de clientes, pacotes e contratos usam paginação/busca server-side. No boot, loaders de compatibilidade ainda percorrem todas as páginas para alimentar pickers e outras telas; eles serão removidos quando os módulos restantes migrarem.
 - Galerias e financeiro já usam a API real.
 - Upload de fotos até 50 MB e vídeos até 500 MB, com progresso e URLs assinadas. O processamento de derivados roda em background com polling.
 - A entrega baixa arquivos individualmente ou em ZIP; pós-processamento de vídeo fica para a próxima fase.
-- O comprovante de pagamento é enviado direto ao MinIO com URLs pré-assinadas, progresso real e limite de 10 MB. O IndexedDB não é mais usado para comprovantes.
+- O comprovante de pagamento é enviado direto ao Garage/S3 com URLs pré-assinadas, progresso real e limite de 10 MB. O IndexedDB não é mais usado para comprovantes.
 - O download do comprovante pelo staff usa URL assinada temporária; a rota será protegida na fase de autenticação.
 - A expiração dos links de galeria é validada pelo backend; a UI exibe o prazo e o estado.
 - Sem envio automático de WhatsApp ou e-mail.

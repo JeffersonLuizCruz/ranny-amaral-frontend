@@ -15,8 +15,10 @@ import { useKeyboardShortcuts } from '@/shared/hooks/useKeyboardShortcuts'
 import { useMediaQuery } from '@/shared/hooks/useMediaQuery'
 import { registerServiceWorker } from '@/shared/lib/pwa'
 import { useToastStore } from '@/shared/store/toastStore'
+import { useBootstrapData } from '@/app/useBootstrapData'
 
 export function AppShell() {
+  useBootstrapData()
   const isDesktop = useMediaQuery('(min-width: 1024px)')
   const location = useLocation()
   const navigate = useNavigate()

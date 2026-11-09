@@ -8,12 +8,14 @@ import {
   Package,
   Plus,
   RotateCcw,
+  ShieldCheck,
   Users,
   Wallet,
   X,
 } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 
+import { useAuthStore } from '@/features/auth/store/authStore'
 import { useAgendaStore } from '@/features/agenda/store/agendaStore'
 import { AgendaFilters } from '@/features/agenda/components/AgendaFilters'
 import { MiniCalendar } from '@/features/agenda/components/MiniCalendar'
@@ -47,6 +49,7 @@ const NAV_ITEMS = [
 ]
 
 export function Sidebar({ onNavigate, onClose }: SidebarProps) {
+  const isAdmin = useAuthStore((state) => state.usuario?.role === 'admin')
   const openCreateDrawer = useAgendaStore((state) => state.openCreateDrawer)
   const selectedDate = useAgendaStore((state) => state.selectedDate)
   const restoreClients = useClientStore((state) => state.restoreDemoData)
@@ -58,6 +61,9 @@ export function Sidebar({ onNavigate, onClose }: SidebarProps) {
   const restoreGalleries = useGalleryStore((state) => state.restoreDemoData)
   const addToast = useToastStore((state) => state.addToast)
   const { canInstall, installing, install } = useInstallPrompt()
+  const navItems = isAdmin
+    ? [...NAV_ITEMS, { to: '/usuarios', label: 'Usuários', icon: ShieldCheck, end: false }]
+    : NAV_ITEMS
 
   const handleInstall = async () => {
     const accepted = await install()
@@ -121,7 +127,7 @@ export function Sidebar({ onNavigate, onClose }: SidebarProps) {
 
       <div className="thin-scrollbar flex-1 overflow-y-auto px-3 pb-4">
         <nav aria-label="Navegação principal" className="mt-2 space-y-0.5">
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const Icon = item.icon
 
             return (

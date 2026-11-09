@@ -1,32 +1,67 @@
-name: CI
+name: CI/CD
 
 on:
   push:
     branches: ["**"]
+    tags: ["v*"]
   pull_request:
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
-  build:
-    name: Lint + build (React/TS)
+  test:
+    name: Lint, testes e build
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Configurar Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
 
-      - name: Instalar dependências
-        run: npm ci
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Testes
-        run: npm test
-
-      - name: Build e typecheck
-        run: npm run build
+  image:
+    name: Publicar imagem no GHCR
+    needs: test
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/ranny-amaral-frontend
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix=sha-
+            type=semver,pattern={{version}}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VITE_API_URL=https://api.rannyamaralfotografia.digital/api/v1
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Deploy no Coolify
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+        env:
+          COOLIFY_WEBHOOK: ${{ secrets.COOLIFY_FRONTEND_WEBHOOK }}
+        run: |
+          if [ -n "$COOLIFY_WEBHOOK" ]; then
+            curl -fsS -X POST "$COOLIFY_WEBHOOK"
+          fi

@@ -2,6 +2,9 @@ import { Navigate, RouterProvider, createBrowserRouter } from 'react-router-dom'
 
 import { AppShell } from '@/app/layout/AppShell'
 import { AgendaPage } from '@/features/agenda/components/AgendaPage'
+import { ChangePasswordPage } from '@/features/auth/components/ChangePasswordPage'
+import { LoginPage } from '@/features/auth/components/LoginPage'
+import { RequireAdmin, RequireAuth } from '@/features/auth/components/RequireAuth'
 import { ClientsPage } from '@/features/clients/components/ClientsPage'
 import { ContractDetailPage } from '@/features/contracts/components/ContractDetailPage'
 import { ContractsLayout } from '@/features/contracts/components/ContractsLayout'
@@ -16,6 +19,7 @@ import { GalleryDetailPage } from '@/features/galleries/components/GalleryDetail
 import { PublicDeliveryPage } from '@/features/galleries/components/public/PublicDeliveryPage'
 import { PublicSelectionPage } from '@/features/galleries/components/public/PublicSelectionPage'
 import { PackagesPage } from '@/features/packages/components/PackagesPage'
+import { UsersPage } from '@/features/users/components/UsersPage'
 
 const router = createBrowserRouter([
   {
@@ -31,8 +35,24 @@ const router = createBrowserRouter([
     element: <PublicDeliveryPage />,
   },
   {
+    path: '/login',
+    element: <LoginPage />,
+  },
+  {
+    path: '/trocar-senha',
+    element: (
+      <RequireAuth>
+        <ChangePasswordPage />
+      </RequireAuth>
+    ),
+  },
+  {
     path: '/',
-    element: <AppShell />,
+    element: (
+      <RequireAuth>
+        <AppShell />
+      </RequireAuth>
+    ),
     children: [
       { index: true, element: <DashboardPage /> },
       { path: 'agenda', element: <AgendaPage /> },
@@ -41,6 +61,14 @@ const router = createBrowserRouter([
       { path: 'galerias', element: <GalleriesPage /> },
       { path: 'galerias/:galeriaId', element: <GalleryDetailPage /> },
       { path: 'financeiro', element: <FinancePage /> },
+      {
+        path: 'usuarios',
+        element: (
+          <RequireAdmin>
+            <UsersPage />
+          </RequireAdmin>
+        ),
+      },
       {
         path: 'contratos',
         element: <ContractsLayout />,
