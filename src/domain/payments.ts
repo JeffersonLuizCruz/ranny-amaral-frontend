@@ -40,31 +40,67 @@ export interface PagamentoSaldo {
   observacoes?: string
 }
 
-export const PAGAMENTO_STATUS_META: Record<
-  PagamentoStatus,
-  { label: string; description: string; badge: string; dot: string }
-> = {
+type PagamentoStatusMeta = {
+  label: string
+  description: string
+  badge: string
+  dot: string
+}
+
+/**
+ * A entrada e o saldo final compartilham o mesmo enum de status, mas sao
+ * conceitos financeiros distintos. Manter catalogos separados evita que um
+ * "confirmado" da entrada seja lido como quitacao do ensaio inteiro.
+ */
+export const ENTRADA_STATUS_META: Record<PagamentoStatus, PagamentoStatusMeta> = {
   pendente: {
-    label: 'Pagamento pendente',
+    label: 'Entrada pendente',
     description: 'Entrada ainda não confirmada pelo estúdio.',
     badge: 'bg-amber-50 text-amber-800 ring-amber-200',
     dot: 'bg-amber-500',
   },
   confirmado: {
-    label: 'Pagamento confirmado',
+    label: 'Entrada confirmada',
     description: 'Entrada recebida e confirmada pelo estúdio.',
     badge: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
     dot: 'bg-emerald-500',
   },
   isento: {
-    label: 'Sem entrada',
+    label: 'Entrada isenta',
     description: 'Este ensaio não possui entrada a pagar.',
     badge: 'bg-slate-100 text-slate-600 ring-slate-200',
     dot: 'bg-slate-400',
   },
   cancelado: {
-    label: 'Pagamento cancelado',
-    description: 'O pagamento foi cancelado junto com o contrato.',
+    label: 'Entrada cancelada',
+    description: 'A entrada foi cancelada junto com o contrato.',
+    badge: 'bg-red-50 text-red-700 ring-red-200',
+    dot: 'bg-red-500',
+  },
+}
+
+export const SALDO_FINAL_STATUS_META: Record<PagamentoStatus, PagamentoStatusMeta> = {
+  pendente: {
+    label: 'Saldo final pendente',
+    description: 'Saldo final ainda não recebido pelo estúdio.',
+    badge: 'bg-amber-50 text-amber-800 ring-amber-200',
+    dot: 'bg-amber-500',
+  },
+  confirmado: {
+    label: 'Saldo final recebido',
+    description: 'Saldo final recebido e confirmado pelo estúdio.',
+    badge: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+    dot: 'bg-emerald-500',
+  },
+  isento: {
+    label: 'Saldo final isento',
+    description: 'Este ensaio não possui saldo final a receber.',
+    badge: 'bg-slate-100 text-slate-600 ring-slate-200',
+    dot: 'bg-slate-400',
+  },
+  cancelado: {
+    label: 'Saldo final cancelado',
+    description: 'O saldo final foi cancelado junto com o contrato.',
     badge: 'bg-red-50 text-red-700 ring-red-200',
     dot: 'bg-red-500',
   },

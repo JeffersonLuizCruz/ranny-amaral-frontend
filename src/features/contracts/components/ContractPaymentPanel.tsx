@@ -12,7 +12,7 @@ import { Button } from '@/shared/components/ui/Button'
 import { formatBRL } from '@/shared/lib/currency'
 import { mensagemDeErro } from '@/shared/api/errors'
 import { useToastStore } from '@/shared/store/toastStore'
-import { PagamentoStatusBadge } from '@/features/contracts/components/ContractStatusBadge'
+import { EntradaStatusBadge } from '@/features/contracts/components/ContractStatusBadge'
 import { useContractStore } from '@/features/contracts/store/contractStore'
 
 function formatDateTime(value?: string): string {
@@ -30,14 +30,14 @@ export function ContractPaymentPanel({ contrato }: { contrato: Contrato }) {
   const addToast = useToastStore((state) => state.addToast)
 
   const pagamento = contrato.pagamento
-  const isSettled = ['confirmado', 'isento'].includes(contrato.statusPagamento)
-  const canConfirm = contrato.statusPagamento === 'pendente'
+  const isSettled = contrato.entradaQuitada
+  const canConfirm = contrato.statusEntrada === 'pendente'
   const hasProof = Boolean(pagamento.comprovante)
 
   const handleConfirm = async () => {
     try {
       await confirmPayment(contrato.id)
-      addToast('Pagamento confirmado. Ensaio atualizado.')
+      addToast('Entrada confirmada. Ensaio atualizado.')
     } catch (error) {
       addToast(mensagemDeErro(error))
     }
@@ -98,8 +98,8 @@ export function ContractPaymentPanel({ contrato }: { contrato: Contrato }) {
             Acompanhe o comprovante e confirme o recebimento.
           </p>
         </div>
-        <PagamentoStatusBadge
-          status={contrato.statusPagamento}
+        <EntradaStatusBadge
+          status={contrato.statusEntrada}
           pagamento={pagamento}
         />
       </div>
@@ -155,8 +155,8 @@ export function ContractPaymentPanel({ contrato }: { contrato: Contrato }) {
       ) : (
         <p className="mt-3 rounded-xl border border-dashed border-line bg-canvas/60 p-3 text-[11px] text-muted">
           {isSettled
-            ? 'Pagamento concluído ou isento.'
-            : 'Aguardando o cliente enviar o comprovante de pagamento.'}
+            ? 'Entrada confirmada ou isenta.'
+            : 'Aguardando o cliente enviar o comprovante da entrada.'}
         </p>
       )}
 
@@ -165,7 +165,7 @@ export function ContractPaymentPanel({ contrato }: { contrato: Contrato }) {
           {canConfirm ? (
             <Button size="sm" onClick={handleConfirm}>
               <CheckCircle2 className="size-3.5" />
-              Confirmar pagamento
+              Confirmar entrada
             </Button>
           ) : null}
           {hasProof ? (

@@ -1,5 +1,48 @@
 import type { AgendamentoEnsaio, Cliente, PacoteFotografico } from './types'
 
+type AgendamentoSeed = Omit<
+  AgendamentoEnsaio,
+  | 'statusEntrada'
+  | 'statusSaldoFinal'
+  | 'entradaQuitada'
+  | 'saldoQuitado'
+  | 'quitado'
+  | 'valorRecebido'
+  | 'valorPendente'
+>
+
+function enriquecerPagamento(appointment: AgendamentoSeed): AgendamentoEnsaio {
+  const statusEntrada = appointment.pagamentoEntrada.status
+  const statusSaldoFinal =
+    appointment.pagamentoFinal?.status ??
+    (appointment.saldoRestante > 0 ? 'pendente' : 'isento')
+  const entradaQuitada =
+    statusEntrada === 'confirmado' || statusEntrada === 'isento'
+  const saldoQuitado =
+    statusSaldoFinal === 'confirmado' || statusSaldoFinal === 'isento'
+  const valorRecebido =
+    (statusEntrada === 'confirmado' ? appointment.pagamentoEntrada.valor : 0) +
+    (statusSaldoFinal === 'confirmado'
+      ? (appointment.pagamentoFinal?.valor ?? 0)
+      : 0)
+  const valorPendente =
+    (statusEntrada === 'pendente' ? appointment.pagamentoEntrada.valor : 0) +
+    (statusSaldoFinal === 'pendente'
+      ? (appointment.pagamentoFinal?.valor ?? appointment.saldoRestante)
+      : 0)
+
+  return {
+    ...appointment,
+    statusEntrada,
+    statusSaldoFinal,
+    entradaQuitada,
+    saldoQuitado,
+    quitado: entradaQuitada && saldoQuitado,
+    valorRecebido,
+    valorPendente,
+  }
+}
+
 export interface SeedData {
   packages: PacoteFotografico[]
   clients: Cliente[]
@@ -138,7 +181,7 @@ export function createSeedData(): SeedData {
     },
   ]
 
-  const appointments: AgendamentoEnsaio[] = [
+  const appointmentsSeed: AgendamentoSeed[] = [
     {
       id: 'apt-001',
       clienteId: 'cli-marina',
@@ -237,6 +280,8 @@ export function createSeedData(): SeedData {
       updatedAt: timestamp,
     },
   ]
+
+  const appointments = appointmentsSeed.map(enriquecerPagamento)
 
   return { packages, clients, appointments }
 }

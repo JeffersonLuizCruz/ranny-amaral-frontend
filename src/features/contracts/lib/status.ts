@@ -4,14 +4,14 @@ import type { Contrato } from '@/domain/contracts'
 export function appointmentStatusFromContract(contrato: Contrato): AgendamentoStatus {
   if (
     contrato.statusAceite === 'cancelado' ||
-    contrato.statusPagamento === 'cancelado'
+    contrato.statusEntrada === 'cancelado'
   ) {
     return 'cancelado'
   }
 
   if (
     contrato.statusAceite === 'aceito' &&
-    ['confirmado', 'isento'].includes(contrato.statusPagamento)
+    ['confirmado', 'isento'].includes(contrato.statusEntrada)
   ) {
     return 'confirmado'
   }

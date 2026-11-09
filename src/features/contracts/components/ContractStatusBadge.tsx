@@ -4,7 +4,7 @@ import {
   type ContratoPagamentoStatus,
 } from '@/domain/contracts'
 import type { PagamentoEntrada } from '@/domain/payments'
-import { PAGAMENTO_STATUS_META } from '@/domain/payments'
+import { ENTRADA_STATUS_META, SALDO_FINAL_STATUS_META } from '@/domain/payments'
 import { cn } from '@/shared/lib/cn'
 
 export function AceiteStatusBadge({
@@ -30,7 +30,7 @@ export function AceiteStatusBadge({
   )
 }
 
-export function PagamentoStatusBadge({
+export function EntradaStatusBadge({
   status,
   pagamento,
   className,
@@ -39,7 +39,7 @@ export function PagamentoStatusBadge({
   pagamento?: PagamentoEntrada
   className?: string
 }) {
-  const base = PAGAMENTO_STATUS_META[status]
+  const base = ENTRADA_STATUS_META[status]
   const emAnalise = status === 'pendente' && Boolean(pagamento?.comprovante)
   const rejeitado = status === 'pendente' && Boolean(pagamento?.rejeicao)
 
@@ -75,19 +75,45 @@ export function PagamentoStatusBadge({
   )
 }
 
+export function SaldoFinalStatusBadge({
+  status,
+  className,
+}: {
+  status: ContratoPagamentoStatus
+  className?: string
+}) {
+  const base = SALDO_FINAL_STATUS_META[status]
+
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ring-1 ring-inset',
+        base.badge,
+        className,
+      )}
+    >
+      <span className={cn('size-1.5 rounded-full', base.dot)} />
+      {base.label}
+    </span>
+  )
+}
+
 export function ContractStatusBadges({
   aceite,
-  pagamentoStatus,
+  entradaStatus,
   pagamento,
+  saldoStatus,
 }: {
   aceite: ContratoAceiteStatus
-  pagamentoStatus: ContratoPagamentoStatus
+  entradaStatus: ContratoPagamentoStatus
   pagamento?: PagamentoEntrada
+  saldoStatus?: ContratoPagamentoStatus
 }) {
   return (
     <div className="flex flex-wrap items-center gap-1.5">
       <AceiteStatusBadge status={aceite} />
-      <PagamentoStatusBadge status={pagamentoStatus} pagamento={pagamento} />
+      <EntradaStatusBadge status={entradaStatus} pagamento={pagamento} />
+      {saldoStatus ? <SaldoFinalStatusBadge status={saldoStatus} /> : null}
     </div>
   )
 }

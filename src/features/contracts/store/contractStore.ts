@@ -32,7 +32,8 @@ import type { Pagina } from '@/shared/api/types'
 export interface FiltrosContratosPagina {
   q?: string
   statusAceite?: ContratoAceiteStatus
-  statusPagamento?: ContratoPagamentoStatus
+  statusEntrada?: ContratoPagamentoStatus
+  statusSaldoFinal?: ContratoPagamentoStatus
   clienteId?: string
   agendamentoId?: string
   pagina?: number
@@ -103,6 +104,13 @@ function sincronizarAgendamento(contrato: Contrato): void {
       status: appointmentStatusFromContract(contrato),
       pagamentoEntrada: contrato.pagamento,
       pagamentoFinal: contrato.pagamentoFinal,
+      statusEntrada: contrato.statusEntrada,
+      statusSaldoFinal: contrato.statusSaldoFinal,
+      entradaQuitada: contrato.entradaQuitada,
+      saldoQuitado: contrato.saldoQuitado,
+      quitado: contrato.quitado,
+      valorRecebido: contrato.valorRecebido,
+      valorPendente: contrato.valorPendente,
     },
   ])
 }

@@ -140,7 +140,6 @@ export function buildContractDraftFromAppointment(
       percentual: percentualEntrada,
     },
     pagamentoFinal,
-    statusPagamentoFinal: pagamentoFinal.status,
     formaPagamento,
     condicoesPagamento:
       'Entrada na reserva; saldo no dia do ensaio, via Pix ou dinheiro, registrado pelo estúdio.',

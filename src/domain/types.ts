@@ -1,4 +1,4 @@
-import type { PagamentoEntrada, PagamentoSaldo } from './payments'
+import type { PagamentoEntrada, PagamentoSaldo, PagamentoStatus } from './payments'
 
 export type CalendarView = 'month' | 'week' | 'day'
 
@@ -97,6 +97,14 @@ export interface AgendamentoEnsaio {
   pagamentoEntrada: PagamentoEntrada
   /** Saldo final recebido manualmente pelo staff. */
   pagamentoFinal?: PagamentoSaldo
+  /** Campos derivados pelo backend para evitar regra duplicada no frontend. */
+  statusEntrada: PagamentoStatus
+  statusSaldoFinal: PagamentoStatus
+  entradaQuitada: boolean
+  saldoQuitado: boolean
+  quitado: boolean
+  valorRecebido: number
+  valorPendente: number
   /** Snapshot das regras de mídia e preço de foto extra. */
   condicoesPacote?: CondicoesPacote
 
@@ -124,7 +132,19 @@ export interface AgendamentoEnsaio {
 /** Payloads aceitos pelas stores. */
 export type PacoteDraft = Omit<PacoteFotografico, 'id' | 'createdAt' | 'updatedAt'>
 export type ClienteDraft = Omit<Cliente, 'id' | 'createdAt' | 'updatedAt'>
-export type AgendamentoDraft = Omit<AgendamentoEnsaio, 'id' | 'createdAt' | 'updatedAt'>
+export type AgendamentoDraft = Omit<
+  AgendamentoEnsaio,
+  | 'id'
+  | 'createdAt'
+  | 'updatedAt'
+  | 'statusEntrada'
+  | 'statusSaldoFinal'
+  | 'entradaQuitada'
+  | 'saldoQuitado'
+  | 'quitado'
+  | 'valorRecebido'
+  | 'valorPendente'
+>
 
 export type AppointmentDrawerMode = 'create' | 'edit' | 'view'
 

@@ -221,7 +221,17 @@ export function createContractSeedData(): ContractSeedData {
         valor: saldoRestante,
         status: saldoRestante > 0 ? 'pendente' : 'isento',
       }
-    const statusPagamentoFinal = extra.statusPagamentoFinal ?? pagamentoFinal.status
+    const statusSaldoFinal = extra.statusSaldoFinal ?? pagamentoFinal.status
+    const statusEntrada = pagamento.status
+    const entradaQuitada = statusEntrada === 'confirmado' || statusEntrada === 'isento'
+    const saldoQuitado =
+      statusSaldoFinal === 'confirmado' || statusSaldoFinal === 'isento'
+    const valorRecebido =
+      (statusEntrada === 'confirmado' ? pagamento.valor : 0) +
+      (statusSaldoFinal === 'confirmado' ? pagamentoFinal.valor : 0)
+    const valorPendente =
+      (statusEntrada === 'pendente' ? pagamento.valor : 0) +
+      (statusSaldoFinal === 'pendente' ? pagamentoFinal.valor : 0)
     const formaPagamento = extra.formaPagamento ?? 'Pix'
     const clausulas = resolveContractClauses(template.clausulas, {
       estudio: studio,
@@ -275,7 +285,6 @@ export function createContractSeedData(): ContractSeedData {
       pacoteId: pacote.id,
       modeloId: template.id,
       statusAceite,
-      statusPagamento: pagamento.status,
       titulo: template.nome,
       clausulas,
       clausulasModelo: template.clausulas,
@@ -286,7 +295,13 @@ export function createContractSeedData(): ContractSeedData {
       saldoRestante,
       pagamento,
       pagamentoFinal,
-      statusPagamentoFinal,
+      statusEntrada,
+      statusSaldoFinal,
+      entradaQuitada,
+      saldoQuitado,
+      quitado: entradaQuitada && saldoQuitado,
+      valorRecebido,
+      valorPendente,
       formaPagamento,
       condicoesPagamento:
         'Entrada na reserva; saldo no dia do ensaio, via Pix ou dinheiro, registrado pelo estúdio.',
@@ -393,7 +408,7 @@ export function createContractSeedData(): ContractSeedData {
           recebidoEm: new Date(now.getTime() - 1 * 86_400_000).toISOString(),
           recebidoPor: 'Equipe Photoizer',
         },
-        statusPagamentoFinal: 'confirmado',
+        statusSaldoFinal: 'confirmado',
         historico: [
           {
             id: createId('evt'),

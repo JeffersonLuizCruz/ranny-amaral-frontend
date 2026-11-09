@@ -40,16 +40,8 @@ export function CreateGalleryDialog({ open, onClose }: CreateGalleryDialogProps)
       const contrato = contratos.find(
         (item) => item.agendamentoId === appointment.id,
       )
-      const entradaOk =
-        contrato?.statusPagamento === 'confirmado' ||
-        contrato?.statusPagamento === 'isento' ||
-        appointment.pagamentoEntrada.status === 'confirmado' ||
-        appointment.pagamentoEntrada.status === 'isento'
-      const saldoOk =
-        contrato?.statusPagamentoFinal === 'confirmado' ||
-        contrato?.statusPagamentoFinal === 'isento' ||
-        appointment.pagamentoFinal?.status === 'confirmado' ||
-        appointment.pagamentoFinal?.status === 'isento'
+      const entradaOk = contrato?.entradaQuitada ?? appointment.entradaQuitada
+      const saldoOk = contrato?.saldoQuitado ?? appointment.saldoQuitado
 
       return entradaOk && saldoOk
     })

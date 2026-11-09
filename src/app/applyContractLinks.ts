@@ -21,6 +21,13 @@ export function aplicarVinculosDeContratos() {
         status: appointmentStatusFromContract(contrato),
         pagamentoEntrada: contrato.pagamento,
         pagamentoFinal: contrato.pagamentoFinal,
+        statusEntrada: contrato.statusEntrada,
+        statusSaldoFinal: contrato.statusSaldoFinal,
+        entradaQuitada: contrato.entradaQuitada,
+        saldoQuitado: contrato.saldoQuitado,
+        quitado: contrato.quitado,
+        valorRecebido: contrato.valorRecebido,
+        valorPendente: contrato.valorPendente,
       },
     ]
   })

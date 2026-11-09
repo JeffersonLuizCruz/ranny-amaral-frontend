@@ -148,8 +148,9 @@ export function ContractDetailPage() {
         <span className="text-xs font-semibold text-ink">{contrato.numero}</span>
         <ContractStatusBadges
           aceite={contrato.statusAceite}
-          pagamentoStatus={contrato.statusPagamento}
+          entradaStatus={contrato.statusEntrada}
           pagamento={contrato.pagamento}
+          saldoStatus={contrato.statusSaldoFinal}
         />
 
         <div className="ml-auto flex flex-wrap items-center gap-1.5">

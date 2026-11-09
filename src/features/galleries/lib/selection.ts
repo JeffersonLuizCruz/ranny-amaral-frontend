@@ -117,10 +117,6 @@ export function entregaDisponivel(galeria: GaleriaEnsaio, now = new Date()): boo
   )
 }
 
-function pagamentoLiquidado(status?: string): boolean {
-  return status === 'confirmado' || status === 'isento'
-}
-
 export function podePublicarSelecao(input: {
   galeria: GaleriaEnsaio
   appointment?: AgendamentoEnsaio
@@ -135,15 +131,14 @@ export function podePublicarSelecao(input: {
     motivos.push('Marque o ensaio como realizado antes de publicar a galeria.')
   }
 
-  const entradaStatus = contrato?.statusPagamento ?? appointment?.pagamentoEntrada.status
-  const saldoStatus =
-    contrato?.statusPagamentoFinal ?? appointment?.pagamentoFinal?.status
+  const entradaQuitada = contrato?.entradaQuitada ?? appointment?.entradaQuitada ?? false
+  const saldoQuitado = contrato?.saldoQuitado ?? appointment?.saldoQuitado ?? false
 
-  if (!pagamentoLiquidado(entradaStatus)) {
+  if (!entradaQuitada) {
     motivos.push('A entrada do ensaio ainda não foi confirmada.')
   }
-  if (!pagamentoLiquidado(saldoStatus)) {
-    motivos.push('Registre o recebimento do saldo final antes de publicar a galeria.')
+  if (!saldoQuitado) {
+    motivos.push('Registre o recebimento integral do saldo final antes de publicar a galeria.')
   }
 
   const fotos = contarMidias(galeria.midias, 'foto')

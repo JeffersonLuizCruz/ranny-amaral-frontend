@@ -4,7 +4,7 @@ import { CalendarDays, ChevronRight, Wallet } from 'lucide-react'
 
 import type { EntradaFinanceira } from '@/features/finance/api/financeiroApi'
 import { StatusBadge } from '@/features/appointments/components/StatusBadge'
-import { PagamentoStatusBadge } from '@/features/contracts/components/ContractStatusBadge'
+import { EntradaStatusBadge } from '@/features/contracts/components/ContractStatusBadge'
 import { Button } from '@/shared/components/ui/Button'
 import { formatBRL } from '@/shared/lib/currency'
 import { formatTimeRange } from '@/shared/lib/date'
@@ -77,7 +77,7 @@ export function FinanceAppointmentList({
                       {formatBRL(entry.valorTotal)}
                     </span>
                     <span aria-hidden="true">·</span>
-                    <PagamentoStatusBadge status={entry.statusEntrada} />
+                    <EntradaStatusBadge status={entry.statusEntrada} />
                   </span>
                 </span>
 
@@ -86,7 +86,7 @@ export function FinanceAppointmentList({
                     {formatBRL(entry.valorTotal)}
                   </span>
                   <span className="mt-1 flex justify-end">
-                    <PagamentoStatusBadge status={entry.statusEntrada} />
+                    <EntradaStatusBadge status={entry.statusEntrada} />
                   </span>
                   <span className="mt-0.5 block text-[10px] text-muted">
                     Saldo {formatBRL(entry.saldoRestante)} ·{' '}

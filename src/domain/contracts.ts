@@ -129,7 +129,6 @@ export interface Contrato {
   pacoteId?: string
   modeloId: string
   statusAceite: ContratoAceiteStatus
-  statusPagamento: ContratoPagamentoStatus
   titulo: string
   clausulas: ContratoClausula[]
   /** Cláusulas originais do modelo, com placeholders, para re-resolver no aceite. */
@@ -143,7 +142,15 @@ export interface Contrato {
   pagamento: PagamentoEntrada
   /** Saldo final recebido manualmente pelo staff após o ensaio. */
   pagamentoFinal: PagamentoSaldo
-  statusPagamentoFinal: PagamentoStatus
+  /** Status explícito da entrada. */
+  statusEntrada: ContratoPagamentoStatus
+  /** Status explícito do saldo final. */
+  statusSaldoFinal: PagamentoStatus
+  entradaQuitada: boolean
+  saldoQuitado: boolean
+  quitado: boolean
+  valorRecebido: number
+  valorPendente: number
   formaPagamento: string
   condicoesPagamento?: string
   dataEmissao: string
@@ -189,7 +196,13 @@ export type ContratoDraft = Omit<
   | 'id'
   | 'numero'
   | 'statusAceite'
-  | 'statusPagamento'
+  | 'statusEntrada'
+  | 'statusSaldoFinal'
+  | 'entradaQuitada'
+  | 'saldoQuitado'
+  | 'quitado'
+  | 'valorRecebido'
+  | 'valorPendente'
   | 'historico'
   | 'aceite'
   | 'solicitacaoAtualId'

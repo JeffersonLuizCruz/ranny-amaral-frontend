@@ -8,7 +8,7 @@ import {
   type ContratoAceiteStatus,
   type ContratoPagamentoStatus,
 } from '@/domain/contracts'
-import { PAGAMENTO_STATUS_META } from '@/domain/payments'
+import { ENTRADA_STATUS_META, SALDO_FINAL_STATUS_META } from '@/domain/payments'
 import { Button } from '@/shared/components/ui/Button'
 import { EmptyState } from '@/shared/components/ui/EmptyState'
 import { inputClass } from '@/shared/components/ui/Field'
@@ -39,7 +39,8 @@ export function ContractsPage() {
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
   const [aceite, setAceite] = useState<AceiteFilter>('todos')
-  const [pagamento, setPagamento] = useState<PagamentoFilter>('todos')
+  const [entrada, setEntrada] = useState<PagamentoFilter>('todos')
+  const [saldoFinal, setSaldoFinal] = useState<PagamentoFilter>('todos')
   const [pagina, setPagina] = useState(0)
   const [tamanho, setTamanho] = useState(12)
   const queryDebounced = useDebouncedValue(query)
@@ -48,11 +49,12 @@ export function ContractsPage() {
     void carregarPaginaContratos({
       q: queryDebounced.trim() || undefined,
       statusAceite: aceite === 'todos' ? undefined : aceite,
-      statusPagamento: pagamento === 'todos' ? undefined : pagamento,
+      statusEntrada: entrada === 'todos' ? undefined : entrada,
+      statusSaldoFinal: saldoFinal === 'todos' ? undefined : saldoFinal,
       pagina,
       tamanho,
     }).catch(() => undefined)
-  }, [aceite, carregarPaginaContratos, pagina, pagamento, queryDebounced, tamanho])
+  }, [aceite, carregarPaginaContratos, entrada, pagina, queryDebounced, saldoFinal, tamanho])
 
   const items = paginaContratos?.itens ?? []
 
@@ -60,14 +62,19 @@ export function ContractsPage() {
     carregarPaginaContratos({
       q: queryDebounced.trim() || undefined,
       statusAceite: aceite === 'todos' ? undefined : aceite,
-      statusPagamento: pagamento === 'todos' ? undefined : pagamento,
+      statusEntrada: entrada === 'todos' ? undefined : entrada,
+      statusSaldoFinal: saldoFinal === 'todos' ? undefined : saldoFinal,
       pagina,
       tamanho,
     })
 
   const filtrosAtivos = useMemo(
-    () => aceite !== 'todos' || pagamento !== 'todos' || query.trim().length > 0,
-    [aceite, pagamento, query],
+    () =>
+      aceite !== 'todos' ||
+      entrada !== 'todos' ||
+      saldoFinal !== 'todos' ||
+      query.trim().length > 0,
+    [aceite, entrada, query, saldoFinal],
   )
 
   return (
@@ -130,35 +137,68 @@ export function ContractsPage() {
           })}
         </div>
 
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="mr-1 text-[10px] font-semibold uppercase tracking-wide text-muted">
-            Pagamento
-          </span>
-          <FilterChip
-            active={pagamento === 'todos'}
-            label="Todos"
-            onClick={() => {
-              setPagamento('todos')
-              setPagina(0)
-            }}
-          />
-          {PAGAMENTO_ORDER.map((item) => {
-            const count = contratos.filter(
-              (contrato) => contrato.statusPagamento === item,
-            ).length
-            return (
-              <FilterChip
-                key={item}
-                active={pagamento === item}
-                label={`${PAGAMENTO_STATUS_META[item].label} (${count})`}
-                dot={PAGAMENTO_STATUS_META[item].dot}
-                onClick={() => {
-                  setPagamento(item)
-                  setPagina(0)
-                }}
-              />
-            )
-          })}
+        <div className="space-y-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="mr-1 text-[10px] font-semibold uppercase tracking-wide text-muted">
+              Entrada
+            </span>
+            <FilterChip
+              active={entrada === 'todos'}
+              label="Todos"
+              onClick={() => {
+                setEntrada('todos')
+                setPagina(0)
+              }}
+            />
+            {PAGAMENTO_ORDER.map((item) => {
+              const count = contratos.filter(
+                (contrato) => contrato.statusEntrada === item,
+              ).length
+              return (
+                <FilterChip
+                  key={`entrada-${item}`}
+                  active={entrada === item}
+                  label={`${ENTRADA_STATUS_META[item].label} (${count})`}
+                  dot={ENTRADA_STATUS_META[item].dot}
+                  onClick={() => {
+                    setEntrada(item)
+                    setPagina(0)
+                  }}
+                />
+              )
+            })}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="mr-1 text-[10px] font-semibold uppercase tracking-wide text-muted">
+              Saldo final
+            </span>
+            <FilterChip
+              active={saldoFinal === 'todos'}
+              label="Todos"
+              onClick={() => {
+                setSaldoFinal('todos')
+                setPagina(0)
+              }}
+            />
+            {PAGAMENTO_ORDER.map((item) => {
+              const count = contratos.filter(
+                (contrato) => contrato.statusSaldoFinal === item,
+              ).length
+              return (
+                <FilterChip
+                  key={`saldo-${item}`}
+                  active={saldoFinal === item}
+                  label={`${SALDO_FINAL_STATUS_META[item].label} (${count})`}
+                  dot={SALDO_FINAL_STATUS_META[item].dot}
+                  onClick={() => {
+                    setSaldoFinal(item)
+                    setPagina(0)
+                  }}
+                />
+              )
+            })}
+          </div>
         </div>
       </div>
 
@@ -190,7 +230,7 @@ export function ContractsPage() {
             }
             description={
               filtrosAtivos
-                ? 'Ajuste a busca ou os filtros de aceite e pagamento.'
+                ? 'Ajuste a busca ou os filtros de aceite, entrada e saldo final.'
                 : 'Crie um ensaio para gerar o contrato automaticamente.'
             }
             action={

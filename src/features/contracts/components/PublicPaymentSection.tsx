@@ -6,7 +6,7 @@ import { Button } from '@/shared/components/ui/Button'
 import { UploadProgress } from '@/shared/components/ui/UploadProgress'
 import { formatBRL } from '@/shared/lib/currency'
 import type { UploadProgress as UploadProgressValue } from '@/shared/upload/types'
-import { PagamentoStatusBadge } from '@/features/contracts/components/ContractStatusBadge'
+import { EntradaStatusBadge } from '@/features/contracts/components/ContractStatusBadge'
 import { PROOF_ACCEPT, validateProofFile } from '@/features/contracts/lib/proofFile'
 
 interface PublicPaymentSectionProps {
@@ -31,7 +31,7 @@ export function PublicPaymentSection({
 
   const proof = contrato.pagamento.comprovante
   const rejected = contrato.pagamento.rejeicao
-  const canUpload = contrato.statusPagamento === 'pendente' && (!proof || Boolean(rejected))
+  const canUpload = contrato.statusEntrada === 'pendente' && (!proof || Boolean(rejected))
 
   const handleFileChange = (nextFile: File | null) => {
     setFileError('')
@@ -57,8 +57,8 @@ export function PublicPaymentSection({
             Envie o comprovante para o estúdio confirmar o recebimento.
           </p>
         </div>
-        <PagamentoStatusBadge
-          status={contrato.statusPagamento}
+        <EntradaStatusBadge
+          status={contrato.statusEntrada}
           pagamento={contrato.pagamento}
         />
       </div>
@@ -166,13 +166,18 @@ export function PublicPaymentSection({
         </div>
       ) : null}
 
-      {contrato.statusPagamento === 'confirmado' ? (
+      {contrato.statusEntrada === 'confirmado' ? (
         <p className="mt-3 rounded-lg bg-emerald-50 px-2.5 py-2 text-[11px] text-emerald-700">
-          Pagamento confirmado pelo estúdio.
+          Entrada confirmada pelo estúdio.{' '}
+          {contrato.statusSaldoFinal === 'confirmado'
+            ? 'Saldo final já recebido.'
+            : contrato.statusSaldoFinal === 'isento'
+              ? 'Saldo final isento.'
+              : `Saldo final de ${formatBRL(contrato.saldoRestante)} será recebido no dia do ensaio.`}
         </p>
       ) : null}
 
-      {contrato.statusPagamento === 'isento' ? (
+      {contrato.statusEntrada === 'isento' ? (
         <p className="mt-3 flex items-center gap-1.5 rounded-lg bg-slate-50 px-2.5 py-2 text-[11px] text-slate-600">
           <Wallet className="size-3.5" />
           Este ensaio não possui entrada a pagar.

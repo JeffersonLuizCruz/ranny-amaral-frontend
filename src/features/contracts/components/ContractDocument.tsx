@@ -2,7 +2,7 @@ import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
 import type { Contrato, DadosAceite } from '@/domain/contracts'
-import { PAGAMENTO_STATUS_META } from '@/domain/payments'
+import { ENTRADA_STATUS_META, SALDO_FINAL_STATUS_META } from '@/domain/payments'
 import { cn } from '@/shared/lib/cn'
 import { formatBRL } from '@/shared/lib/currency'
 import {
@@ -127,7 +127,8 @@ export function ContractDocument({
             <p>Entrada: {formatBRL(contrato.valorEntrada)} ({contrato.percentualEntrada}%)</p>
             <p>Saldo restante: {formatBRL(contrato.saldoRestante)}</p>
             <p>Forma de pagamento: {contrato.formaPagamento}</p>
-            <p>Status do pagamento: {PAGAMENTO_STATUS_META[contrato.statusPagamento].label}</p>
+            <p>Status da entrada: {ENTRADA_STATUS_META[contrato.statusEntrada].label}</p>
+            <p>Status do saldo final: {SALDO_FINAL_STATUS_META[contrato.statusSaldoFinal].label}</p>
             {pacote ? <p>Pacote: {pacote.nome}</p> : null}
             {pacote ? <p>Duração: {formatDuration(pacote.duracaoMinutos)}</p> : null}
             {agendamento ? (

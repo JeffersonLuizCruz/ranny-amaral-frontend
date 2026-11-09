@@ -31,6 +31,13 @@ export interface VinculoContrato {
   status: AgendamentoStatus
   pagamentoEntrada?: PagamentoEntrada
   pagamentoFinal?: PagamentoSaldo
+  statusEntrada: PagamentoStatus
+  statusSaldoFinal: PagamentoStatus
+  entradaQuitada: boolean
+  saldoQuitado: boolean
+  quitado: boolean
+  valorRecebido: number
+  valorPendente: number
 }
 
 interface AppointmentState {
@@ -216,6 +223,13 @@ export const useAppointmentStore = create<AppointmentState>()((set, get) => ({
             appointment.status === 'realizado' ? appointment.status : vinculo.status,
           pagamentoEntrada: vinculo.pagamentoEntrada ?? appointment.pagamentoEntrada,
           pagamentoFinal: vinculo.pagamentoFinal ?? appointment.pagamentoFinal,
+          statusEntrada: vinculo.statusEntrada,
+          statusSaldoFinal: vinculo.statusSaldoFinal,
+          entradaQuitada: vinculo.entradaQuitada,
+          saldoQuitado: vinculo.saldoQuitado,
+          quitado: vinculo.quitado,
+          valorRecebido: vinculo.valorRecebido,
+          valorPendente: vinculo.valorPendente,
           updatedAt: new Date().toISOString(),
         }
       }),

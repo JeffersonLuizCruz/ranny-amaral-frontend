@@ -54,6 +54,10 @@ export function FinalPaymentDialog({
       setErro('Informe um valor recebido maior que zero.')
       return
     }
+    if (Math.round(valorRecebido * 100) !== Math.round(saldo * 100)) {
+      setErro(`O saldo final deve ser recebido integralmente (${formatBRL(saldo)}).`)
+      return
+    }
     if (!recebidoEm) {
       setErro('Informe a data do recebimento.')
       return
@@ -112,6 +116,7 @@ export function FinalPaymentDialog({
               data-autofocus
               type="number"
               min={0}
+              max={saldo}
               step={0.01}
               inputMode="decimal"
               value={valor}

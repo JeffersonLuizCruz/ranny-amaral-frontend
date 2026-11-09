@@ -110,7 +110,7 @@ interface ContratoDto {
   pacoteId: string | null
   modeloId: string
   statusAceite: ContratoAceiteStatus
-  statusPagamento: ContratoPagamentoStatus
+  statusEntrada: ContratoPagamentoStatus
   titulo: string
   clausulas: ContratoClausula[]
   clausulasModelo: ContratoClausula[]
@@ -121,7 +121,12 @@ interface ContratoDto {
   saldoRestante: number
   pagamento: PagamentoEntradaDto | null
   pagamentoFinal: PagamentoSaldoDto | null
-  statusPagamentoFinal: ContratoPagamentoStatus
+  statusSaldoFinal: ContratoPagamentoStatus
+  entradaQuitada: boolean
+  saldoQuitado: boolean
+  quitado: boolean
+  valorRecebido: number
+  valorPendente: number
   formaPagamento: string | null
   condicoesPagamento: string | null
   dataEmissao: string
@@ -252,7 +257,6 @@ export function toContrato(dto: ContratoDto): Contrato {
     pacoteId: dto.pacoteId ?? undefined,
     modeloId: dto.modeloId,
     statusAceite: dto.statusAceite,
-    statusPagamento: dto.statusPagamento,
     titulo: dto.titulo,
     clausulas: dto.clausulas,
     clausulasModelo: dto.clausulasModelo,
@@ -263,7 +267,13 @@ export function toContrato(dto: ContratoDto): Contrato {
     saldoRestante: dto.saldoRestante,
     pagamento: toPagamentoEntrada(dto.pagamento),
     pagamentoFinal: toPagamentoSaldo(dto.pagamentoFinal),
-    statusPagamentoFinal: dto.statusPagamentoFinal,
+    statusEntrada: dto.statusEntrada,
+    statusSaldoFinal: dto.statusSaldoFinal,
+    entradaQuitada: dto.entradaQuitada,
+    saldoQuitado: dto.saldoQuitado,
+    quitado: dto.quitado,
+    valorRecebido: dto.valorRecebido,
+    valorPendente: dto.valorPendente,
     formaPagamento: dto.formaPagamento ?? '',
     condicoesPagamento: dto.condicoesPagamento ?? undefined,
     dataEmissao: dto.dataEmissao,
@@ -310,7 +320,8 @@ function toRequest(draft: ContratoDraft): ContratoRequestPayload {
 export interface ContratosFiltros {
   q?: string
   statusAceite?: ContratoAceiteStatus
-  statusPagamento?: ContratoPagamentoStatus
+  statusEntrada?: ContratoPagamentoStatus
+  statusSaldoFinal?: ContratoPagamentoStatus
   clienteId?: string
   agendamentoId?: string
   pagina?: number
@@ -324,7 +335,8 @@ export async function listarContratosPagina(
   const query = toQuery({
     q: filtros.q,
     statusAceite: filtros.statusAceite,
-    statusPagamento: filtros.statusPagamento,
+    statusEntrada: filtros.statusEntrada,
+    statusSaldoFinal: filtros.statusSaldoFinal,
     clienteId: filtros.clienteId,
     agendamentoId: filtros.agendamentoId,
     pagina: filtros.pagina,

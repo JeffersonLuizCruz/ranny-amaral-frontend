@@ -72,6 +72,13 @@ interface AgendamentoDto {
   saldoRestante: number
   pagamentoEntrada: PagamentoEntradaDto | null
   pagamentoFinal: PagamentoSaldoDto | null
+  statusEntrada: PagamentoStatus
+  statusSaldoFinal: PagamentoStatus
+  entradaQuitada: boolean
+  saldoQuitado: boolean
+  quitado: boolean
+  valorRecebido: number
+  valorPendente: number
   condicoesPacote: CondicoesPacoteDto | null
   galeriaId: string | null
   createdAt: string
@@ -158,6 +165,13 @@ function toAgendamento(dto: AgendamentoDto): AgendamentoEnsaio {
     saldoRestante: dto.saldoRestante,
     pagamentoEntrada: toPagamentoEntrada(dto.pagamentoEntrada),
     pagamentoFinal: toPagamentoSaldo(dto.pagamentoFinal),
+    statusEntrada: dto.statusEntrada,
+    statusSaldoFinal: dto.statusSaldoFinal,
+    entradaQuitada: dto.entradaQuitada,
+    saldoQuitado: dto.saldoQuitado,
+    quitado: dto.quitado,
+    valorRecebido: dto.valorRecebido,
+    valorPendente: dto.valorPendente,
     condicoesPacote: toCondicoes(dto.condicoesPacote),
     galeriaId: dto.galeriaId ?? undefined,
     createdAt: dto.createdAt,

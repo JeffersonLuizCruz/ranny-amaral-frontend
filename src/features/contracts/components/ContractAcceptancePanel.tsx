@@ -154,15 +154,15 @@ export function ContractAcceptancePanel({ contrato }: { contrato: Contrato }) {
             ) : null}
           </dl>
 
-          {contrato.statusPagamento === 'pendente' ? (
+          {contrato.statusEntrada === 'pendente' ? (
             <div className="mt-3 border-t border-emerald-200 pt-2">
               <p className="text-[10px] text-emerald-900/80">
-                Pagamento pendente. O cliente pode usar o mesmo link para enviar o
+                Entrada pendente. O cliente pode usar o mesmo link para enviar o
                 comprovante.
               </p>
               <Button size="sm" variant="secondary" className="mt-2" onClick={handleCopy}>
                 <Copy className="size-3.5" />
-                Copiar link para pagamento
+                Copiar link para comprovante
               </Button>
             </div>
           ) : null}

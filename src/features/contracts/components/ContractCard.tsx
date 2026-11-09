@@ -54,8 +54,9 @@ export function ContractCard({ contrato }: ContractCardProps) {
       <div className="mt-2">
         <ContractStatusBadges
           aceite={contrato.statusAceite}
-          pagamentoStatus={contrato.statusPagamento}
+          entradaStatus={contrato.statusEntrada}
           pagamento={contrato.pagamento}
+          saldoStatus={contrato.statusSaldoFinal}
         />
       </div>
 

@@ -10,6 +10,7 @@ import { mensagemDeErro } from '@/shared/api/errors'
 import { useToastStore } from '@/shared/store/toastStore'
 import { useContractStore } from '@/features/contracts/store/contractStore'
 import { FinalPaymentDialog } from '@/features/contracts/components/FinalPaymentDialog'
+import { SaldoFinalStatusBadge } from '@/features/contracts/components/ContractStatusBadge'
 
 interface FinalPaymentPanelProps {
   appointment?: AgendamentoEnsaio
@@ -44,7 +45,7 @@ export function FinalPaymentPanel({
 
   const saldo = contrato?.saldoRestante ?? appointment?.saldoRestante ?? 0
   const pagamentoFinal = contrato?.pagamentoFinal ?? appointment?.pagamentoFinal
-  const status = contrato?.statusPagamentoFinal ?? pagamentoFinal?.status ?? 'pendente'
+  const status = contrato?.statusSaldoFinal ?? appointment?.statusSaldoFinal ?? pagamentoFinal?.status ?? 'pendente'
   const confirmado = status === 'confirmado'
   const isento = status === 'isento'
   const liquidado = confirmado || isento
@@ -77,17 +78,7 @@ export function FinalPaymentPanel({
             Saldo final
           </p>
         </div>
-        <span
-          className={
-            confirmado
-              ? 'rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-emerald-200'
-              : isento
-                ? 'rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600 ring-1 ring-slate-200'
-                : 'rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-800 ring-1 ring-amber-200'
-          }
-        >
-          {confirmado ? 'Recebido' : isento ? 'Isento' : 'Pendente'}
-        </span>
+        <SaldoFinalStatusBadge status={status} />
       </div>
 
       <div className="mt-2 flex flex-wrap items-end justify-between gap-2">

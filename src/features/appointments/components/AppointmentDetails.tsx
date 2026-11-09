@@ -21,7 +21,7 @@ import { financeIntegration } from '@/integrations/finance'
 import { whatsappReminders } from '@/integrations/whatsapp'
 import { Badge } from '@/shared/components/ui/Badge'
 import { Button } from '@/shared/components/ui/Button'
-import { PagamentoStatusBadge } from '@/features/contracts/components/ContractStatusBadge'
+import { EntradaStatusBadge } from '@/features/contracts/components/ContractStatusBadge'
 import { cn } from '@/shared/lib/cn'
 import { formatBRL } from '@/shared/lib/currency'
 import {
@@ -77,13 +77,9 @@ export function AppointmentDetails({
       item.agendamentoId === appointment.id,
   )
   const [confirmingDelete, setConfirmingDelete] = useState(false)
-  const entradaLiquidada =
-    pagamento.status === 'confirmado' || pagamento.status === 'isento'
-  const saldoLiquidado =
-    contrato?.statusPagamentoFinal === 'confirmado' ||
-    contrato?.statusPagamentoFinal === 'isento' ||
-    appointment.pagamentoFinal?.status === 'confirmado' ||
-    appointment.pagamentoFinal?.status === 'isento'
+  const entradaStatus = contrato?.statusEntrada ?? appointment.statusEntrada
+  const entradaLiquidada = contrato?.entradaQuitada ?? appointment.entradaQuitada
+  const saldoLiquidado = contrato?.saldoQuitado ?? appointment.saldoQuitado
   const podeCriarGaleria =
     appointment.status === 'realizado' && entradaLiquidada && saldoLiquidado
   const contatoNome = cliente?.nome ?? appointment.contato?.nome
@@ -174,7 +170,7 @@ export function AppointmentDetails({
             <p className="text-[11px] font-semibold uppercase tracking-wide text-muted">
               Entrada
             </p>
-            <PagamentoStatusBadge status={pagamento.status} pagamento={pagamento} />
+            <EntradaStatusBadge status={entradaStatus} pagamento={pagamento} />
           </div>
           <div className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
             <div>
@@ -241,8 +237,9 @@ export function AppointmentDetails({
             <div className="flex items-center gap-2">
               <ContractStatusBadges
                 aceite={contrato.statusAceite}
-                pagamentoStatus={contrato.statusPagamento}
+                entradaStatus={contrato.statusEntrada}
                 pagamento={contrato.pagamento}
+                saldoStatus={contrato.statusSaldoFinal}
               />
               <span className="text-[11px] text-muted">{contrato.numero}</span>
             </div>

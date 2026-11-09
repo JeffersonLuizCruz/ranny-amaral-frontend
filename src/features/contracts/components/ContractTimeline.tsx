@@ -20,7 +20,7 @@ const EVENT_META: Record<
   cliente_criado: { label: 'Cliente criado', icon: CheckCircle2, color: 'text-emerald-700 bg-emerald-50' },
   cliente_vinculado: { label: 'Cliente vinculado', icon: CheckCircle2, color: 'text-emerald-700 bg-emerald-50' },
   comprovante_enviado: { label: 'Comprovante enviado', icon: FileText, color: 'text-blue-700 bg-blue-50' },
-  pagamento_confirmado: { label: 'Pagamento confirmado', icon: CheckCircle2, color: 'text-emerald-700 bg-emerald-50' },
+  pagamento_confirmado: { label: 'Entrada confirmada', icon: CheckCircle2, color: 'text-emerald-700 bg-emerald-50' },
   pagamento_rejeitado: { label: 'Comprovante rejeitado', icon: XCircle, color: 'text-red-700 bg-red-50' },
   saldo_recebido: { label: 'Saldo final recebido', icon: CheckCircle2, color: 'text-emerald-700 bg-emerald-50' },
   saldo_isento: { label: 'Saldo final isento', icon: CheckCircle2, color: 'text-slate-500 bg-slate-100' },

@@ -203,8 +203,9 @@ export function PublicContractPage() {
         </div>
         <ContractStatusBadges
           aceite={contrato.statusAceite}
-          pagamentoStatus={contrato.statusPagamento}
+          entradaStatus={contrato.statusEntrada}
           pagamento={contrato.pagamento}
+          saldoStatus={contrato.statusSaldoFinal}
         />
         {acceptanceAdapter.mode === 'local' ? (
           <span className="ml-auto rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-medium text-amber-800 ring-1 ring-amber-200">
@@ -219,7 +220,7 @@ export function PublicContractPage() {
           aceite={aceite}
           onPrint={() => printContract(contrato)}
         >
-          {contrato.statusPagamento === 'pendente' ? (
+          {contrato.statusEntrada !== 'cancelado' ? (
             <PublicPaymentSection
               contrato={contrato}
               submitting={submittingProof}

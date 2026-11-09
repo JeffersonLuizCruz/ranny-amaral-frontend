@@ -41,7 +41,7 @@ export function PublicAcceptanceForm({
 
   const requiresProof =
     contrato.valorEntrada > 0 &&
-    contrato.statusPagamento === 'pendente' &&
+    contrato.statusEntrada === 'pendente' &&
     (!contrato.pagamento.comprovante || Boolean(contrato.pagamento.rejeicao))
 
   const update = (patch: Partial<AcceptanceFormValues>) => {
@@ -234,7 +234,7 @@ export function PublicAcceptanceForm({
             </div>
           ) : (
             <p className="mt-2 rounded-lg bg-emerald-50 px-2 py-1.5 text-[10px] text-emerald-700">
-              {contrato.statusPagamento === 'confirmado'
+              {contrato.statusEntrada === 'confirmado'
                 ? 'Entrada já confirmada pelo estúdio.'
                 : 'Este ensaio não possui entrada a pagar.'}
             </p>
