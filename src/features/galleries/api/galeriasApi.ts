@@ -358,6 +358,17 @@ export async function baixarMidiaPublica(
   return http.post(`/public/galerias/${token}/download`, { midiaId, versao })
 }
 
+/** Valida o ZIP antes da navegacao; devolve a quantidade de arquivos. */
+export async function validarZipPublico(
+  token: string,
+  versao: 'editada' | 'original',
+): Promise<number> {
+  const dto = await http.get<{ quantidade: number }>(
+    `/public/galerias/${token}/download-zip/validar?versao=${versao}`,
+  )
+  return dto.quantidade
+}
+
 /** URL do ZIP streaming; usada em navegacao direta para nao carregar em memoria. */
 export function urlZipPublico(
   token: string,

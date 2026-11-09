@@ -72,8 +72,10 @@ export function PublicSelectionPage() {
   const videosInclusos = data?.galeria.videosInclusos ?? 0
   const extras = Math.max(0, fotoIds.size - fotosInclusas)
   const valorExtras = extras * (data?.galeria.valorFotoExtra ?? 0)
-  const podeSelecionar =
-    data?.galeria.status === 'em_selecao' && !data.selecao
+  // Uma seleção reaberta continua disponível para edição; só bloqueia quando
+  // o cliente já enviou a seleção atual.
+  const selecaoEnviada = data?.selecao?.status === 'enviada'
+  const podeSelecionar = data?.galeria.status === 'em_selecao' && !selecaoEnviada
 
   const toggle = (set: Set<string>, id: string): Set<string> => {
     const proximo = new Set(set)
@@ -134,7 +136,7 @@ export function PublicSelectionPage() {
     )
   }
 
-  if (data.selecao) {
+  if (data.selecao && selecaoEnviada) {
     return (
       <PublicShell>
         <div className="mx-auto max-w-lg rounded-2xl border border-emerald-200 bg-emerald-50/70 p-6 text-center shadow-card">

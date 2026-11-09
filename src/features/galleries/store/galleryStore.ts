@@ -73,6 +73,26 @@ function ordenar(galerias: GaleriaEnsaio[]): GaleriaEnsaio[] {
   )
 }
 
+const TAMANHO_PAGINA_MIDIAS = 100
+
+/**
+ * Carrega todas as páginas de mídias.
+ *
+ * O backend limita cada página a 100 itens; pedir 500 diretamente retorna
+ * `400 PAGINACAO_INVALIDA` e derruba a tela de detalhe.
+ */
+async function listarTodasMidias(id: string): Promise<MidiaGaleria[]> {
+  const primeira = await listarMidias(id, 0, TAMANHO_PAGINA_MIDIAS)
+  const midias = [...primeira.itens]
+
+  for (let pagina = 1; pagina < primeira.totalPaginas; pagina += 1) {
+    const proxima = await listarMidias(id, pagina, TAMANHO_PAGINA_MIDIAS)
+    midias.push(...proxima.itens)
+  }
+
+  return midias
+}
+
 export const useGalleryStore = create<GalleryState>()((set, get) => ({
   galerias: [],
   paginaGalerias: null,
@@ -99,10 +119,10 @@ export const useGalleryStore = create<GalleryState>()((set, get) => ({
     set({ carregandoDetalhe: true, erro: null })
     try {
       const detalhe = await buscarGaleria(id)
-      const paginaMidias = await listarMidias(id, 0, 500)
+      const midias = await listarTodasMidias(id)
       set({
         galeriaAtual: detalhe,
-        midias: paginaMidias.itens,
+        midias,
         galerias: atualizarGaleriaNaLista(get().galerias, detalhe.galeria),
       })
       return detalhe
@@ -116,8 +136,8 @@ export const useGalleryStore = create<GalleryState>()((set, get) => ({
 
   carregarMidias: async (id) => {
     try {
-      const pagina = await listarMidias(id, 0, 500)
-      set({ midias: pagina.itens })
+      const midias = await listarTodasMidias(id)
+      set({ midias })
     } catch (error) {
       set({ erro: mensagemDeErro(error) })
       throw error

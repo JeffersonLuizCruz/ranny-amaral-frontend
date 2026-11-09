@@ -109,6 +109,7 @@ export function GalleryDetailPage() {
     'pronta_entrega',
     'entregue',
   ].includes(galeria.status)
+  const podeReabrirSelecao = !['entregue', 'cancelada'].includes(galeria.status)
   const selecionadas = new Set(detalhe.selecao?.fotoIds ?? [])
   const fotosSelecionadas = fotos.filter((midia) => selecionadas.has(midia.id))
   const fotosEditadas = fotosSelecionadas.filter((midia) => midia.editadaDisponivel)
@@ -211,16 +212,18 @@ export function GalleryDetailPage() {
                     <Copy className="size-3.5" />
                     Copiar link
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() =>
-                      void executar(() => reopenSelection(galeria.id), 'Seleção reaberta.')
-                    }
-                  >
-                    <RotateCcw className="size-3.5" />
-                    Reabrir
-                  </Button>
+                  {podeReabrirSelecao ? (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() =>
+                        void executar(() => reopenSelection(galeria.id), 'Seleção reaberta.')
+                      }
+                    >
+                      <RotateCcw className="size-3.5" />
+                      Reabrir
+                    </Button>
+                  ) : null}
                 </div>
               </div>
             ) : (

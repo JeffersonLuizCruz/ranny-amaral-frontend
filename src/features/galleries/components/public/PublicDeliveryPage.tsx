@@ -11,6 +11,7 @@ import {
   baixarMidiaPublica,
   consultarGaleriaPublica,
   urlZipPublico,
+  validarZipPublico,
 } from '@/features/galleries/api/galeriasApi'
 
 interface PublicDeliveryData {
@@ -31,7 +32,6 @@ export function PublicDeliveryPage() {
   const [data, setData] = useState<PublicDeliveryData | null>(null)
   const [loading, setLoading] = useState(true)
   const [erro, setErro] = useState('')
-  const [mensagem, setMensagem] = useState('')
   const [baixando, setBaixando] = useState<'editada' | 'original' | null>(null)
 
   useEffect(() => {
@@ -59,33 +59,40 @@ export function PublicDeliveryPage() {
   }, [token])
 
   const baixar = async (midia: MidiaGaleria, versao: 'editada' | 'original') => {
+    setErro('')
     try {
       const { url } = await baixarMidiaPublica(token, midia.id, versao)
       const anchor = document.createElement('a')
       anchor.href = url
       anchor.download = midia.nomeArquivo
-      anchor.target = '_blank'
-      anchor.rel = 'noreferrer'
       document.body.appendChild(anchor)
       anchor.click()
       anchor.remove()
       return true
     } catch (error) {
-      setMensagem(mensagemDeErro(error))
+      setErro(mensagemDeErro(error))
       return false
     }
   }
 
-  const baixarZip = (versao: 'editada' | 'original') => {
-    setMensagem('')
+  const baixarZip = async (versao: 'editada' | 'original') => {
+    setErro('')
     setBaixando(versao)
-    const anchor = document.createElement('a')
-    anchor.href = urlZipPublico(token, versao)
-    anchor.download = versao === 'original' ? 'galeria-raw.zip' : 'galeria-editada.zip'
-    document.body.appendChild(anchor)
-    anchor.click()
-    anchor.remove()
-    window.setTimeout(() => setBaixando(null), 1500)
+    try {
+      // Valida antes de navegar; sem isso o navegador baixaria um JSON de erro
+      // com extensao .zip.
+      await validarZipPublico(token, versao)
+      const anchor = document.createElement('a')
+      anchor.href = urlZipPublico(token, versao)
+      anchor.download = versao === 'original' ? 'galeria-raw.zip' : 'galeria-editada.zip'
+      document.body.appendChild(anchor)
+      anchor.click()
+      anchor.remove()
+    } catch (error) {
+      setErro(mensagemDeErro(error))
+    } finally {
+      setBaixando(null)
+    }
   }
 
   if (loading) {
@@ -137,7 +144,7 @@ export function PublicDeliveryPage() {
         <div className="flex flex-wrap gap-2">
           {editadas.length > 0 ? (
             <Button
-              onClick={() => baixarZip('editada')}
+              onClick={() => void baixarZip('editada')}
               disabled={baixando !== null}
             >
               <Download className="size-4" />
@@ -147,7 +154,7 @@ export function PublicDeliveryPage() {
           {originais.length > 0 ? (
             <Button
               variant="secondary"
-              onClick={() => baixarZip('original')}
+              onClick={() => void baixarZip('original')}
               disabled={baixando !== null}
             >
               <Download className="size-4" />
@@ -156,7 +163,7 @@ export function PublicDeliveryPage() {
           ) : null}
           {editadas.length === 0 && originais.length === 0 && videos.length > 0 ? (
             <Button
-              onClick={() => baixarZip('original')}
+              onClick={() => void baixarZip('original')}
               disabled={baixando !== null}
             >
               <Download className="size-4" />
@@ -166,9 +173,12 @@ export function PublicDeliveryPage() {
         </div>
       </div>
 
-      {mensagem ? (
-        <p className="mb-3 rounded-xl bg-emerald-50 px-3 py-2 text-[11px] font-medium text-emerald-700 ring-1 ring-emerald-200">
-          {mensagem}
+      {erro ? (
+        <p
+          role="alert"
+          className="mb-3 rounded-xl bg-red-50 px-3 py-2 text-[11px] font-medium text-red-700 ring-1 ring-red-200"
+        >
+          {erro}
         </p>
       ) : null}
 
