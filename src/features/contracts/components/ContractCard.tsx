@@ -77,10 +77,19 @@ export function ContractCard({ contrato }: ContractCardProps) {
 
       <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[11px]">
         <span className="rounded-full bg-canvas px-2 py-1 font-semibold text-ink ring-1 ring-line">
-          {formatBRL(contrato.valorTotal)}
+          Total {formatBRL(contrato.valorTotal)}
         </span>
-        <span className="rounded-full bg-canvas px-2 py-1 text-muted ring-1 ring-line">
-          Entrada {formatBRL(contrato.valorEntrada)}
+        <span className="rounded-full bg-emerald-50 px-2 py-1 font-medium text-emerald-700 ring-1 ring-emerald-200">
+          Recebido {formatBRL(contrato.valorRecebido)}
+        </span>
+        <span
+          className={
+            contrato.valorPendente > 0
+              ? 'rounded-full bg-amber-50 px-2 py-1 font-medium text-amber-700 ring-1 ring-amber-200'
+              : 'rounded-full bg-canvas px-2 py-1 text-muted ring-1 ring-line'
+          }
+        >
+          Pendente {formatBRL(contrato.valorPendente)}
         </span>
       </div>
 

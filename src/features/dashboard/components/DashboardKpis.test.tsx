@@ -8,6 +8,7 @@ const resumo = {
   ensaiosSemana: 5,
   contratosAguardandoAceite: 3,
   contratosEntradaPendente: 1,
+  contratosSaldoPendente: 2,
   galeriasEmSelecao: 2,
   galeriasAguardandoEdicao: 1,
   galeriasEmEdicao: 2,

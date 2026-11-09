@@ -64,7 +64,7 @@ interface GalleryState {
   revokeDelivery: (id: string) => Promise<void>
   releaseRaw: (id: string, por?: string) => Promise<void>
   revokeRaw: (id: string) => Promise<void>
-  restoreDemoData: () => Promise<void>
+  recarregar: () => Promise<void>
 }
 
 function ordenar(galerias: GaleriaEnsaio[]): GaleriaEnsaio[] {
@@ -213,7 +213,7 @@ export const useGalleryStore = create<GalleryState>()((set, get) => ({
     await get().carregarGaleria(id)
   },
 
-  restoreDemoData: async () => {
+  recarregar: async () => {
     await get().carregarGalerias()
   },
 }))

@@ -159,9 +159,16 @@ export interface AppointmentDrawerState {
   defaultClienteId: string | null
 }
 
+export type AgendaPaymentFilter =
+  | 'entrada_pendente'
+  | 'saldo_pendente'
+  | 'quitado'
+
 export interface AgendaFilters {
   /** Empty means every status is visible. */
   hiddenStatuses: AgendamentoStatus[]
   /** Empty means every package is visible. */
   hiddenPackageIds: string[]
+  /** Empty means every financial state is visible. */
+  hiddenPaymentStates: AgendaPaymentFilter[]
 }

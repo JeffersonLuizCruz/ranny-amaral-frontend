@@ -18,7 +18,7 @@ interface StudioState {
   carregarEstudio: () => Promise<void>
   updateEstudio: (config: EstudioConfig) => Promise<void>
   /** Mantido para o botão de demonstração: recarrega do servidor. */
-  restoreDemoData: () => Promise<void>
+  recarregar: () => Promise<void>
 }
 
 /** Store da configuração única do estúdio, servida pelo backend. */
@@ -51,7 +51,7 @@ export const useStudioStore = create<StudioState>()((set, get) => ({
     }
   },
 
-  restoreDemoData: async () => {
+  recarregar: async () => {
     await get().carregarEstudio()
   },
 }))

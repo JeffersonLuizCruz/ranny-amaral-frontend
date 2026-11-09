@@ -6,6 +6,7 @@ export interface DashboardResumo {
   ensaiosSemana: number
   contratosAguardandoAceite: number
   contratosEntradaPendente: number
+  contratosSaldoPendente: number
   galeriasEmSelecao: number
   galeriasAguardandoEdicao: number
   galeriasEmEdicao: number

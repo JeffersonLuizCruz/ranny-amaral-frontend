@@ -33,7 +33,7 @@ interface PackageState {
   deletePackage: (id: string) => Promise<void>
   togglePackageActive: (id: string) => Promise<void>
   /** Mantido para o botão de demonstração: recarrega do servidor. */
-  restoreDemoData: () => Promise<void>
+  recarregar: () => Promise<void>
 }
 
 function ordenar(pacotes: PacoteFotografico[]): PacoteFotografico[] {
@@ -135,7 +135,7 @@ export const usePackageStore = create<PackageState>()((set, get) => ({
     }
   },
 
-  restoreDemoData: async () => {
+  recarregar: async () => {
     await get().carregarPacotes()
   },
 }))

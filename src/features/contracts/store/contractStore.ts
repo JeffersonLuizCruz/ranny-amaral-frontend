@@ -71,7 +71,7 @@ interface ContractState {
   marcarPagamentoFinalIsento: (id: string) => Promise<void>
   reabrirPagamentoFinal: (id: string) => Promise<void>
   /** Mantido para o botão de demonstração: recarrega do servidor. */
-  restoreDemoData: () => Promise<void>
+  recarregar: () => Promise<void>
 }
 
 function ordenar(contratos: Contrato[]): Contrato[] {
@@ -309,7 +309,7 @@ export const useContractStore = create<ContractState>()((set, get) => ({
     }
   },
 
-  restoreDemoData: async () => {
+  recarregar: async () => {
     await get().carregarContratos()
   },
 }))

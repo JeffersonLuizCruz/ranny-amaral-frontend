@@ -18,11 +18,11 @@ import {
 import { mensagemDeErro } from '@/shared/api/errors'
 
 /**
- * Vínculo vindo do contrato local (transição).
+ * Dados do contrato aplicados localmente no agendamento após uma ação do
+ * usuário.
  *
- * Enquanto o módulo de contratos ainda vive no navegador, o backend não conhece
- * `contratoId`, `clienteId` nem os pagamentos espelhados. No boot, o app
- * reconcilia esse vínculo nos agendamentos recém-carregados da API.
+ * A fonte de verdade é o backend; este vínculo mantém a UI imediatamente
+ * consistente enquanto o evento de sincronização do contrato não chega.
  */
 export interface VinculoContrato {
   contratoId: string
@@ -58,7 +58,7 @@ interface AppointmentState {
   linkClient: (id: string, clienteId: string) => void
   aplicarVinculos: (vinculos: VinculoContrato[]) => void
   /** Mantido para o botão de demonstração: recarrega do servidor. */
-  restoreDemoData: () => Promise<void>
+  recarregar: () => Promise<void>
 }
 
 function ordenar(appointments: AgendamentoEnsaio[]): AgendamentoEnsaio[] {
@@ -236,7 +236,7 @@ export const useAppointmentStore = create<AppointmentState>()((set, get) => ({
     }))
   },
 
-  restoreDemoData: async () => {
+  recarregar: async () => {
     await get().carregarAgendamentos()
   },
 }))

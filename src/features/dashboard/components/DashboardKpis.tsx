@@ -20,7 +20,7 @@ export function DashboardKpis({ resumo, financeiro }: DashboardKpisProps) {
     {
       label: 'Contratos pendentes',
       value: String(resumo.contratosAguardandoAceite),
-      hint: `${resumo.contratosEntradaPendente} com entrada pendente`,
+      hint: `${resumo.contratosEntradaPendente} com entrada · ${resumo.contratosSaldoPendente} com saldo final`,
       icon: FileSignature,
       tone: 'bg-amber-50 text-amber-700',
     },

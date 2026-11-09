@@ -32,6 +32,11 @@ export function AppointmentBlock({
   const isReserved = appointment.status === 'reservado'
   const isCancelled = appointment.status === 'cancelado'
   const nomeContato = cliente?.nome ?? contatoNome ?? 'Cliente'
+  const paymentLabel = appointment.quitado
+    ? 'Quitado'
+    : !appointment.entradaQuitada
+      ? 'Entrada pendente'
+      : 'Saldo final pendente'
 
   return (
     <button
@@ -39,7 +44,7 @@ export function AppointmentBlock({
       data-appointment="true"
       title={`${nomeContato} · ${pacote?.nome ?? 'Pacote'} · ${
         status.label
-      } · ${formatTime(appointment.dataHoraInicio)} – ${formatTime(appointment.dataHoraFim)}`}
+      } · ${paymentLabel} · ${formatTime(appointment.dataHoraInicio)} – ${formatTime(appointment.dataHoraFim)}`}
       onClick={(event) => {
         event.stopPropagation()
         onClick()
@@ -69,6 +74,17 @@ export function AppointmentBlock({
 
       {height > 64 && pacote ? (
         <span className="mt-0.5 block truncate text-[10px] opacity-75">{pacote.nome}</span>
+      ) : null}
+
+      {height > 78 ? (
+        <span
+          className={cn(
+            'mt-0.5 block truncate text-[10px] font-medium',
+            appointment.quitado ? 'text-emerald-700' : 'text-amber-700',
+          )}
+        >
+          {paymentLabel}
+        </span>
       ) : null}
 
       <span

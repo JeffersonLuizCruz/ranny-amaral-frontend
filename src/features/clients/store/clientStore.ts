@@ -30,7 +30,7 @@ interface ClientState {
   updateClient: (id: string, draft: ClienteDraft) => Promise<void>
   deleteClient: (id: string) => Promise<void>
   /** Mantido para o botão de demonstração: recarrega do servidor. */
-  restoreDemoData: () => Promise<void>
+  recarregar: () => Promise<void>
 }
 
 function ordenar(clientes: Cliente[]): Cliente[] {
@@ -117,7 +117,7 @@ export const useClientStore = create<ClientState>()((set, get) => ({
     }
   },
 
-  restoreDemoData: async () => {
+  recarregar: async () => {
     await get().carregarClientes()
   },
 }))

@@ -185,6 +185,18 @@ export function AppointmentDetails({
                 {formatBRL(saldoRestante)}
               </p>
             </div>
+            <div>
+              <p className="text-muted">Recebido</p>
+              <p className="font-semibold text-emerald-600">
+                {formatBRL(contrato?.valorRecebido ?? appointment.valorRecebido)}
+              </p>
+            </div>
+            <div>
+              <p className="text-muted">Pendente</p>
+              <p className="font-semibold text-amber-600">
+                {formatBRL(contrato?.valorPendente ?? appointment.valorPendente)}
+              </p>
+            </div>
           </div>
         </div>
 

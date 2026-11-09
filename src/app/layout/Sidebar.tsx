@@ -20,7 +20,6 @@ import { useAgendaStore } from '@/features/agenda/store/agendaStore'
 import { AgendaFilters } from '@/features/agenda/components/AgendaFilters'
 import { MiniCalendar } from '@/features/agenda/components/MiniCalendar'
 import { useAppointmentStore } from '@/features/appointments/store/appointmentStore'
-import { aplicarVinculosDeContratos } from '@/app/applyContractLinks'
 import { useClientStore } from '@/features/clients/store/clientStore'
 import { useContractStore } from '@/features/contracts/store/contractStore'
 import { useStudioStore } from '@/features/contracts/store/studioStore'
@@ -52,13 +51,13 @@ export function Sidebar({ onNavigate, onClose }: SidebarProps) {
   const isAdmin = useAuthStore((state) => state.usuario?.role === 'admin')
   const openCreateDrawer = useAgendaStore((state) => state.openCreateDrawer)
   const selectedDate = useAgendaStore((state) => state.selectedDate)
-  const restoreClients = useClientStore((state) => state.restoreDemoData)
-  const restorePackages = usePackageStore((state) => state.restoreDemoData)
-  const restoreAppointments = useAppointmentStore((state) => state.restoreDemoData)
-  const restoreContracts = useContractStore((state) => state.restoreDemoData)
-  const restoreTemplates = useTemplateStore((state) => state.restoreDemoData)
-  const restoreStudio = useStudioStore((state) => state.restoreDemoData)
-  const restoreGalleries = useGalleryStore((state) => state.restoreDemoData)
+  const recarregarClientes = useClientStore((state) => state.recarregar)
+  const recarregarPacotes = usePackageStore((state) => state.recarregar)
+  const recarregarAgendamentos = useAppointmentStore((state) => state.recarregar)
+  const recarregarContratos = useContractStore((state) => state.recarregar)
+  const recarregarModelos = useTemplateStore((state) => state.recarregar)
+  const recarregarEstudio = useStudioStore((state) => state.recarregar)
+  const recarregarGalerias = useGalleryStore((state) => state.recarregar)
   const addToast = useToastStore((state) => state.addToast)
   const { canInstall, installing, install } = useInstallPrompt()
   const navItems = isAdmin
@@ -70,25 +69,23 @@ export function Sidebar({ onNavigate, onClose }: SidebarProps) {
     if (accepted) addToast('Aplicativo instalado com sucesso.')
   }
 
-  const handleRestore = async () => {
+  const handleReload = async () => {
     const confirmed = window.confirm(
-      'Substituir a demonstração local de galerias e recarregar clientes, pacotes, agenda, contratos, modelos e estúdio do servidor? Esta ação não pode ser desfeita.',
+      'Recarregar clientes, pacotes, agenda, contratos, modelos, estúdio e galerias do servidor?',
     )
     if (!confirmed) return
 
     try {
-      restoreGalleries()
-
       await Promise.all([
-        restoreClients(),
-        restorePackages(),
-        restoreAppointments(),
-        restoreContracts(),
-        restoreTemplates(),
-        restoreStudio(),
+        recarregarClientes(),
+        recarregarPacotes(),
+        recarregarAgendamentos(),
+        recarregarContratos(),
+        recarregarModelos(),
+        recarregarEstudio(),
+        recarregarGalerias(),
       ])
-      aplicarVinculosDeContratos()
-      addToast('Dados de demonstração restaurados.')
+      addToast('Dados recarregados do servidor.')
     } catch (error) {
       addToast(mensagemDeErro(error))
     }
@@ -169,11 +166,11 @@ export function Sidebar({ onNavigate, onClose }: SidebarProps) {
           ) : null}
           <button
             type="button"
-            onClick={handleRestore}
+            onClick={handleReload}
             className="inline-flex items-center gap-1.5 px-2 text-[11px] font-medium text-brand-700 transition hover:underline"
           >
             <RotateCcw className="size-3" />
-            Restaurar demonstração
+            Recarregar dados
           </button>
           <p className="px-2 pb-2 text-[10px] leading-relaxed text-muted">
             Atalhos: <span className="font-medium text-ink">N</span> novo ensaio ·{' '}

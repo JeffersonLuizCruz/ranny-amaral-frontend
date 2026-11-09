@@ -1,6 +1,5 @@
 import { useEffect } from 'react'
 
-import { aplicarVinculosDeContratos } from '@/app/applyContractLinks'
 import { useAppointmentStore } from '@/features/appointments/store/appointmentStore'
 import { useClientStore } from '@/features/clients/store/clientStore'
 import { useContractStore } from '@/features/contracts/store/contractStore'
@@ -14,10 +13,8 @@ import { useToastStore } from '@/shared/store/toastStore'
 /**
  * Carrega os dados servidos pelo backend no boot da aplicação.
  *
- * Clientes, pacotes, agenda, contratos, modelos e estúdio já usam a API.
- * As listagens de clientes/pacotes/agenda/contratos são paginadas; aqui os
- * loaders percorrem todas as páginas de forma transitória para manter pickers,
- * galerias e financeiro funcionando até a migração desses módulos.
+ * Contratos e agenda são fontes independentes da API; a sincronização entre
+ * eles é responsabilidade do backend, via evento de contrato.
  */
 export function useBootstrapData() {
   const carregarClientes = useClientStore((state) => state.carregarClientes)
@@ -41,9 +38,6 @@ export function useBootstrapData() {
       carregarEstudio(),
       carregarGalerias({ tamanho: 100 }),
     ])
-      .then(() => {
-        if (ativo) aplicarVinculosDeContratos()
-      })
       .catch((error) => {
         if (ativo) addToast(mensagemDeErro(error))
       })

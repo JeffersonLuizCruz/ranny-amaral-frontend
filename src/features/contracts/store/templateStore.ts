@@ -23,7 +23,7 @@ interface TemplateState {
   duplicateTemplate: (id: string) => Promise<ModeloContrato>
   toggleTemplateActive: (id: string) => Promise<void>
   /** Mantido para o botão de demonstração: recarrega do servidor. */
-  restoreDemoData: () => Promise<void>
+  recarregar: () => Promise<void>
 }
 
 function ordenar(modelos: ModeloContrato[]): ModeloContrato[] {
@@ -115,7 +115,7 @@ export const useTemplateStore = create<TemplateState>()((set, get) => ({
     }
   },
 
-  restoreDemoData: async () => {
+  recarregar: async () => {
     await get().carregarModelos()
   },
 }))

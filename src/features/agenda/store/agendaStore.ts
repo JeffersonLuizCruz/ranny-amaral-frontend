@@ -2,6 +2,7 @@ import { create } from 'zustand'
 
 import type {
   AgendaFilters,
+  AgendaPaymentFilter,
   AgendamentoStatus,
   AppointmentDrawerState,
   CalendarView,
@@ -19,6 +20,7 @@ const CLOSED_DRAWER: AppointmentDrawerState = {
 const EMPTY_FILTERS: AgendaFilters = {
   hiddenStatuses: [],
   hiddenPackageIds: [],
+  hiddenPaymentStates: [],
 }
 
 interface AgendaState {
@@ -36,6 +38,7 @@ interface AgendaState {
   setSidebarOpen: (open: boolean) => void
   toggleStatusFilter: (status: AgendamentoStatus) => void
   togglePackageFilter: (packageId: string) => void
+  togglePaymentFilter: (state: AgendaPaymentFilter) => void
   clearFilters: () => void
   openCreateDrawer: (date?: Date | string, startTime?: string, clienteId?: string) => void
   openAppointmentDrawer: (
@@ -94,6 +97,19 @@ export const useAgendaStore = create<AgendaState>((set, get) => ({
           hiddenPackageIds: hidden.includes(packageId)
             ? hidden.filter((item) => item !== packageId)
             : [...hidden, packageId],
+        },
+      }
+    }),
+
+  togglePaymentFilter: (paymentState) =>
+    set((state) => {
+      const hidden = state.filters.hiddenPaymentStates
+      return {
+        filters: {
+          ...state.filters,
+          hiddenPaymentStates: hidden.includes(paymentState)
+            ? hidden.filter((item) => item !== paymentState)
+            : [...hidden, paymentState],
         },
       }
     }),
