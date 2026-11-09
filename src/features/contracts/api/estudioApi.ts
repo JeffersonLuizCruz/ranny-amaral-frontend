@@ -16,6 +16,8 @@ interface EstudioDto {
   percentualEntradaPadrao: number
   chavePix: string | null
   instrucoesPagamento: string | null
+  chavePixExtras: string | null
+  instrucoesPagamentoExtras: string | null
   prazoPagamentoDias: number | null
 }
 
@@ -35,6 +37,8 @@ function toEstudio(dto: EstudioDto): EstudioConfig {
     percentualEntradaPadrao: dto.percentualEntradaPadrao,
     chavePix: dto.chavePix ?? undefined,
     instrucoesPagamento: dto.instrucoesPagamento ?? undefined,
+    chavePixExtras: dto.chavePixExtras ?? undefined,
+    instrucoesPagamentoExtras: dto.instrucoesPagamentoExtras ?? undefined,
     prazoPagamentoDias: dto.prazoPagamentoDias ?? undefined,
   }
 }
@@ -59,6 +63,8 @@ export async function atualizarEstudio(config: EstudioConfig): Promise<EstudioCo
     percentualEntradaPadrao: config.percentualEntradaPadrao,
     chavePix: config.chavePix ?? null,
     instrucoesPagamento: config.instrucoesPagamento ?? null,
+    chavePixExtras: config.chavePixExtras ?? null,
+    instrucoesPagamentoExtras: config.instrucoesPagamentoExtras ?? null,
     prazoPagamentoDias: config.prazoPagamentoDias ?? null,
   })
   return toEstudio(dto)

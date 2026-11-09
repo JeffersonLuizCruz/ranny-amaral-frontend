@@ -63,6 +63,11 @@ export interface PedidoExtras {
   confirmadoEm?: string
   confirmadoPor?: string
   liberacaoManual?: LiberacaoManual
+  chavePix?: string
+  instrucoesPagamento?: string
+  comprovanteNome?: string
+  comprovanteEnviadoEm?: string
+  comprovanteUrl?: string
 }
 
 export type EntregaStatus = 'nao_publicada' | 'disponivel' | 'revogada'
@@ -99,6 +104,7 @@ export type EventoGaleriaTipo =
   | 'entrega_publicada'
   | 'entrega_revogada'
   | 'download_registrado'
+  | 'comprovante_extras_enviado'
   | 'cancelada'
 
 export interface EventoGaleria {

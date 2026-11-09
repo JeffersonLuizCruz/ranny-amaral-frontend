@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   CheckCircle2,
   Copy,
+  ExternalLink,
   Images,
   Link2,
   RotateCcw,
@@ -277,45 +278,88 @@ export function GalleryDetailPage() {
                   {formatBRL(detalhe.extras.valorTotal)} · status{' '}
                   <strong className="text-ink">{detalhe.extras.status}</strong>
                 </p>
+                <p>
+                  Pix dos extras:{' '}
+                  {detalhe.extras.chavePix ? (
+                    <strong className="text-ink">{detalhe.extras.chavePix}</strong>
+                  ) : (
+                    'não configurada'
+                  )}{' '}
+                  ·{' '}
+                  <Link
+                    to="/contratos/configuracoes"
+                    className="font-medium text-brand-700 hover:underline"
+                  >
+                    Configurar
+                  </Link>
+                </p>
                 {extrasPendentes ? (
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      size="sm"
-                      onClick={() =>
-                        void executar(
-                          () => confirmExtras(galeria.id, 'pix'),
-                          'Extras confirmados.',
-                        )
-                      }
-                    >
-                      <CheckCircle2 className="size-3.5" />
-                      Confirmar Pix
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() =>
-                        void executar(() => waiveExtras(galeria.id), 'Extras isentos.')
-                      }
-                    >
-                      Isentar
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        const motivo = window.prompt('Motivo da liberação manual:')
-                        if (motivo) {
+                  <>
+                    {detalhe.extras.comprovanteEnviadoEm ? (
+                      <div className="rounded-xl border border-line bg-canvas/60 p-2.5">
+                        <p className="text-ink">
+                          Comprovante: {detalhe.extras.comprovanteNome ?? 'arquivo'}
+                        </p>
+                        <p className="mt-0.5 text-[10px]">
+                          Enviado em {formatDateTime(detalhe.extras.comprovanteEnviadoEm)}.
+                        </p>
+                        {detalhe.extras.comprovanteUrl ? (
+                          <a
+                            href={detalhe.extras.comprovanteUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="mt-1 inline-flex items-center gap-1 font-medium text-brand-700 hover:underline"
+                          >
+                            <ExternalLink className="size-3" />
+                            Baixar comprovante
+                          </a>
+                        ) : null}
+                      </div>
+                    ) : (
+                      <p className="rounded-lg bg-amber-50 px-2.5 py-2 text-[11px] text-amber-800">
+                        Aguardando o cliente enviar o comprovante Pix.
+                      </p>
+                    )}
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        disabled={!detalhe.extras.comprovanteEnviadoEm}
+                        onClick={() =>
                           void executar(
-                            () => releaseEditing(galeria.id, motivo),
-                            'Edição liberada manualmente.',
+                            () => confirmExtras(galeria.id, 'pix'),
+                            'Extras confirmados.',
                           )
                         }
-                      }}
-                    >
-                      Liberar manualmente
-                    </Button>
-                  </div>
+                      >
+                        <CheckCircle2 className="size-3.5" />
+                        Confirmar Pix
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() =>
+                          void executar(() => waiveExtras(galeria.id), 'Extras isentos.')
+                        }
+                      >
+                        Isentar
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          const motivo = window.prompt('Motivo da liberação manual:')
+                          if (motivo) {
+                            void executar(
+                              () => releaseEditing(galeria.id, motivo),
+                              'Edição liberada manualmente.',
+                            )
+                          }
+                        }}
+                      >
+                        Liberar manualmente
+                      </Button>
+                    </div>
+                  </>
                 ) : null}
               </div>
             ) : (

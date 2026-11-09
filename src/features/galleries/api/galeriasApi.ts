@@ -57,7 +57,7 @@ interface SelecaoDto {
   videoIds: string[]
 }
 
-interface ExtrasDto {
+export interface ExtrasDto {
   id: string
   quantidadeFotos: number
   valorUnitario: number
@@ -69,6 +69,11 @@ interface ExtrasDto {
   liberacaoMotivo: string | null
   liberadoPor: string | null
   liberadoEm: string | null
+  chavePix: string | null
+  instrucoesPagamento: string | null
+  comprovanteNome: string | null
+  comprovanteEnviadoEm: string | null
+  comprovanteUrl: string | null
 }
 
 interface EventoDto {
@@ -114,7 +119,7 @@ function toSelecao(dto: SelecaoDto | null): SelecaoGaleria | undefined {
   }
 }
 
-function toExtras(dto: ExtrasDto | null): PedidoExtras | undefined {
+export function toExtras(dto: ExtrasDto | null): PedidoExtras | undefined {
   if (!dto) return undefined
   return {
     id: dto.id,
@@ -133,6 +138,11 @@ function toExtras(dto: ExtrasDto | null): PedidoExtras | undefined {
             motivo: dto.liberacaoMotivo ?? '',
           }
         : undefined,
+    chavePix: dto.chavePix ?? undefined,
+    instrucoesPagamento: dto.instrucoesPagamento ?? undefined,
+    comprovanteNome: dto.comprovanteNome ?? undefined,
+    comprovanteEnviadoEm: dto.comprovanteEnviadoEm ?? undefined,
+    comprovanteUrl: dto.comprovanteUrl ?? undefined,
   }
 }
 

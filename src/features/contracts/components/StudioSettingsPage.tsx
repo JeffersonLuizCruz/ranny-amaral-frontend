@@ -53,6 +53,8 @@ export function StudioSettingsPage() {
         foro: values.foro?.trim() || undefined,
         chavePix: values.chavePix?.trim() || undefined,
         instrucoesPagamento: values.instrucoesPagamento?.trim() || undefined,
+        chavePixExtras: values.chavePixExtras?.trim() || undefined,
+        instrucoesPagamentoExtras: values.instrucoesPagamentoExtras?.trim() || undefined,
       })
       addToast('Dados do estúdio atualizados.')
     } catch (erro) {
@@ -216,7 +218,7 @@ export function StudioSettingsPage() {
                   className={inputClass}
                 />
               </Field>
-              <Field label="Chave Pix" htmlFor="studio-pix-key">
+              <Field label="Chave Pix do ensaio" htmlFor="studio-pix-key">
                 <input
                   id="studio-pix-key"
                   value={values.chavePix ?? ''}
@@ -225,15 +227,43 @@ export function StudioSettingsPage() {
                   className={inputClass}
                 />
               </Field>
+              <Field label="Chave Pix de fotos extras" htmlFor="studio-pix-key-extras">
+                <input
+                  id="studio-pix-key-extras"
+                  value={values.chavePixExtras ?? ''}
+                  onChange={(event) => update({ chavePixExtras: event.target.value })}
+                  placeholder="pix-extras@estudio.com.br"
+                  className={inputClass}
+                />
+              </Field>
             </div>
 
-            <Field label="Instruções de pagamento" htmlFor="studio-payment-instructions">
+            <Field
+              label="Instruções de pagamento do ensaio"
+              htmlFor="studio-payment-instructions"
+            >
               <textarea
                 id="studio-payment-instructions"
                 value={values.instrucoesPagamento ?? ''}
                 onChange={(event) => update({ instrucoesPagamento: event.target.value })}
                 rows={3}
                 placeholder="Ex.: Pague a entrada via Pix e anexe o comprovante no link do contrato."
+                className={textareaClass}
+              />
+            </Field>
+
+            <Field
+              label="Instruções de pagamento das fotos extras"
+              htmlFor="studio-payment-instructions-extras"
+            >
+              <textarea
+                id="studio-payment-instructions-extras"
+                value={values.instrucoesPagamentoExtras ?? ''}
+                onChange={(event) =>
+                  update({ instrucoesPagamentoExtras: event.target.value })
+                }
+                rows={3}
+                placeholder="Ex.: Pague as fotos extras via Pix e anexe o comprovante na galeria."
                 className={textareaClass}
               />
             </Field>

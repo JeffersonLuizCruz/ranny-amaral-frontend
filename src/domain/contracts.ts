@@ -36,6 +36,8 @@ export interface EstudioConfig {
   percentualEntradaPadrao: number
   chavePix?: string
   instrucoesPagamento?: string
+  chavePixExtras?: string
+  instrucoesPagamentoExtras?: string
   prazoPagamentoDias?: number
 }
 
@@ -73,8 +75,31 @@ export interface ContratoSnapshot {
     AgendamentoEnsaio,
     'dataHoraInicio' | 'dataHoraFim' | 'local' | 'valorAcordado'
   >
-  estudio: EstudioConfig
+  estudio: EstudioSnapshot
   modeloVersao: number
+}
+
+/**
+ * Dados do estúdio congelados no contrato.
+ *
+ * Não inclui a chave Pix de extras: ela pertence somente ao fluxo da galeria.
+ */
+export interface EstudioSnapshot {
+  nome: string
+  razaoSocial?: string
+  cnpj?: string
+  endereco?: string
+  cidade?: string
+  estado?: string
+  email?: string
+  telefone?: string
+  responsavel?: string
+  site?: string
+  foro?: string
+  percentualEntradaPadrao: number
+  chavePix?: string
+  instrucoesPagamento?: string
+  prazoPagamentoDias?: number
 }
 
 export interface DadosAceiteInput {

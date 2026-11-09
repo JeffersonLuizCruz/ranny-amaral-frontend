@@ -3,11 +3,12 @@ import type { ReactNode } from 'react'
 import { AlertTriangle, CheckCircle2, Images, Loader2 } from 'lucide-react'
 import { useParams } from 'react-router-dom'
 
-import type { MidiaGaleria } from '@/domain/galleries'
+import type { MidiaGaleria, PedidoExtras } from '@/domain/galleries'
 import { Button } from '@/shared/components/ui/Button'
 import { formatBRL } from '@/shared/lib/currency'
 import { mensagemDeErro } from '@/shared/api/errors'
 import { GalleryMediaGrid } from '@/features/galleries/components/GalleryMediaGrid'
+import { ExtrasPaymentCard } from '@/features/galleries/components/public/ExtrasPaymentCard'
 import {
   consultarGaleriaPublica,
   enviarSelecaoPublica,
@@ -17,6 +18,7 @@ interface PublicData {
   galeria: Awaited<ReturnType<typeof consultarGaleriaPublica>>['galeria']
   midias: MidiaGaleria[]
   selecao?: Awaited<ReturnType<typeof consultarGaleriaPublica>>['selecao']
+  extras?: PedidoExtras
   token: string
 }
 
@@ -38,6 +40,7 @@ export function PublicSelectionPage() {
           galeria: resultado.galeria,
           midias: resultado.midias,
           selecao: resultado.selecao,
+          extras: resultado.extras,
           token,
         })
         setFotoIds(new Set(resultado.selecao?.fotoIds ?? []))
@@ -105,6 +108,21 @@ export function PublicSelectionPage() {
     try {
       const selecao = await enviarSelecaoPublica(token, [...fotoIds], [...videoIds])
       setData((atual) => (atual ? { ...atual, selecao } : atual))
+
+      // A resposta da seleção não traz o pedido de extras. Recarrega a galeria
+      // pública para exibir a chave Pix e o upload do comprovante na hora.
+      try {
+        const atualizado = await consultarGaleriaPublica(token)
+        setData({
+          galeria: atualizado.galeria,
+          midias: atualizado.midias,
+          selecao: atualizado.selecao,
+          extras: atualizado.extras,
+          token,
+        })
+      } catch {
+        // A seleção já foi enviada; a próxima visita recarrega os extras.
+      }
     } catch (error) {
       setErro(mensagemDeErro(error))
     } finally {
@@ -156,6 +174,18 @@ export function PublicSelectionPage() {
             </p>
           ) : null}
         </div>
+
+        {data.extras ? (
+          <div className="mx-auto max-w-lg">
+            <ExtrasPaymentCard
+              token={data.token}
+              extras={data.extras}
+              onChange={(extras) =>
+                setData((atual) => (atual ? { ...atual, extras } : atual))
+              }
+            />
+          </div>
+        ) : null}
       </PublicShell>
     )
   }

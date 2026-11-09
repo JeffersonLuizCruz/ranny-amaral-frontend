@@ -1,4 +1,5 @@
-import type { MidiaGaleria } from '@/domain/galleries'
+import type { MidiaGaleria, PedidoExtras } from '@/domain/galleries'
+import { toExtras, type ExtrasDto } from '@/features/galleries/api/galeriasApi'
 import { toMidia } from '@/features/galleries/api/midiaMapper'
 import { http } from '@/shared/api/httpClient'
 import { sha256File } from '@/shared/upload/sha256'
@@ -193,4 +194,84 @@ export async function removerVersaoEditada(
   midiaId: string,
 ): Promise<void> {
   await http.delete(`/galerias/${galeriaId}/midias/${midiaId}/editada`)
+}
+
+export async function iniciarComprovanteExtras(
+  token: string,
+  file: File,
+): Promise<UploadSession> {
+  const checksumSha256 = await sha256File(file)
+  return http.post<UploadSession>(
+    `/public/galerias/${token}/extras/comprovante/upload`,
+    {
+      nomeArquivo: file.name,
+      mimeType: file.type,
+      tamanho: file.size,
+      checksumSha256,
+    },
+  )
+}
+
+export async function concluirComprovanteExtras(
+  token: string,
+  arquivoId: string,
+  partes: UploadedPart[],
+): Promise<PedidoExtras> {
+  const dto = await http.post<ExtrasDto>(
+    `/public/galerias/${token}/extras/comprovante/upload/${arquivoId}/complete`,
+    { partes },
+  )
+  const extras = toExtras(dto)
+  if (!extras) throw new Error('Resposta inválida ao concluir o comprovante.')
+  return extras
+}
+
+export async function abortarComprovanteExtras(
+  token: string,
+  arquivoId: string,
+): Promise<void> {
+  await http.post(
+    `/public/galerias/${token}/extras/comprovante/upload/${arquivoId}/abort`,
+  )
+}
+
+export async function enviarComprovanteExtras(
+  token: string,
+  file: File,
+  options: UploadOptions = {},
+): Promise<PedidoExtras> {
+  options.onProgress?.({
+    fase: 'preparando',
+    enviado: 0,
+    total: file.size,
+    percentual: 0,
+    velocidadeBps: 0,
+  })
+
+  const sessao = await iniciarComprovanteExtras(token, file)
+  let partes: UploadedPart[] = []
+  try {
+    partes = await enviarArquivo(file, sessao, options)
+  } catch (error) {
+    await abortarComprovanteExtras(token, sessao.arquivoId).catch(() => undefined)
+    throw error
+  }
+
+  options.onProgress?.({
+    fase: 'concluindo',
+    enviado: file.size,
+    total: file.size,
+    percentual: 100,
+    velocidadeBps: 0,
+  })
+
+  const extras = await concluirComprovanteExtras(token, sessao.arquivoId, partes)
+  options.onProgress?.({
+    fase: 'concluido',
+    enviado: file.size,
+    total: file.size,
+    percentual: 100,
+    velocidadeBps: 0,
+  })
+  return extras
 }

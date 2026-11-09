@@ -56,7 +56,25 @@ function buildSnapshot(input: BuildContractInput): ContratoSnapshot {
       local: appointment.local,
       valorAcordado: appointment.valorAcordado,
     },
-    estudio: { ...studio },
+    // O snapshot do contrato não inclui a chave Pix de extras; ela é exclusiva
+    // do fluxo da galeria.
+    estudio: {
+      nome: studio.nome,
+      razaoSocial: studio.razaoSocial,
+      cnpj: studio.cnpj,
+      endereco: studio.endereco,
+      cidade: studio.cidade,
+      estado: studio.estado,
+      email: studio.email,
+      telefone: studio.telefone,
+      responsavel: studio.responsavel,
+      site: studio.site,
+      foro: studio.foro,
+      percentualEntradaPadrao: studio.percentualEntradaPadrao,
+      chavePix: studio.chavePix,
+      instrucoesPagamento: studio.instrucoesPagamento,
+      prazoPagamentoDias: studio.prazoPagamentoDias,
+    },
     modeloVersao: template.versao,
   }
 }
