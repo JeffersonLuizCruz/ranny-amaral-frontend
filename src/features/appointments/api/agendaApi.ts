@@ -31,6 +31,7 @@ interface CondicoesPacoteDto {
   quantidadeVideosInclusos: number
   valorFotoExtra: number
   valorTabela: number
+  faixasFotoExtra: { quantidadeMinima: number; valorUnitario: number }[] | null
   promocaoAplicada: PromocaoAplicadaDto | null
 }
 
@@ -133,6 +134,7 @@ function toCondicoes(dto: CondicoesPacoteDto | null): CondicoesPacote | undefine
     quantidadeVideosInclusos: dto.quantidadeVideosInclusos,
     valorFotoExtra: dto.valorFotoExtra,
     valorTabela: dto.valorTabela,
+    faixasFotoExtra: dto.faixasFotoExtra ?? [],
     promocaoAplicada: dto.promocaoAplicada
       ? {
           valorPromocional: dto.promocaoAplicada.valorPromocional,

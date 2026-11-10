@@ -1,6 +1,7 @@
 import { Check, Download, Film, ImageOff, Loader2, Pencil, PlayCircle, Trash2 } from 'lucide-react'
 
 import type { MidiaGaleria } from '@/domain/galleries'
+import { formatarNumeroFoto } from '@/features/galleries/lib/format'
 import { cn } from '@/shared/lib/cn'
 
 interface GalleryMediaGridProps {
@@ -12,6 +13,7 @@ interface GalleryMediaGridProps {
   onEdit?: (midia: MidiaGaleria) => void
   emptyLabel?: string
   watermark?: boolean
+  numerarFotos?: boolean
 }
 
 export function GalleryMediaGrid({
@@ -23,6 +25,7 @@ export function GalleryMediaGrid({
   onEdit,
   emptyLabel = 'Nenhuma mídia enviada ainda.',
   watermark = false,
+  numerarFotos = false,
 }: GalleryMediaGridProps) {
   if (midias.length === 0) {
     return (
@@ -45,6 +48,7 @@ export function GalleryMediaGrid({
           onDownload={onDownload}
           onEdit={onEdit}
           watermark={watermark}
+          numerarFotos={numerarFotos}
         />
       ))}
     </div>
@@ -59,6 +63,7 @@ function GalleryMediaTile({
   onDownload,
   onEdit,
   watermark,
+  numerarFotos,
 }: {
   midia: MidiaGaleria
   selected: boolean
@@ -67,10 +72,12 @@ function GalleryMediaTile({
   onDownload?: (midia: MidiaGaleria) => void
   onEdit?: (midia: MidiaGaleria) => void
   watermark?: boolean
+  numerarFotos?: boolean
 }) {
   const url =
     midia.thumbUrl ?? midia.webUrl ?? midia.editadaUrl ?? midia.originalUrl ?? null
   const isVideo = midia.tipo === 'video'
+  const numeroVisivel = numerarFotos && midia.tipo === 'foto'
 
   return (
     <div
@@ -123,6 +130,16 @@ function GalleryMediaTile({
           </span>
         ) : null}
 
+        {numeroVisivel ? (
+          <span
+            aria-label={`Foto ${midia.numero}`}
+            title={`Foto ${formatarNumeroFoto(midia.numero)}`}
+            className="absolute left-1.5 top-1.5 inline-flex min-w-5 items-center justify-center rounded-full bg-black/65 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-white shadow"
+          >
+            {formatarNumeroFoto(midia.numero)}
+          </span>
+        ) : null}
+
         {isVideo ? (
           <span className="absolute bottom-1.5 left-1.5 inline-flex items-center gap-1 rounded-full bg-black/60 px-1.5 py-0.5 text-[9px] font-medium text-white">
             <Film className="size-2.5" />
@@ -137,7 +154,12 @@ function GalleryMediaTile({
         ) : null}
 
         {midia.editadaDisponivel ? (
-          <span className="absolute left-1.5 top-1.5 inline-flex items-center gap-1 rounded-full bg-emerald-600/90 px-1.5 py-0.5 text-[9px] font-semibold text-white shadow">
+          <span
+            className={cn(
+              'absolute left-1.5 inline-flex items-center gap-1 rounded-full bg-emerald-600/90 px-1.5 py-0.5 text-[9px] font-semibold text-white shadow',
+              numeroVisivel ? 'top-9' : 'top-1.5',
+            )}
+          >
             <Check className="size-2.5" />
             editada
           </span>

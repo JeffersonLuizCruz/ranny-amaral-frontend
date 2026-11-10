@@ -71,7 +71,7 @@ Os módulos de galerias e financeiro agora usam a API real; o navegador não cal
 - **Login e usuários:** autenticação JWT, troca obrigatória de senha, criação/reset por admin e perfis `Admin`/`Gestor`.
 - **Dashboard:** visão do dia com próximos ensaios, pendências e resumo financeiro.
 - **Agenda:** ensaios, status, remarcações e detalhes do atendimento.
-- **Pacotes:** duração, valor de tabela, fotos/vídeos inclusos, valor da foto extra e promoção opcional.
+- **Pacotes:** duração, valor de tabela, fotos/vídeos inclusos, valor da foto extra, faixas progressivas opcionais e promoção opcional.
 - **Contratos:** modelo, aceite por link público, entrada e saldo final.
 - **Galerias:** upload de originais, seleção pública, fotos extras, edição e entrega por link.
 - **Financeiro:** entradas, saldos finais, extras e previsão do mês.
@@ -80,7 +80,8 @@ Os módulos de galerias e financeiro agora usam a API real; o navegador não cal
 
 ### Pacotes e promoção
 
-- Cada pacote define `quantidadeFotosInclusas`, `quantidadeVideosInclusos` e `valorFotoExtra`.
+- Cada pacote define `quantidadeFotosInclusas`, `quantidadeVideosInclusos`, `valorFotoExtra` e, opcionalmente, `faixasFotoExtra`.
+- As faixas são progressivas: o valor base vale até a primeira faixa; a partir do mínimo de cada faixa, aplica-se o valor unitário dela.
 - A promoção é um atributo do catálogo (`promocao.valorPromocional`), com validade opcional.
 - No momento da venda, o snapshot comercial do ensaio registra se a promoção foi aplicada.
 - Alterar o pacote depois não altera ensaios já criados.
@@ -101,10 +102,14 @@ aguardando_upload → em_selecao → selecao_enviada → em_edicao → pronta_en
 
 - A publicação da seleção exige ensaio realizado, entrada e saldo quitados e mídia mínima enviada.
 - Link de seleção: 30 dias, reabrindo o mesmo token.
+- Cada foto recebe um número estável exibido no grid público e no detalhe do staff; o mesmo número nomeia
+  o arquivo no ZIP de edição.
 - Fotos: o cliente precisa selecionar pelo menos a quantidade inclusa, sem máximo.
 - Vídeos: exatamente a quantidade inclusa, sem vídeo extra.
 - Fotos acima do incluso geram pedido de extras.
 - A edição pode ser liberada manualmente pelo staff, com registro de motivo.
+- O staff vê as fotos selecionadas destacadas, a lista de números e pode baixar os originais em
+  **ZIP para edição** direto do detalhe da galeria.
 - Cada foto selecionada pode receber uma **versão editada** (JPEG/PNG/WebP até 50 MB).
 - O staff pode **liberar os RAW** de forma explícita, auditada e revogável.
 - A publicação da entrega exige versão editada ou RAW liberado para cada foto selecionada.

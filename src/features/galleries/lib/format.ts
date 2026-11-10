@@ -4,3 +4,8 @@ export function formatDateLong(value?: string): string {
   if (!Number.isFinite(date.getTime())) return '—'
   return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'long' }).format(date)
 }
+
+/** Numero da foto no grid, com tres digitos para ordenar e casar com o ZIP. */
+export function formatarNumeroFoto(numero: number): string {
+  return String(numero).padStart(3, '0')
+}

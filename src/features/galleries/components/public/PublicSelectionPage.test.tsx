@@ -21,6 +21,7 @@ const midia = {
   mimeType: 'image/jpeg',
   tamanho: 10,
   status: 'original',
+  numero: 1,
   uploadedAt: '2026-01-01T00:00:00.000Z',
   thumbUrl: 'https://storage/thumb.jpg',
   processamentoStatus: 'disponivel',
@@ -88,6 +89,7 @@ describe('PublicSelectionPage', () => {
 
     expect(await screen.findByText('Enviar seleção')).toBeInTheDocument()
     expect(screen.queryByText('Seleção enviada')).not.toBeInTheDocument()
+    expect(screen.getByText('001')).toBeInTheDocument()
   })
 
   it('mostra a chave Pix e o upload quando há extras pendentes', async () => {
@@ -161,5 +163,6 @@ describe('PublicSelectionPage', () => {
 
     expect(await screen.findByText('Seleção enviada')).toBeInTheDocument()
     expect(screen.getByText('SEL-2026-0001')).toBeInTheDocument()
+    expect(screen.getByText('001')).toBeInTheDocument()
   })
 })

@@ -29,6 +29,7 @@ export function toMidia(dto: MidiaDto): MidiaGaleria {
     mimeType: dto.mimeType,
     tamanho: dto.tamanho,
     status: dto.editadaDisponivel || dto.editadaUrl ? 'editada' : 'original',
+    numero: dto.ordem,
     uploadedAt: dto.createdAt,
     thumbUrl: dto.thumbUrl ?? undefined,
     webUrl: dto.webUrl ?? undefined,

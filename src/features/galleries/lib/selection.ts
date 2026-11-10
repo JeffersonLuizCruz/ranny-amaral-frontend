@@ -4,6 +4,7 @@ import type { Contrato } from '@/domain/contracts'
 import type {
   AgendamentoEnsaio,
   CondicoesPacote,
+  FaixaFotoExtra,
   PacoteFotografico,
 } from '@/domain/types'
 
@@ -11,6 +12,13 @@ export interface CondicoesGaleria {
   fotosInclusas: number
   videosInclusos: number
   valorFotoExtra: number
+  faixasFotoExtra?: FaixaFotoExtra[]
+}
+
+export interface FaixaAplicada {
+  quantidade: number
+  valorUnitario: number
+  subtotal: number
 }
 
 export interface ResultadoSelecao {
@@ -18,6 +26,7 @@ export interface ResultadoSelecao {
   videosSelecionados: number
   fotosExtras: number
   valorExtras: number
+  detalhamentoExtras: FaixaAplicada[]
 }
 
 export interface ValidacaoSelecao {
@@ -47,7 +56,69 @@ export function getCondicoesGaleria(
       pacote?.quantidadeVideosInclusos ??
       0,
     valorFotoExtra: condicoes?.valorFotoExtra ?? pacote?.valorFotoExtra ?? 0,
+    faixasFotoExtra: condicoes?.faixasFotoExtra ?? pacote?.faixasFotoExtra ?? [],
   }
+}
+
+function arredondar(valor: number): number {
+  return Math.round(valor * 100) / 100
+}
+
+/**
+ * Calculo progressivo das fotos extras: o preco base vale ate a primeira
+ * faixa; cada faixa vale do seu minimo ate o minimo da proxima (ou o fim).
+ */
+export function calcularValorExtras(
+  valorBase: number,
+  faixas: FaixaFotoExtra[] | undefined,
+  quantidade: number,
+): { valorTotal: number; detalhamento: FaixaAplicada[] } {
+  if (quantidade <= 0) {
+    return { valorTotal: 0, detalhamento: [] }
+  }
+
+  const ordenadas = [...(faixas ?? [])]
+    .filter(
+      (faixa) =>
+        faixa != null && faixa.quantidadeMinima > 0 && Number.isFinite(faixa.valorUnitario),
+    )
+    .sort((a, b) => a.quantidadeMinima - b.quantidadeMinima)
+
+  const detalhamento: FaixaAplicada[] = []
+  let total = 0
+  let cursor = 1
+
+  const registrar = (quantidadeFaixa: number, valorUnitario: number) => {
+    const subtotal = arredondar(quantidadeFaixa * valorUnitario)
+    detalhamento.push({ quantidade: quantidadeFaixa, valorUnitario, subtotal })
+    total += subtotal
+  }
+
+  for (let i = 0; i < ordenadas.length && cursor <= quantidade; i += 1) {
+    const faixa = ordenadas[i]
+    if (faixa.quantidadeMinima > cursor) {
+      const fimBase = Math.min(quantidade, faixa.quantidadeMinima - 1)
+      if (fimBase >= cursor) {
+        registrar(fimBase - cursor + 1, valorBase)
+        cursor = fimBase + 1
+      }
+    }
+    if (cursor > quantidade) break
+
+    const proximoMinimo =
+      i + 1 < ordenadas.length ? ordenadas[i + 1].quantidadeMinima : Number.POSITIVE_INFINITY
+    const fimFaixa = Math.min(quantidade, proximoMinimo - 1)
+    if (fimFaixa >= cursor) {
+      registrar(fimFaixa - cursor + 1, faixa.valorUnitario)
+      cursor = fimFaixa + 1
+    }
+  }
+
+  if (cursor <= quantidade) {
+    registrar(quantidade - cursor + 1, valorBase)
+  }
+
+  return { valorTotal: arredondar(total), detalhamento }
 }
 
 export function calcularResultadoSelecao(
@@ -56,14 +127,18 @@ export function calcularResultadoSelecao(
   condicoes: CondicoesGaleria,
 ): ResultadoSelecao {
   const fotosExtras = Math.max(0, fotosSelecionadas - condicoes.fotosInclusas)
-  const valorExtras =
-    Math.round(fotosExtras * condicoes.valorFotoExtra * 100) / 100
+  const { valorTotal, detalhamento } = calcularValorExtras(
+    condicoes.valorFotoExtra,
+    condicoes.faixasFotoExtra,
+    fotosExtras,
+  )
 
   return {
     fotosSelecionadas,
     videosSelecionados,
     fotosExtras,
-    valorExtras,
+    valorExtras: valorTotal,
+    detalhamentoExtras: detalhamento,
   }
 }
 
@@ -170,4 +245,16 @@ export function contarSelecao(
     fotos: fotos.filter((midia) => fotoIds.has(midia.id)).length,
     videos: videos.filter((midia) => videoIds.has(midia.id)).length,
   }
+}
+
+/** Numeros das fotos selecionadas, na ordem exibida no grid. */
+export function numerosDasFotosSelecionadas(
+  fotos: MidiaGaleria[],
+  fotoIds: string[],
+): number[] {
+  const numeroPorId = new Map(fotos.map((foto) => [foto.id, foto.numero]))
+  return fotoIds
+    .map((id) => numeroPorId.get(id))
+    .filter((numero): numero is number => numero !== undefined)
+    .sort((a, b) => a - b)
 }

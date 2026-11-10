@@ -2,6 +2,11 @@ import type { PacoteDraft, PacoteFotografico } from '@/domain/types'
 import { isHexColor, normalizeHex } from '@/shared/lib/colors'
 import { parseCurrencyInput } from '@/shared/lib/currency'
 
+export interface FaixaFotoExtraFormValue {
+  quantidadeMinima: string
+  valorUnitario: string
+}
+
 export interface PackageFormValues {
   nome: string
   duracaoMinutos: string
@@ -13,6 +18,7 @@ export interface PackageFormValues {
   quantidadeFotosInclusas: string
   quantidadeVideosInclusos: string
   valorFotoExtra: string
+  faixasFotoExtra: FaixaFotoExtraFormValue[]
   promocaoAtiva: boolean
   promocaoValor: string
   promocaoValidaAte: string
@@ -28,6 +34,7 @@ export type PackageFormErrors = Partial<
     | 'quantidadeFotosInclusas'
     | 'quantidadeVideosInclusos'
     | 'valorFotoExtra'
+    | 'faixasFotoExtra'
     | 'promocaoValor',
     string
   >
@@ -45,6 +52,7 @@ export function createEmptyPackageValues(): PackageFormValues {
     quantidadeFotosInclusas: '0',
     quantidadeVideosInclusos: '0',
     valorFotoExtra: '',
+    faixasFotoExtra: [],
     promocaoAtiva: false,
     promocaoValor: '',
     promocaoValidaAte: '',
@@ -64,6 +72,10 @@ export function packageToFormValues(pacote: PacoteFotografico): PackageFormValue
     quantidadeFotosInclusas: String(pacote.quantidadeFotosInclusas),
     quantidadeVideosInclusos: String(pacote.quantidadeVideosInclusos),
     valorFotoExtra: String(pacote.valorFotoExtra),
+    faixasFotoExtra: (pacote.faixasFotoExtra ?? []).map((faixa) => ({
+      quantidadeMinima: String(faixa.quantidadeMinima),
+      valorUnitario: String(faixa.valorUnitario),
+    })),
     promocaoAtiva: Boolean(pacote.promocao?.ativa),
     promocaoValor: pacote.promocao ? String(pacote.promocao.valorPromocional) : '',
     promocaoValidaAte: pacote.promocao?.validaAte?.slice(0, 10) ?? '',
@@ -117,6 +129,33 @@ export function validatePackageForm(values: PackageFormValues): {
   if (!Number.isFinite(valorFotoExtra) || valorFotoExtra < 0) {
     errors.valorFotoExtra = 'Informe um valor válido para a foto extra.'
   }
+
+  const faixasFotoExtra = values.faixasFotoExtra.map((faixa) => ({
+    quantidadeMinima: Number(faixa.quantidadeMinima),
+    valorUnitario: parseCurrencyInput(faixa.valorUnitario),
+  }))
+  const minimos = new Set<number>()
+  for (const faixa of faixasFotoExtra) {
+    if (!Number.isInteger(faixa.quantidadeMinima) || faixa.quantidadeMinima < 2) {
+      errors.faixasFotoExtra = 'A primeira faixa deve começar na 2ª foto extra.'
+      break
+    }
+    if (
+      !Number.isFinite(faixa.valorUnitario) ||
+      faixa.valorUnitario < 0
+    ) {
+      errors.faixasFotoExtra = 'Informe um valor válido para cada faixa.'
+      break
+    }
+    if (minimos.has(faixa.quantidadeMinima)) {
+      errors.faixasFotoExtra = 'Não repita a mesma quantidade mínima nas faixas.'
+      break
+    }
+    minimos.add(faixa.quantidadeMinima)
+  }
+  const faixasOrdenadas = [...faixasFotoExtra].sort(
+    (a, b) => a.quantidadeMinima - b.quantidadeMinima,
+  )
   if (values.promocaoAtiva) {
     if (
       !values.promocaoValor.trim() ||
@@ -144,6 +183,7 @@ export function validatePackageForm(values: PackageFormValues): {
       quantidadeFotosInclusas,
       quantidadeVideosInclusos,
       valorFotoExtra,
+      faixasFotoExtra: faixasOrdenadas,
       promocao: values.promocaoAtiva
         ? {
             ativa: true,

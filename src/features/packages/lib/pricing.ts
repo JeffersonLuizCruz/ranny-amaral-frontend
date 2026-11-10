@@ -33,6 +33,7 @@ export function buildCondicoesPacote(
     quantidadeFotosInclusas: pacote.quantidadeFotosInclusas,
     quantidadeVideosInclusos: pacote.quantidadeVideosInclusos,
     valorFotoExtra: pacote.valorFotoExtra,
+    faixasFotoExtra: pacote.faixasFotoExtra ?? [],
     valorTabela: pacote.valor,
     promocaoAplicada: usarPromocao
       ? {

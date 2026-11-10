@@ -1,4 +1,5 @@
 import type { FormaPagamentoSaldo } from './payments'
+import type { FaixaFotoExtra } from './types'
 
 export type GaleriaStatus =
   | 'nao_criada'
@@ -22,6 +23,7 @@ export interface MidiaGaleria {
   arquivoKey?: string
   status: MidiaStatus
   originalId?: string
+  numero: number
   uploadedAt: string
   thumbUrl?: string
   webUrl?: string
@@ -53,11 +55,19 @@ export interface LiberacaoManual {
   motivo: string
 }
 
+export interface FaixaAplicada {
+  quantidade: number
+  valorUnitario: number
+  subtotal: number
+}
+
 export interface PedidoExtras {
   id: string
   quantidadeFotos: number
   valorUnitario: number
+  valorMedioUnitario?: number
   valorTotal: number
+  detalhamento?: FaixaAplicada[]
   status: PedidoExtrasStatus
   formaPagamento?: FormaPagamentoSaldo
   confirmadoEm?: string
@@ -123,6 +133,7 @@ export interface GaleriaEnsaio {
   fotosInclusas?: number
   videosInclusos?: number
   valorFotoExtra?: number
+  faixasFotoExtra?: FaixaFotoExtra[]
   totalFotos?: number
   totalVideos?: number
   fotosDisponiveis?: number

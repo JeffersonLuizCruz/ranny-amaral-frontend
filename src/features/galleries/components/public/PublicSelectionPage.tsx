@@ -9,6 +9,8 @@ import { formatBRL } from '@/shared/lib/currency'
 import { mensagemDeErro } from '@/shared/api/errors'
 import { GalleryMediaGrid } from '@/features/galleries/components/GalleryMediaGrid'
 import { ExtrasPaymentCard } from '@/features/galleries/components/public/ExtrasPaymentCard'
+import { formatarNumeroFoto } from '@/features/galleries/lib/format'
+import { calcularValorExtras, numerosDasFotosSelecionadas } from '@/features/galleries/lib/selection'
 import {
   consultarGaleriaPublica,
   enviarSelecaoPublica,
@@ -71,10 +73,18 @@ export function PublicSelectionPage() {
       ),
     [data],
   )
+  const numerosSelecionados = useMemo(
+    () => numerosDasFotosSelecionadas(fotos, data?.selecao?.fotoIds ?? []),
+    [fotos, data?.selecao],
+  )
   const fotosInclusas = data?.galeria.fotosInclusas ?? 0
   const videosInclusos = data?.galeria.videosInclusos ?? 0
   const extras = Math.max(0, fotoIds.size - fotosInclusas)
-  const valorExtras = extras * (data?.galeria.valorFotoExtra ?? 0)
+  const { valorTotal: valorExtras } = calcularValorExtras(
+    data?.galeria.valorFotoExtra ?? 0,
+    data?.galeria.faixasFotoExtra,
+    extras,
+  )
   // Uma seleção reaberta continua disponível para edição; só bloqueia quando
   // o cliente já enviou a seleção atual.
   const selecaoEnviada = data?.selecao?.status === 'enviada'
@@ -167,6 +177,14 @@ export function PublicSelectionPage() {
             {data.selecao.fotoIds.length} fotos e {data.selecao.videoIds.length} vídeos
             selecionados.
           </p>
+          {numerosSelecionados.length > 0 ? (
+            <p className="mt-1 text-xs text-muted">
+              Fotos:{' '}
+              <strong className="text-ink">
+                {numerosSelecionados.map(formatarNumeroFoto).join(', ')}
+              </strong>
+            </p>
+          ) : null}
           {data.selecao.fotosExtras > 0 ? (
             <p className="mt-2 text-xs text-ink">
               {data.selecao.fotosExtras} foto(s) extra(s) ·{' '}
@@ -211,7 +229,8 @@ export function PublicSelectionPage() {
           {data.galeria.clienteNome ?? 'Sua galeria'}
         </h1>
         <p className="mt-0.5 text-xs text-muted">
-          {fotosInclusas} fotos e {videosInclusos} vídeos inclusos
+          {fotosInclusas} fotos e {videosInclusos} vídeos inclusos. As fotos estão
+          numeradas; use o número para se referir a cada uma.
         </p>
       </div>
 
@@ -225,6 +244,7 @@ export function PublicSelectionPage() {
             midias={fotos}
             selectedIds={fotoIds}
             watermark
+            numerarFotos
             onToggle={(id) => setFotoIds((atual) => toggle(atual, id))}
           />
         </div>

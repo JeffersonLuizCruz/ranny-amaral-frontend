@@ -288,7 +288,11 @@ export function AppointmentForm({
               </span>
             ) : null}
             <span className="inline-flex items-center gap-1 rounded-full bg-surface px-2 py-1 ring-1 ring-line">
-              Extra {formatBRL(pacoteSelecionado.valorFotoExtra)}/foto
+              Extra{' '}
+              {pacoteSelecionado.faixasFotoExtra &&
+              pacoteSelecionado.faixasFotoExtra.length > 0
+                ? `a partir de ${formatBRL(pacoteSelecionado.valorFotoExtra)}/foto`
+                : `${formatBRL(pacoteSelecionado.valorFotoExtra)}/foto`}
             </span>
           </div>
 

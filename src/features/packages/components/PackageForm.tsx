@@ -184,6 +184,96 @@ export function PackageForm({ open, pacote, onClose, onSubmit }: PackageFormProp
               aria-invalid={Boolean(errors.valorFotoExtra)}
             />
           </Field>
+
+          <div className="mt-3 rounded-lg border border-line bg-canvas/40 p-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold text-ink">Faixas progressivas (opcional)</p>
+                <p className="text-[11px] text-muted">
+                  Ex.: a partir da 11ª foto extra, R$ 10,00 cada. O valor base acima vale
+                  até a faixa seguinte.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => update({
+                  faixasFotoExtra: [
+                    ...values.faixasFotoExtra,
+                    { quantidadeMinima: '', valorUnitario: '' },
+                  ],
+                })}
+              >
+                Adicionar
+              </Button>
+            </div>
+
+            {values.faixasFotoExtra.length > 0 ? (
+              <div className="mt-3 space-y-2">
+                {values.faixasFotoExtra.map((faixa, index) => (
+                  <div key={index} className="grid grid-cols-[1fr_1fr_auto] items-end gap-2">
+                    <Field label="A partir da foto extra" htmlFor={`package-tier-min-${index}`}>
+                      <input
+                        id={`package-tier-min-${index}`}
+                        type="number"
+                        min={2}
+                        step={1}
+                        value={faixa.quantidadeMinima}
+                        onChange={(event) => {
+                          const faixas = values.faixasFotoExtra.map((item, itemIndex) =>
+                            itemIndex === index
+                              ? { ...item, quantidadeMinima: event.target.value }
+                              : item,
+                          )
+                          update({ faixasFotoExtra: faixas })
+                        }}
+                        placeholder="11"
+                        className={inputClass}
+                      />
+                    </Field>
+                    <Field label="Valor unitário (R$)" htmlFor={`package-tier-value-${index}`}>
+                      <input
+                        id={`package-tier-value-${index}`}
+                        type="number"
+                        min={0}
+                        step={0.01}
+                        value={faixa.valorUnitario}
+                        onChange={(event) => {
+                          const faixas = values.faixasFotoExtra.map((item, itemIndex) =>
+                            itemIndex === index
+                              ? { ...item, valorUnitario: event.target.value }
+                              : item,
+                          )
+                          update({ faixasFotoExtra: faixas })
+                        }}
+                        placeholder="10,00"
+                        className={inputClass}
+                      />
+                    </Field>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => update({
+                        faixasFotoExtra: values.faixasFotoExtra.filter(
+                          (_, itemIndex) => itemIndex !== index,
+                        ),
+                      })}
+                    >
+                      Remover
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+
+            {errors.faixasFotoExtra ? (
+              <p className="mt-2 text-[11px] font-medium text-red-600">
+                {errors.faixasFotoExtra}
+              </p>
+            ) : null}
+          </div>
         </div>
 
         <div className="rounded-xl border border-line p-3">

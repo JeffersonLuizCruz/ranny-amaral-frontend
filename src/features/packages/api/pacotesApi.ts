@@ -1,4 +1,4 @@
-import type { PacoteDraft, PacoteFotografico, PromocaoPacote } from '@/domain/types'
+import type { FaixaFotoExtra, PacoteDraft, PacoteFotografico, PromocaoPacote } from '@/domain/types'
 import { http } from '@/shared/api/httpClient'
 import { toQuery } from '@/shared/api/query'
 import type { Pagina } from '@/shared/api/types'
@@ -22,9 +22,15 @@ interface PacoteDto {
   quantidadeFotosInclusas: number
   quantidadeVideosInclusos: number
   valorFotoExtra: number
+  faixasFotoExtra: FaixaFotoExtraDto[] | null
   promocao: PromocaoDto | null
   createdAt: string
   updatedAt: string
+}
+
+interface FaixaFotoExtraDto {
+  quantidadeMinima: number
+  valorUnitario: number
 }
 
 interface PacoteRequest {
@@ -38,6 +44,7 @@ interface PacoteRequest {
   quantidadeFotosInclusas: number
   quantidadeVideosInclusos: number
   valorFotoExtra: number
+  faixasFotoExtra: FaixaFotoExtraDto[]
   promocao: PromocaoDto | null
 }
 
@@ -49,6 +56,14 @@ function toPromocao(dto: PromocaoDto | null): PromocaoPacote | undefined {
     validaAte: dto.validaAte ?? undefined,
     rotulo: dto.rotulo ?? undefined,
   }
+}
+
+function toFaixas(dto: FaixaFotoExtraDto[] | null): FaixaFotoExtra[] {
+  if (!dto) return []
+  return dto.map((faixa) => ({
+    quantidadeMinima: faixa.quantidadeMinima,
+    valorUnitario: faixa.valorUnitario,
+  }))
 }
 
 function toPacote(dto: PacoteDto): PacoteFotografico {
@@ -64,6 +79,7 @@ function toPacote(dto: PacoteDto): PacoteFotografico {
     quantidadeFotosInclusas: dto.quantidadeFotosInclusas,
     quantidadeVideosInclusos: dto.quantidadeVideosInclusos,
     valorFotoExtra: dto.valorFotoExtra,
+    faixasFotoExtra: toFaixas(dto.faixasFotoExtra),
     promocao: toPromocao(dto.promocao),
     createdAt: dto.createdAt,
     updatedAt: dto.updatedAt,
@@ -82,6 +98,10 @@ function toRequest(draft: PacoteDraft): PacoteRequest {
     quantidadeFotosInclusas: draft.quantidadeFotosInclusas,
     quantidadeVideosInclusos: draft.quantidadeVideosInclusos,
     valorFotoExtra: draft.valorFotoExtra,
+    faixasFotoExtra: (draft.faixasFotoExtra ?? []).map((faixa) => ({
+      quantidadeMinima: faixa.quantidadeMinima,
+      valorUnitario: faixa.valorUnitario,
+    })),
     promocao: draft.promocao
       ? {
           ativa: draft.promocao.ativa,

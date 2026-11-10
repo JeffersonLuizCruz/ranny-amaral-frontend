@@ -13,6 +13,12 @@ export type ClienteOrigem =
   | 'contrato'
   | 'outro'
 
+export interface FaixaFotoExtra {
+  /** Quantidade minima de fotos extras em que a faixa passa a valer. */
+  quantidadeMinima: number
+  valorUnitario: number
+}
+
 export interface PromocaoPacote {
   ativa: boolean
   /** Valor total do pacote durante a promoção. */
@@ -36,6 +42,8 @@ export interface PacoteFotografico {
   quantidadeVideosInclusos: number
   /** Valor cobrado por cada foto adicional. */
   valorFotoExtra: number
+  /** Faixas progressivas opcionais da foto extra. */
+  faixasFotoExtra?: FaixaFotoExtra[]
   promocao?: PromocaoPacote
   createdAt: string
   updatedAt: string
@@ -49,6 +57,7 @@ export interface CondicoesPacote {
   quantidadeFotosInclusas: number
   quantidadeVideosInclusos: number
   valorFotoExtra: number
+  faixasFotoExtra?: FaixaFotoExtra[]
   valorTabela: number
   promocaoAplicada?: {
     valorPromocional: number

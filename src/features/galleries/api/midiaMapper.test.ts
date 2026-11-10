@@ -27,6 +27,7 @@ describe('toMidia', () => {
 
     expect(midia.id).toBe('mid-1')
     expect(midia.tipo).toBe('foto')
+    expect(midia.numero).toBe(1)
     expect(midia.thumbUrl).toBe('https://storage/thumb.jpg')
     expect(midia.processamentoStatus).toBe('disponivel')
     expect(midia.status).toBe('original')

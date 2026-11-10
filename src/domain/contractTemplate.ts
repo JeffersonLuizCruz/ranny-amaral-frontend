@@ -1,6 +1,6 @@
 import { format } from 'date-fns'
 
-import type { AgendamentoEnsaio, Cliente, PacoteFotografico } from './types'
+import type { AgendamentoEnsaio, Cliente, FaixaFotoExtra, PacoteFotografico } from './types'
 import type { ClausulaModelo, ContratoClausula, EstudioConfig } from './contracts'
 import { formatBRL } from '@/shared/lib/currency'
 import { formatDuration, formatTime } from '@/shared/lib/date'
@@ -20,6 +20,7 @@ export interface ContractTemplateContext {
     | 'quantidadeFotosInclusas'
     | 'quantidadeVideosInclusos'
     | 'valorFotoExtra'
+    | 'faixasFotoExtra'
   > & {
     promocaoAplicada?: { valorPromocional: number; rotulo?: string }
     valorEfetivo?: number
@@ -74,6 +75,7 @@ export const CONTRACT_VARIABLES: ContractVariable[] = [
   { token: 'pacote.fotosInclusas', label: 'Fotos inclusas', group: 'Pacote', sample: '20' },
   { token: 'pacote.videosInclusos', label: 'Vídeos inclusos', group: 'Pacote', sample: '0' },
   { token: 'pacote.valorFotoExtra', label: 'Valor da foto extra', group: 'Pacote', sample: 'R$ 45,00' },
+  { token: 'pacote.regraFotoExtra', label: 'Regra da foto extra', group: 'Pacote', sample: 'R$ 45,00 da 1ª à 10ª foto extra; R$ 30,00 da 11ª em diante' },
   { token: 'pacote.itens', label: 'Itens inclusos', group: 'Pacote', sample: '20 fotos tratadas; galeria online' },
 
   { token: 'agendamento.data', label: 'Data do ensaio', group: 'Agendamento', sample: '05/11/2026' },
@@ -97,6 +99,43 @@ function formatDate(value?: string): string {
   if (!value) return '—'
   const date = new Date(value)
   return Number.isNaN(date.getTime()) ? '—' : format(date, 'dd/MM/yyyy')
+}
+
+function formatarRegraFotoExtra(
+  valorBase?: number,
+  faixas?: FaixaFotoExtra[],
+): string {
+  if (!faixas || faixas.length === 0) {
+    return valorBase != null ? `${formatBRL(valorBase)} por foto extra` : '—'
+  }
+  const ordenadas = [...faixas]
+    .filter((faixa) => faixa != null && faixa.quantidadeMinima > 0)
+    .sort((a, b) => a.quantidadeMinima - b.quantidadeMinima)
+  if (ordenadas.length === 0) {
+    return valorBase != null ? `${formatBRL(valorBase)} por foto extra` : '—'
+  }
+  const partes: string[] = []
+  const primeira = ordenadas[0].quantidadeMinima
+  if (primeira > 2) {
+    partes.push(`${formatBRL(valorBase ?? 0)} da 1ª à ${primeira - 1}ª foto extra`)
+  } else if (primeira === 2) {
+    partes.push(`${formatBRL(valorBase ?? 0)} na 1ª foto extra`)
+  }
+  ordenadas.forEach((faixa, index) => {
+    const proxima = index + 1 < ordenadas.length
+      ? ordenadas[index + 1].quantidadeMinima
+      : undefined
+    if (proxima != null) {
+      partes.push(
+        `${formatBRL(faixa.valorUnitario)} da ${faixa.quantidadeMinima}ª à ${proxima - 1}ª foto extra`,
+      )
+    } else {
+      partes.push(
+        `${formatBRL(faixa.valorUnitario)} da ${faixa.quantidadeMinima}ª em diante`,
+      )
+    }
+  })
+  return partes.join('; ')
 }
 
 function buildTokens(context: ContractTemplateContext): Record<string, string> {
@@ -136,6 +175,10 @@ function buildTokens(context: ContractTemplateContext): Record<string, string> {
         : '—',
     'pacote.valorFotoExtra':
       pacote?.valorFotoExtra != null ? formatBRL(pacote.valorFotoExtra) : '—',
+    'pacote.regraFotoExtra': formatarRegraFotoExtra(
+      pacote?.valorFotoExtra,
+      pacote?.faixasFotoExtra,
+    ),
     'pacote.itens': pacote?.itensInclusos.length ? pacote.itensInclusos.join('; ') : '—',
 
     'agendamento.data': formatDate(agendamento?.dataHoraInicio),

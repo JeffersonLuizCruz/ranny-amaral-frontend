@@ -76,6 +76,16 @@ export function ExtrasPaymentCard({ token, extras, onChange }: ExtrasPaymentCard
       <p className="mt-1 text-xs text-muted">
         {extras.quantidadeFotos} foto(s) extra(s) · {formatBRL(extras.valorTotal)}
       </p>
+      {extras.detalhamento && extras.detalhamento.length > 0 ? (
+        <p className="mt-1 text-[10px] leading-relaxed text-muted">
+          {extras.detalhamento
+            .map(
+              (faixa) =>
+                `${faixa.quantidade} × ${formatBRL(faixa.valorUnitario)} = ${formatBRL(faixa.subtotal)}`,
+            )
+            .join(' · ')}
+        </p>
+      ) : null}
 
       {pendente ? (
         <>

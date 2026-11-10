@@ -1,12 +1,14 @@
 import type {
   EntregaGaleria,
   EventoGaleria,
+  FaixaAplicada,
   GaleriaEnsaio,
   GaleriaStatus,
   MidiaGaleria,
   PedidoExtras,
   SelecaoGaleria,
 } from '@/domain/galleries'
+import type { FaixaFotoExtra } from '@/domain/types'
 import { toMidia, type MidiaDto } from '@/features/galleries/api/midiaMapper'
 import { http, apiUrl } from '@/shared/api/httpClient'
 import { toQuery } from '@/shared/api/query'
@@ -22,6 +24,7 @@ interface GaleriaDto {
   fotosInclusas: number
   videosInclusos: number
   valorFotoExtra: number
+  faixasFotoExtra: FaixaFotoExtra[] | null
   totalFotos: number
   totalVideos: number
   fotosDisponiveis: number
@@ -61,7 +64,9 @@ export interface ExtrasDto {
   id: string
   quantidadeFotos: number
   valorUnitario: number
+  valorMedioUnitario: number
   valorTotal: number
+  detalhamento: FaixaAplicada[]
   status: 'pendente' | 'pago' | 'isento' | 'cancelado'
   formaPagamento: string | null
   confirmadoEm: string | null
@@ -125,7 +130,9 @@ export function toExtras(dto: ExtrasDto | null): PedidoExtras | undefined {
     id: dto.id,
     quantidadeFotos: dto.quantidadeFotos,
     valorUnitario: dto.valorUnitario,
+    valorMedioUnitario: dto.valorMedioUnitario,
     valorTotal: dto.valorTotal,
+    detalhamento: dto.detalhamento ?? [],
     status: dto.status,
     formaPagamento: (dto.formaPagamento ?? undefined) as PedidoExtras['formaPagamento'],
     confirmadoEm: dto.confirmadoEm ?? undefined,
@@ -191,6 +198,7 @@ function toGaleria(
     fotosInclusas: dto.fotosInclusas,
     videosInclusos: dto.videosInclusos,
     valorFotoExtra: dto.valorFotoExtra,
+    faixasFotoExtra: dto.faixasFotoExtra ?? [],
     totalFotos: dto.totalFotos,
     totalVideos: dto.totalVideos,
     fotosDisponiveis: dto.fotosDisponiveis,
@@ -317,6 +325,19 @@ export async function liberarRaw(galeriaId: string, por?: string): Promise<void>
 
 export async function revogarRaw(galeriaId: string): Promise<void> {
   await http.post(`/galerias/${galeriaId}/entrega/revogar-raw`)
+}
+
+export interface DownloadSelecao {
+  url: string
+  expiraEm: string
+  quantidade: number
+}
+
+/** Gera a URL temporaria do ZIP com as fotos selecionadas para edicao. */
+export async function prepararDownloadSelecao(
+  galeriaId: string,
+): Promise<DownloadSelecao> {
+  return http.post<DownloadSelecao>(`/galerias/${galeriaId}/selecao/download`)
 }
 
 export async function consultarGaleriaPublica(token: string): Promise<{

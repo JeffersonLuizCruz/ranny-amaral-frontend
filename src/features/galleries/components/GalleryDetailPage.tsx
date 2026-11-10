@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   CheckCircle2,
   Copy,
+  Download,
   ExternalLink,
   Images,
   Link2,
@@ -18,11 +19,15 @@ import { EmptyState } from '@/shared/components/ui/EmptyState'
 import { formatBRL } from '@/shared/lib/currency'
 import { useToastStore } from '@/shared/store/toastStore'
 import { mensagemDeErro } from '@/shared/api/errors'
+import { apiUrl } from '@/shared/api/httpClient'
+import { prepararDownloadSelecao } from '@/features/galleries/api/galeriasApi'
 import { useGalleryStore } from '@/features/galleries/store/galleryStore'
 import { GalleryStatusBadge } from '@/features/galleries/components/GalleryStatusBadge'
 import { GalleryMediaGrid } from '@/features/galleries/components/GalleryMediaGrid'
 import { GalleryMediaUploader } from '@/features/galleries/components/GalleryMediaUploader'
 import { GalleryEditedVersionDialog } from '@/features/galleries/components/GalleryEditedVersionDialog'
+import { formatarNumeroFoto } from '@/features/galleries/lib/format'
+import { numerosDasFotosSelecionadas } from '@/features/galleries/lib/selection'
 
 function formatDateTime(value?: string): string {
   if (!value) return '—'
@@ -52,6 +57,7 @@ export function GalleryDetailPage() {
   const revokeRaw = useGalleryStore((state) => state.revokeRaw)
   const addToast = useToastStore((state) => state.addToast)
   const [editando, setEditando] = useState<MidiaGaleria | null>(null)
+  const [baixandoSelecao, setBaixandoSelecao] = useState(false)
 
   useEffect(() => {
     void carregarGaleria(galeriaId).catch(() => undefined)
@@ -111,8 +117,16 @@ export function GalleryDetailPage() {
     'entregue',
   ].includes(galeria.status)
   const podeReabrirSelecao = !['entregue', 'cancelada'].includes(galeria.status)
-  const selecionadas = new Set(detalhe.selecao?.fotoIds ?? [])
+  const selecionadas = new Set([
+    ...(detalhe.selecao?.fotoIds ?? []),
+    ...(detalhe.selecao?.videoIds ?? []),
+  ])
   const fotosSelecionadas = fotos.filter((midia) => selecionadas.has(midia.id))
+  const numerosSelecionados = numerosDasFotosSelecionadas(
+    fotos,
+    detalhe.selecao?.fotoIds ?? [],
+  )
+  const selecaoEnviada = detalhe.selecao?.status === 'enviada'
   const fotosEditadas = fotosSelecionadas.filter((midia) => midia.editadaDisponivel)
   const fotosSemEdicao = fotosSelecionadas.length - fotosEditadas.length
   const entregaBloqueada = !galeria.rawLiberado && fotosSemEdicao > 0
@@ -129,6 +143,36 @@ export function GalleryDetailPage() {
       addToast(`Link de ${tipo} copiado.`)
     } catch {
       addToast('Não foi possível copiar o link.')
+    }
+  }
+
+  const copiarNumeros = async () => {
+    if (numerosSelecionados.length === 0) return
+    try {
+      await navigator.clipboard.writeText(
+        numerosSelecionados.map(formatarNumeroFoto).join(', '),
+      )
+      addToast('Números das fotos copiados.')
+    } catch {
+      addToast('Não foi possível copiar os números.')
+    }
+  }
+
+  const baixarSelecionadas = async () => {
+    setBaixandoSelecao(true)
+    try {
+      const { url, quantidade } = await prepararDownloadSelecao(galeria.id)
+      const anchor = document.createElement('a')
+      anchor.href = apiUrl(url)
+      anchor.download = `selecao-${detalhe.selecao?.protocolo ?? 'fotos'}.zip`
+      document.body.appendChild(anchor)
+      anchor.click()
+      anchor.remove()
+      addToast(`${quantidade} foto(s) selecionada(s) em download.`)
+    } catch (error) {
+      addToast(mensagemDeErro(error))
+    } finally {
+      setBaixandoSelecao(false)
     }
   }
 
@@ -163,7 +207,10 @@ export function GalleryDetailPage() {
               </h2>
               <p className="mt-0.5 text-xs text-muted">
                 {galeria.fotosInclusas ?? 0} fotos e {galeria.videosInclusos ?? 0}{' '}
-                vídeos inclusos · extra {formatBRL(galeria.valorFotoExtra ?? 0)}
+                vídeos inclusos · extra{' '}
+                {galeria.faixasFotoExtra && galeria.faixasFotoExtra.length > 0
+                  ? `a partir de ${formatBRL(galeria.valorFotoExtra ?? 0)}`
+                  : formatBRL(galeria.valorFotoExtra ?? 0)}
               </p>
             </div>
           </div>
@@ -193,6 +240,8 @@ export function GalleryDetailPage() {
           <div className="mt-4">
             <GalleryMediaGrid
               midias={midias}
+              selectedIds={selecionadas}
+              numerarFotos
               onRemove={podeEditarMidias ? (midia) => void remover(midia) : undefined}
               onEdit={podeEditarVersao ? (midia) => setEditando(midia) : undefined}
             />
@@ -256,11 +305,41 @@ export function GalleryDetailPage() {
                   {detalhe.selecao.fotoIds.length} fotos e{' '}
                   {detalhe.selecao.videoIds.length} vídeos selecionados.
                 </p>
+                {numerosSelecionados.length > 0 ? (
+                  <div className="mt-2">
+                    <p className="font-medium text-ink">
+                      Fotos selecionadas ({numerosSelecionados.length}):
+                    </p>
+                    <p className="mt-0.5 break-words font-semibold tracking-wide text-ink">
+                      {numerosSelecionados.map(formatarNumeroFoto).join(', ')}
+                    </p>
+                  </div>
+                ) : null}
                 {detalhe.selecao.fotosExtras > 0 ? (
-                  <p>
+                  <p className="mt-1">
                     Extras: {detalhe.selecao.fotosExtras} fotos ·{' '}
                     {formatBRL(detalhe.selecao.valorExtras)}
                   </p>
+                ) : null}
+                {selecaoEnviada && numerosSelecionados.length > 0 ? (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => void copiarNumeros()}
+                    >
+                      <Copy className="size-3.5" />
+                      Copiar números
+                    </Button>
+                    <Button
+                      size="sm"
+                      disabled={baixandoSelecao}
+                      onClick={() => void baixarSelecionadas()}
+                    >
+                      <Download className="size-3.5" />
+                      {baixandoSelecao ? 'Preparando…' : 'Baixar selecionadas (.zip)'}
+                    </Button>
+                  </div>
                 ) : null}
               </div>
             ) : null}
@@ -278,6 +357,17 @@ export function GalleryDetailPage() {
                   {formatBRL(detalhe.extras.valorTotal)} · status{' '}
                   <strong className="text-ink">{detalhe.extras.status}</strong>
                 </p>
+                {detalhe.extras.detalhamento &&
+                detalhe.extras.detalhamento.length > 0 ? (
+                  <p>
+                    {detalhe.extras.detalhamento
+                      .map(
+                        (faixa) =>
+                          `${faixa.quantidade} × ${formatBRL(faixa.valorUnitario)} = ${formatBRL(faixa.subtotal)}`,
+                      )
+                      .join(' · ')}
+                  </p>
+                ) : null}
                 <p>
                   Pix dos extras:{' '}
                   {detalhe.extras.chavePix ? (
