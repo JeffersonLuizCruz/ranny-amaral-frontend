@@ -8,13 +8,11 @@ import {
   buscarGaleria,
   confirmarExtras,
   criarGaleria,
-  iniciarEdicao,
   isentarExtras,
   liberarEdicao,
   liberarRaw,
   listarGalerias,
   listarMidias,
-  marcarProntaEntrega,
   publicarEntrega,
   publicarSelecao,
   reabrirSelecao,
@@ -58,8 +56,6 @@ interface GalleryState {
   confirmExtras: (id: string, forma: 'pix' | 'dinheiro') => Promise<void>
   waiveExtras: (id: string) => Promise<void>
   releaseEditing: (id: string, motivo: string) => Promise<void>
-  startEditing: (id: string) => Promise<void>
-  markReadyForDelivery: (id: string) => Promise<void>
   publishDelivery: (id: string) => Promise<string>
   revokeDelivery: (id: string) => Promise<void>
   releaseRaw: (id: string, por?: string) => Promise<void>
@@ -199,16 +195,6 @@ export const useGalleryStore = create<GalleryState>()((set, get) => ({
 
   releaseEditing: async (id, motivo) => {
     await liberarEdicao(id, motivo)
-    await get().carregarGaleria(id)
-  },
-
-  startEditing: async (id) => {
-    await iniciarEdicao(id)
-    await get().carregarGaleria(id)
-  },
-
-  markReadyForDelivery: async (id) => {
-    await marcarProntaEntrega(id)
     await get().carregarGaleria(id)
   },
 

@@ -49,8 +49,6 @@ export function GalleryDetailPage() {
   const confirmExtras = useGalleryStore((state) => state.confirmExtras)
   const waiveExtras = useGalleryStore((state) => state.waiveExtras)
   const releaseEditing = useGalleryStore((state) => state.releaseEditing)
-  const startEditing = useGalleryStore((state) => state.startEditing)
-  const markReadyForDelivery = useGalleryStore((state) => state.markReadyForDelivery)
   const publishDelivery = useGalleryStore((state) => state.publishDelivery)
   const revokeDelivery = useGalleryStore((state) => state.revokeDelivery)
   const releaseRaw = useGalleryStore((state) => state.releaseRaw)
@@ -110,12 +108,9 @@ export function GalleryDetailPage() {
   const videos = midias.filter((midia) => midia.tipo === 'video')
   const disponiveis = midias.filter((midia) => midia.processamentoStatus === 'disponivel')
   const podeEditarMidias = ['aguardando_upload', 'em_selecao'].includes(galeria.status)
-  const podeEditarVersao = [
-    'selecao_enviada',
-    'em_edicao',
-    'pronta_entrega',
-    'entregue',
-  ].includes(galeria.status)
+  const podeEditarVersao = ['selecao_enviada', 'em_edicao', 'entregue'].includes(
+    galeria.status,
+  )
   const podeReabrirSelecao = !['entregue', 'cancelada'].includes(galeria.status)
   const selecionadas = new Set([
     ...(detalhe.selecao?.fotoIds ?? []),
@@ -459,31 +454,7 @@ export function GalleryDetailPage() {
             )}
 
             <div className="mt-3 flex flex-wrap gap-2">
-              {['selecao_enviada', 'em_edicao'].includes(galeria.status) ? (
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() =>
-                    void executar(() => startEditing(galeria.id), 'Edição iniciada.')
-                  }
-                >
-                  Iniciar edição
-                </Button>
-              ) : null}
-              {galeria.status === 'em_edicao' ? (
-                <Button
-                  size="sm"
-                  onClick={() =>
-                    void executar(
-                      () => markReadyForDelivery(galeria.id),
-                      'Galeria pronta para entrega.',
-                    )
-                  }
-                >
-                  Marcar pronta
-                </Button>
-              ) : null}
-              {galeria.status === 'pronta_entrega' && extrasQuitados ? (
+              {galeria.status === 'em_edicao' && extrasQuitados ? (
                 <Button
                   size="sm"
                   onClick={() =>

@@ -10,7 +10,6 @@ export interface DashboardResumo {
   galeriasEmSelecao: number
   galeriasAguardandoEdicao: number
   galeriasEmEdicao: number
-  galeriasProntasEntrega: number
   extrasPendentes: number
 }
 

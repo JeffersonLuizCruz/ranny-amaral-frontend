@@ -311,14 +311,6 @@ export async function liberarEdicao(galeriaId: string, motivo: string): Promise<
   })
 }
 
-export async function iniciarEdicao(galeriaId: string): Promise<void> {
-  await http.post(`/galerias/${galeriaId}/edicao/iniciar`)
-}
-
-export async function marcarProntaEntrega(galeriaId: string): Promise<void> {
-  await http.post(`/galerias/${galeriaId}/pronta-entrega`)
-}
-
 export async function publicarEntrega(galeriaId: string): Promise<LinkDto> {
   return http.post<LinkDto>(`/galerias/${galeriaId}/entrega/publicar`)
 }

@@ -7,7 +7,6 @@ export type GaleriaStatus =
   | 'em_selecao'
   | 'selecao_enviada'
   | 'em_edicao'
-  | 'pronta_entrega'
   | 'entregue'
   | 'cancelada'
 
@@ -191,12 +190,6 @@ export const GALERIA_STATUS_META: Record<GaleriaStatus, GaleriaStatusMeta> = {
     badge: 'bg-purple-50 text-purple-700 ring-purple-200',
     dot: 'bg-purple-500',
   },
-  pronta_entrega: {
-    label: 'Pronta para entrega',
-    description: 'Arquivos editados enviados. Publique o link de entrega.',
-    badge: 'bg-teal-50 text-teal-700 ring-teal-200',
-    dot: 'bg-teal-500',
-  },
   entregue: {
     label: 'Entregue',
     description: 'Link de entrega publicado para o cliente.',
@@ -216,7 +209,6 @@ export const GALERIA_STATUS_ORDER: GaleriaStatus[] = [
   'em_selecao',
   'selecao_enviada',
   'em_edicao',
-  'pronta_entrega',
   'entregue',
   'cancelada',
 ]

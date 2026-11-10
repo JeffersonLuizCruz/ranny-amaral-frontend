@@ -29,7 +29,7 @@ export function DashboardKpis({ resumo, financeiro }: DashboardKpisProps) {
       value: String(
         resumo.galeriasAguardandoEdicao + resumo.galeriasEmEdicao,
       ),
-      hint: `${resumo.galeriasProntasEntrega} prontas para entrega`,
+      hint: `${resumo.galeriasEmEdicao} em edição · ${resumo.galeriasAguardandoEdicao} com extras pendentes`,
       icon: Images,
       tone: 'bg-purple-50 text-purple-700',
     },

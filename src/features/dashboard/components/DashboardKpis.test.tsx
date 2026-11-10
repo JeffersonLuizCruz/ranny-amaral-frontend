@@ -12,7 +12,6 @@ const resumo = {
   galeriasEmSelecao: 2,
   galeriasAguardandoEdicao: 1,
   galeriasEmEdicao: 2,
-  galeriasProntasEntrega: 1,
   extrasPendentes: 4,
 }
 

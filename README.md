@@ -97,7 +97,7 @@ Os módulos de galerias e financeiro agora usam a API real; o navegador não cal
 Fluxo:
 
 ```
-aguardando_upload → em_selecao → selecao_enviada → em_edicao → pronta_entrega → entregue
+aguardando_upload → em_selecao → selecao_enviada → em_edicao → entregue
 ```
 
 - A publicação da seleção exige ensaio realizado, entrada e saldo quitados e mídia mínima enviada.
