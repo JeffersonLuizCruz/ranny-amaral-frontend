@@ -1,13 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { post } = vi.hoisted(() => ({ post: vi.fn() }))
+const { get, post } = vi.hoisted(() => ({
+  get: vi.fn(),
+  post: vi.fn(),
+}))
 
 vi.mock('@/shared/api/httpClient', () => ({
-  http: { post },
+  http: { get, post },
   apiUrl: (path: string) => `/api/v1${path}`,
 }))
 
 import {
+  listarGalerias,
   prepararDownloadSelecao,
   urlZipPublico,
 } from '@/features/galleries/api/galeriasApi'
@@ -21,6 +25,53 @@ describe('urlZipPublico', () => {
       )
     },
   )
+})
+
+describe('listarGalerias', () => {
+  beforeEach(() => {
+    get.mockReset()
+  })
+
+  it('envia o filtro baixada e mapeia a data do ZIP baixado', async () => {
+    get.mockResolvedValue({
+      itens: [
+        {
+          id: 'galeria-1',
+          agendamentoId: 'ag-1',
+          contratoId: null,
+          clienteId: null,
+          clienteNome: 'Marina',
+          status: 'entregue',
+          fotosInclusas: 10,
+          videosInclusos: 0,
+          valorFotoExtra: 50,
+          faixasFotoExtra: null,
+          totalFotos: 10,
+          totalVideos: 0,
+          fotosDisponiveis: 10,
+          videosDisponiveis: 0,
+          rawLiberado: false,
+          rawLiberadoEm: null,
+          rawLiberadoPor: null,
+          zipBaixadoEm: '2026-11-10T12:00:00.000Z',
+          capaUrl: null,
+          createdAt: '2026-11-01T10:00:00.000Z',
+          updatedAt: '2026-11-10T12:00:00.000Z',
+        },
+      ],
+      pagina: 0,
+      tamanho: 12,
+      totalItens: 1,
+      totalPaginas: 1,
+      temAnterior: false,
+      temProxima: false,
+    })
+
+    const pagina = await listarGalerias({ baixada: true, pagina: 0, tamanho: 12 })
+
+    expect(get).toHaveBeenCalledWith('/galerias?baixada=true&pagina=0&tamanho=12')
+    expect(pagina.itens[0].zipBaixadoEm).toBe('2026-11-10T12:00:00.000Z')
+  })
 })
 
 describe('prepararDownloadSelecao', () => {

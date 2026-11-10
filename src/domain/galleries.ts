@@ -141,6 +141,7 @@ export interface GaleriaEnsaio {
   rawLiberado?: boolean
   rawLiberadoEm?: string
   rawLiberadoPor?: string
+  zipBaixadoEm?: string
   tokenSelecao?: string
   prazoSelecaoEm?: string
   midias: MidiaGaleria[]

@@ -14,6 +14,7 @@ import { useDebouncedValue } from '@/shared/lib/useDebouncedValue'
 import { useGalleryStore } from '@/features/galleries/store/galleryStore'
 import { GalleryStatusBadge } from '@/features/galleries/components/GalleryStatusBadge'
 import { CreateGalleryDialog } from '@/features/galleries/components/CreateGalleryDialog'
+import { formatDateTime } from '@/features/galleries/lib/format'
 
 type FiltroStatus = 'todas' | GaleriaStatus
 
@@ -25,6 +26,7 @@ export function GalleriesPage() {
   const carregarGalerias = useGalleryStore((state) => state.carregarGalerias)
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState<FiltroStatus>('todas')
+  const [baixada, setBaixada] = useState(false)
   const [pagina, setPagina] = useState(0)
   const [tamanho, setTamanho] = useState(12)
   const [creating, setCreating] = useState(false)
@@ -32,12 +34,13 @@ export function GalleriesPage() {
 
   useEffect(() => {
     void carregarGalerias({
-      status,
+      status: baixada ? 'todas' : status,
       q: queryDebounced.trim() || undefined,
+      baixada: baixada ? true : undefined,
       pagina,
       tamanho,
     }).catch(() => undefined)
-  }, [carregarGalerias, pagina, queryDebounced, status, tamanho])
+  }, [baixada, carregarGalerias, pagina, queryDebounced, status, tamanho])
 
   return (
     <div className="thin-scrollbar h-full overflow-y-auto bg-canvas">
@@ -73,8 +76,9 @@ export function GalleriesPage() {
 
           <div className="no-scrollbar flex gap-1.5 overflow-x-auto pb-0.5">
             <FilterChip
-              active={status === 'todas'}
+              active={!baixada && status === 'todas'}
               onClick={() => {
+                setBaixada(false)
                 setStatus('todas')
                 setPagina(0)
               }}
@@ -84,8 +88,9 @@ export function GalleriesPage() {
             {GALERIA_STATUS_ORDER.map((item) => (
               <FilterChip
                 key={item}
-                active={status === item}
+                active={!baixada && status === item}
                 onClick={() => {
+                  setBaixada(false)
                   setStatus(item)
                   setPagina(0)
                 }}
@@ -93,6 +98,16 @@ export function GalleriesPage() {
                 {GALERIA_STATUS_META[item].label}
               </FilterChip>
             ))}
+            <FilterChip
+              active={baixada}
+              onClick={() => {
+                setBaixada(true)
+                setStatus('todas')
+                setPagina(0)
+              }}
+            >
+              Baixadas
+            </FilterChip>
           </div>
         </div>
       </div>
@@ -109,10 +124,14 @@ export function GalleriesPage() {
         ) : galerias.length === 0 ? (
           <EmptyState
             icon={Images}
-            title={query.trim() ? 'Nenhuma galeria encontrada' : 'Nenhuma galeria criada'}
+            title={
+              query.trim() || baixada
+                ? 'Nenhuma galeria encontrada'
+                : 'Nenhuma galeria criada'
+            }
             description={
-              query.trim()
-                ? 'Tente ajustar a busca ou o filtro de status.'
+              query.trim() || baixada
+                ? 'Tente ajustar a busca ou os filtros.'
                 : 'Crie a primeira galeria a partir de um ensaio realizado.'
             }
             action={
@@ -157,6 +176,14 @@ export function GalleriesPage() {
                       vídeos
                     </span>
                   </div>
+                  {galeria.zipBaixadoEm ? (
+                    <p className="mt-2 border-t border-line pt-2 text-[11px] text-muted">
+                      ZIP baixado em{' '}
+                      <strong className="text-ink">
+                        {formatDateTime(galeria.zipBaixadoEm)}
+                      </strong>
+                    </p>
+                  ) : null}
                 </Link>
               ))}
             </div>

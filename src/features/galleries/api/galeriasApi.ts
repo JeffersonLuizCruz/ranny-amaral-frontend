@@ -32,6 +32,7 @@ interface GaleriaDto {
   rawLiberado: boolean
   rawLiberadoEm: string | null
   rawLiberadoPor: string | null
+  zipBaixadoEm: string | null
   capaUrl: string | null
   createdAt: string
   updatedAt: string
@@ -107,6 +108,7 @@ export interface GaleriaDetalhe {
 export interface GaleriasFiltros {
   status?: GaleriaStatus | 'todas'
   q?: string
+  baixada?: boolean
   pagina?: number
   tamanho?: number
 }
@@ -153,7 +155,10 @@ export function toExtras(dto: ExtrasDto | null): PedidoExtras | undefined {
   }
 }
 
-function toEntrega(links: LinkDto[]): EntregaGaleria | undefined {
+function toEntrega(
+  links: LinkDto[],
+  zipBaixadoEm?: string,
+): EntregaGaleria | undefined {
   const link = links.find((item) => item.tipo === 'entrega')
   if (!link) return undefined
   return {
@@ -166,6 +171,7 @@ function toEntrega(links: LinkDto[]): EntregaGaleria | undefined {
           : 'nao_publicada',
     publicadaEm: link.visualizadaEm ?? undefined,
     expiraEm: link.expiraEm,
+    primeiroDownloadEm: zipBaixadoEm,
     quantidadeDownloads: 0,
     downloads: [],
   }
@@ -206,12 +212,13 @@ function toGaleria(
     rawLiberado: dto.rawLiberado,
     rawLiberadoEm: dto.rawLiberadoEm ?? undefined,
     rawLiberadoPor: dto.rawLiberadoPor ?? undefined,
+    zipBaixadoEm: dto.zipBaixadoEm ?? undefined,
     tokenSelecao: linkSelecao?.token,
     prazoSelecaoEm: linkSelecao?.expiraEm,
     midias: [],
     selecao,
     pedidoExtras: extras,
-    entrega: toEntrega(links),
+    entrega: toEntrega(links, dto.zipBaixadoEm ?? undefined),
     historico,
     createdAt: dto.createdAt,
     updatedAt: dto.updatedAt,
@@ -234,6 +241,7 @@ export async function listarGalerias(
   const query = toQuery({
     status: filtros.status === 'todas' ? undefined : filtros.status,
     q: filtros.q,
+    baixada: filtros.baixada,
     pagina: filtros.pagina,
     tamanho: filtros.tamanho,
   })

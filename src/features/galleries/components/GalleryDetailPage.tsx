@@ -527,6 +527,13 @@ export function GalleryDetailPage() {
               ? `Disponível até ${formatDateTime(galeria.entrega.expiraEm)}.`
               : 'Ainda não publicada. Marque como pronta e publique após os extras.'}
           </p>
+          {galeria.zipBaixadoEm || galeria.entrega?.token ? (
+            <p className="mt-1 text-[11px] text-muted">
+              {galeria.zipBaixadoEm
+                ? `Cliente baixou o ZIP em ${formatDateTime(galeria.zipBaixadoEm)}.`
+                : 'Cliente ainda não baixou o ZIP da entrega.'}
+            </p>
+          ) : null}
 
           {entregaBloqueada ? (
             <p className="mt-2 rounded-xl bg-amber-50 px-3 py-2 text-[11px] text-amber-800 ring-1 ring-amber-200">
