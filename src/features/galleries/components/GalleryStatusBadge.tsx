@@ -1,11 +1,11 @@
-import { GALERIA_STATUS_META, type GaleriaStatus } from '@/domain/galleries'
+import { GALERIA_STATUS_META, type GaleriaStatusVisual } from '@/domain/galleries'
 import { cn } from '@/shared/lib/cn'
 
 export function GalleryStatusBadge({
   status,
   className,
 }: {
-  status: GaleriaStatus
+  status: GaleriaStatusVisual
   className?: string
 }) {
   const meta = GALERIA_STATUS_META[status]

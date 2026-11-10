@@ -159,7 +159,9 @@ export interface GaleriaStatusMeta {
   dot: string
 }
 
-export const GALERIA_STATUS_META: Record<GaleriaStatus, GaleriaStatusMeta> = {
+export type GaleriaStatusVisual = GaleriaStatus | 'baixada'
+
+export const GALERIA_STATUS_META: Record<GaleriaStatusVisual, GaleriaStatusMeta> = {
   nao_criada: {
     label: 'Não criada',
     description: 'A galeria ainda não foi criada para este ensaio.',
@@ -169,20 +171,20 @@ export const GALERIA_STATUS_META: Record<GaleriaStatus, GaleriaStatusMeta> = {
   aguardando_upload: {
     label: 'Aguardando upload',
     description: 'Envie as mídias originais para liberar a seleção.',
-    badge: 'bg-amber-50 text-amber-800 ring-amber-200',
-    dot: 'bg-amber-500',
+    badge: 'bg-blue-50 text-blue-700 ring-blue-200',
+    dot: 'bg-blue-500',
   },
   em_selecao: {
     label: 'Em seleção',
     description: 'O cliente pode escolher as fotos e vídeos pelo link.',
-    badge: 'bg-blue-50 text-blue-700 ring-blue-200',
-    dot: 'bg-blue-500',
+    badge: 'bg-red-50 text-red-700 ring-red-200',
+    dot: 'bg-red-500',
   },
   selecao_enviada: {
     label: 'Seleção enviada',
     description: 'Seleção recebida. Verifique extras e inicie a edição.',
-    badge: 'bg-indigo-50 text-indigo-700 ring-indigo-200',
-    dot: 'bg-indigo-500',
+    badge: 'bg-slate-100 text-slate-600 ring-slate-200',
+    dot: 'bg-slate-500',
   },
   em_edicao: {
     label: 'Em edição',
@@ -195,6 +197,12 @@ export const GALERIA_STATUS_META: Record<GaleriaStatus, GaleriaStatusMeta> = {
     description: 'Link de entrega publicado para o cliente.',
     badge: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
     dot: 'bg-emerald-500',
+  },
+  baixada: {
+    label: 'Baixada',
+    description: 'O cliente já baixou o ZIP da entrega.',
+    badge: 'bg-orange-50 text-orange-700 ring-orange-200',
+    dot: 'bg-orange-500',
   },
   cancelada: {
     label: 'Cancelada',
@@ -210,6 +218,14 @@ export const GALERIA_STATUS_ORDER: GaleriaStatus[] = [
   'selecao_enviada',
   'em_edicao',
   'entregue',
+  'cancelada',
+]
+
+export type GaleriaFiltro = 'todas' | GaleriaStatus | 'baixadas'
+
+export const GALERIA_FILTRO_ORDER: Exclude<GaleriaFiltro, 'todas'>[] = [
+  ...GALERIA_STATUS_ORDER.filter((status) => status !== 'cancelada'),
+  'baixadas',
   'cancelada',
 ]
 

@@ -36,7 +36,7 @@ import { ContractStatusBadges } from '@/features/contracts/components/ContractSt
 import { FinalPaymentPanel } from '@/features/contracts/components/FinalPaymentPanel'
 import { copyContractLink } from '@/features/contracts/lib/shareLink'
 import { useGalleryStore } from '@/features/galleries/store/galleryStore'
-import { GalleryStatusBadge } from '@/features/galleries/components/GalleryStatusBadge'
+import { GalleryStatusBadges } from '@/features/galleries/components/GalleryStatusBadges'
 import { useToastStore } from '@/shared/store/toastStore'
 import { useCrmLookups } from '@/features/appointments/lib/lookups'
 import { StatusBadge } from '@/features/appointments/components/StatusBadge'
@@ -295,7 +295,10 @@ export function AppointmentDetails({
         {galeria ? (
           <div className="mt-2 space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <GalleryStatusBadge status={galeria.status} />
+              <GalleryStatusBadges
+                status={galeria.status}
+                zipBaixadoEm={galeria.zipBaixadoEm}
+              />
               <span className="text-[11px] text-muted">
                 {galeria.midias.filter((midia) => midia.tipo === 'foto').length} fotos ·{' '}
                 {galeria.midias.filter((midia) => midia.tipo === 'video').length} vídeos

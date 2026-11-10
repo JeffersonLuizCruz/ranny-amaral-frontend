@@ -22,7 +22,7 @@ import { mensagemDeErro } from '@/shared/api/errors'
 import { apiUrl } from '@/shared/api/httpClient'
 import { prepararDownloadSelecao } from '@/features/galleries/api/galeriasApi'
 import { useGalleryStore } from '@/features/galleries/store/galleryStore'
-import { GalleryStatusBadge } from '@/features/galleries/components/GalleryStatusBadge'
+import { GalleryStatusBadges } from '@/features/galleries/components/GalleryStatusBadges'
 import { GalleryMediaGrid } from '@/features/galleries/components/GalleryMediaGrid'
 import { GalleryMediaUploader } from '@/features/galleries/components/GalleryMediaUploader'
 import { GalleryEditedVersionDialog } from '@/features/galleries/components/GalleryEditedVersionDialog'
@@ -209,7 +209,11 @@ export function GalleryDetailPage() {
               </p>
             </div>
           </div>
-          <GalleryStatusBadge status={galeria.status} />
+          <GalleryStatusBadges
+            status={galeria.status}
+            zipBaixadoEm={galeria.zipBaixadoEm}
+            className="shrink-0 justify-end"
+          />
         </div>
       </div>
 

@@ -4,7 +4,7 @@ import { Images, Plus, Search } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import type { GaleriaStatus } from '@/domain/galleries'
-import { GALERIA_STATUS_META, GALERIA_STATUS_ORDER } from '@/domain/galleries'
+import { GALERIA_FILTRO_ORDER, GALERIA_STATUS_META } from '@/domain/galleries'
 import { Button } from '@/shared/components/ui/Button'
 import { EmptyState } from '@/shared/components/ui/EmptyState'
 import { inputClass } from '@/shared/components/ui/Field'
@@ -12,7 +12,7 @@ import { Paginador } from '@/shared/components/ui/Paginador'
 import { cn } from '@/shared/lib/cn'
 import { useDebouncedValue } from '@/shared/lib/useDebouncedValue'
 import { useGalleryStore } from '@/features/galleries/store/galleryStore'
-import { GalleryStatusBadge } from '@/features/galleries/components/GalleryStatusBadge'
+import { GalleryStatusBadges } from '@/features/galleries/components/GalleryStatusBadges'
 import { CreateGalleryDialog } from '@/features/galleries/components/CreateGalleryDialog'
 import { formatDateTime } from '@/features/galleries/lib/format'
 
@@ -85,29 +85,37 @@ export function GalleriesPage() {
             >
               Todas
             </FilterChip>
-            {GALERIA_STATUS_ORDER.map((item) => (
-              <FilterChip
-                key={item}
-                active={!baixada && status === item}
-                onClick={() => {
-                  setBaixada(false)
-                  setStatus(item)
-                  setPagina(0)
-                }}
-              >
-                {GALERIA_STATUS_META[item].label}
-              </FilterChip>
-            ))}
-            <FilterChip
-              active={baixada}
-              onClick={() => {
-                setBaixada(true)
-                setStatus('todas')
-                setPagina(0)
-              }}
-            >
-              Baixadas
-            </FilterChip>
+            {GALERIA_FILTRO_ORDER.map((item) =>
+              item === 'baixadas' ? (
+                <FilterChip
+                  key={item}
+                  active={baixada}
+                  onClick={() => {
+                    setBaixada(true)
+                    setStatus('todas')
+                    setPagina(0)
+                  }}
+                  activeClassName={GALERIA_STATUS_META.baixada.badge}
+                  dotClassName={GALERIA_STATUS_META.baixada.dot}
+                >
+                  Baixadas
+                </FilterChip>
+              ) : (
+                <FilterChip
+                  key={item}
+                  active={!baixada && status === item}
+                  onClick={() => {
+                    setBaixada(false)
+                    setStatus(item)
+                    setPagina(0)
+                  }}
+                  activeClassName={GALERIA_STATUS_META[item].badge}
+                  dotClassName={GALERIA_STATUS_META[item].dot}
+                >
+                  {GALERIA_STATUS_META[item].label}
+                </FilterChip>
+              ),
+            )}
           </div>
         </div>
       </div>
@@ -160,7 +168,11 @@ export function GalleriesPage() {
                         vídeos inclusos
                       </p>
                     </div>
-                    <GalleryStatusBadge status={galeria.status} />
+                    <GalleryStatusBadges
+                      status={galeria.status}
+                      zipBaixadoEm={galeria.zipBaixadoEm}
+                      className="shrink-0 justify-end"
+                    />
                   </div>
                   <div className="mt-3 grid grid-cols-2 gap-2 border-t border-line pt-3 text-[11px] text-muted">
                     <span>
@@ -214,22 +226,29 @@ function FilterChip({
   active,
   onClick,
   children,
+  activeClassName,
+  dotClassName,
 }: {
   active: boolean
   onClick: () => void
   children: ReactNode
+  activeClassName?: string
+  dotClassName?: string
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={cn(
-        'shrink-0 rounded-full px-3 py-1.5 text-xs font-medium ring-1 transition',
+        'inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium ring-1 transition',
         active
-          ? 'bg-brand-50 text-brand-700 ring-brand-200'
+          ? (activeClassName ?? 'bg-brand-50 text-brand-700 ring-brand-200')
           : 'bg-surface text-muted ring-line hover:text-ink',
       )}
     >
+      {dotClassName ? (
+        <span className={cn('size-1.5 rounded-full', dotClassName)} />
+      ) : null}
       {children}
     </button>
   )
