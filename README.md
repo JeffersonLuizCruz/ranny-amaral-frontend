@@ -114,6 +114,8 @@ aguardando_upload → em_selecao → selecao_enviada → em_edicao → entregue
 - O staff vê as fotos selecionadas destacadas, a lista de números e pode baixar os originais em
   **ZIP para edição** direto do detalhe da galeria.
 - Cada foto selecionada pode receber uma **versão editada** (JPEG/PNG/WebP até 50 MB).
+- O staff pode enviar as versões editadas **em lote**, associando os arquivos pelo número da foto
+  (padrão `001_nome.jpg`) ou pelo nome original, com até 3 uploads simultâneos e reenvio dos que falharem.
 - O staff pode **liberar os RAW** de forma explícita, auditada e revogável.
 - A publicação da entrega exige versão editada ou RAW liberado para cada foto selecionada.
 - A entrega baixa as versões editadas e/ou os RAW, individualmente ou em **ZIP streaming**.

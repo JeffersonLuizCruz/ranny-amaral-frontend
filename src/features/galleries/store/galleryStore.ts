@@ -23,6 +23,11 @@ import {
   type GaleriasFiltros,
 } from '@/features/galleries/api/galeriasApi'
 import { enviarMidia, enviarVersaoEditada, removerVersaoEditada } from '@/features/galleries/api/galeriaUploadApi'
+import type {
+  UploadEditadaLoteItem,
+  UploadEditadaLoteProgresso,
+  UploadEditadaLoteResultado,
+} from '@/features/galleries/lib/editedBatch'
 import type { UploadOptions } from '@/shared/upload/types'
 
 interface GalleryState {
@@ -49,6 +54,11 @@ interface GalleryState {
     file: File,
     options?: UploadOptions,
   ) => Promise<MidiaGaleria>
+  uploadVersoesEditadas: (
+    id: string,
+    itens: UploadEditadaLoteItem[],
+    onProgress?: (midiaId: string, progresso: UploadEditadaLoteProgresso) => void,
+  ) => Promise<UploadEditadaLoteResultado[]>
   removeVersaoEditada: (id: string, midiaId: string) => Promise<void>
   removeMedia: (id: string, midiaId: string) => Promise<void>
   publishSelection: (id: string) => Promise<string>
@@ -159,6 +169,56 @@ export const useGalleryStore = create<GalleryState>()((set, get) => ({
     }))
     await get().carregarGaleria(id)
     return midia
+  },
+
+  uploadVersoesEditadas: async (id, itens, onProgress) => {
+    const resultados: UploadEditadaLoteResultado[] = Array.from(
+      { length: itens.length },
+      (_, indice) => ({
+        midiaId: itens[indice].midiaId,
+        ok: false,
+        erro: 'Envio não concluído.',
+      }),
+    )
+    let proximo = 0
+
+    const trabalhador = async () => {
+      while (true) {
+        const indice = proximo
+        proximo += 1
+        if (indice >= itens.length) return
+
+        const item = itens[indice]
+        onProgress?.(item.midiaId, { status: 'enviando', percentual: 0 })
+        try {
+          const midia = await enviarVersaoEditada(id, item.midiaId, item.file, {
+            onProgress: (progresso) =>
+              onProgress?.(item.midiaId, {
+                status: 'enviando',
+                percentual: progresso.percentual,
+              }),
+          })
+          onProgress?.(item.midiaId, { status: 'concluido', percentual: 100 })
+          set((state) => ({
+            midias: state.midias.map((atual) =>
+              atual.id === midia.id ? midia : atual,
+            ),
+          }))
+          resultados[indice] = { midiaId: item.midiaId, ok: true }
+        } catch (error) {
+          const erro = mensagemDeErro(error)
+          onProgress?.(item.midiaId, { status: 'erro', percentual: 0, erro })
+          resultados[indice] = { midiaId: item.midiaId, ok: false, erro }
+        }
+      }
+    }
+
+    // Tres uploads simultaneos equilibram velocidade e carga no storage.
+    const concorrencia = Math.min(3, itens.length)
+    await Promise.all(Array.from({ length: concorrencia }, () => trabalhador()))
+    // A recarga e apenas visual; uma falha aqui nao invalida os uploads.
+    await get().carregarGaleria(id).catch(() => undefined)
+    return resultados
   },
 
   removeVersaoEditada: async (id, midiaId) => {

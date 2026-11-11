@@ -93,6 +93,14 @@ export function PublicSelectionPage() {
     data?.galeria.faixasFotoExtra,
     extras,
   )
+  const quantidadeCoberta = data?.resumoExtras?.quantidadeCoberta ?? 0
+  const valorCoberto = data?.resumoExtras?.valorCoberto ?? 0
+  const novosExtras = Math.max(0, extras - quantidadeCoberta)
+  const novoValor = Math.max(
+    0,
+    Math.round((valorExtras - valorCoberto) * 100) / 100,
+  )
+  const extrasAbaixoDoCoberto = extras < quantidadeCoberta
   // Uma seleção reaberta continua disponível para edição; só bloqueia quando
   // o cliente já enviou a seleção atual.
   const selecaoEnviada = data?.selecao?.status === 'enviada'
@@ -118,9 +126,24 @@ export function PublicSelectionPage() {
       setErro(`Selecione exatamente ${videosInclusos} vídeo(s).`)
       return
     }
+    if (extrasAbaixoDoCoberto) {
+      setErro(
+        `Sua seleção tem ${extras} extra(s), abaixo dos ${quantidadeCoberta} já cobertos. ` +
+          'Recoloque as fotos ou fale com o estúdio.',
+      )
+      return
+    }
+
     const confirmado = window.confirm(
       extras > 0
-        ? `Enviar ${fotoIds.size} fotos e ${videoIds.size} vídeos? Serão cobradas ${extras} foto(s) extra(s), total de ${formatBRL(valorExtras)}.`
+        ? quantidadeCoberta > 0
+          ? `Enviar ${fotoIds.size} fotos e ${videoIds.size} vídeos?\n\n` +
+            `Já cobertos: ${quantidadeCoberta} extra(s) · ${formatBRL(valorCoberto)}.\n` +
+            (novosExtras > 0
+              ? `Novas agora: ${novosExtras} extra(s) · ${formatBRL(novoValor)}.\n`
+              : 'Nenhuma nova cobrança.\n') +
+            `Total da seleção: ${extras} extra(s) · ${formatBRL(valorExtras)}.`
+          : `Enviar ${fotoIds.size} fotos e ${videoIds.size} vídeos? Serão cobradas ${extras} foto(s) extra(s), total de ${formatBRL(valorExtras)}.`
         : `Enviar ${fotoIds.size} fotos e ${videoIds.size} vídeos?`,
     )
     if (!confirmado) return
@@ -198,7 +221,31 @@ export function PublicSelectionPage() {
               </strong>
             </p>
           ) : null}
-          {data.selecao.fotosExtras > 0 ? (
+          {data.resumoExtras && data.resumoExtras.quantidadeTotal > 0 ? (
+            <div className="mt-2 space-y-0.5 text-xs text-muted">
+              {data.resumoExtras.quantidadeCoberta > 0 ? (
+                <>
+                  <p>
+                    Total na seleção:{' '}
+                    <strong className="text-ink">
+                      {data.resumoExtras.quantidadeTotal} extra(s) ·{' '}
+                      {formatBRL(data.resumoExtras.valorTotal)}
+                    </strong>
+                  </p>
+                  <p>
+                    Já coberto: {data.resumoExtras.quantidadeCoberta} extra(s) ·{' '}
+                    {formatBRL(data.resumoExtras.valorCoberto)}
+                  </p>
+                </>
+              ) : null}
+              {data.resumoExtras.quantidadePendente > 0 ? (
+                <p className="font-semibold text-ink">
+                  A pagar agora: {data.resumoExtras.quantidadePendente} extra(s) ·{' '}
+                  {formatBRL(data.resumoExtras.valorPendente)}
+                </p>
+              ) : null}
+            </div>
+          ) : data.selecao.fotosExtras > 0 ? (
             <p className="mt-2 text-xs text-ink">
               {data.selecao.fotosExtras} foto(s) extra(s) ·{' '}
               {formatBRL(data.selecao.valorExtras)}
@@ -293,17 +340,53 @@ export function PublicSelectionPage() {
         ) : null}
 
         <div className="rounded-2xl border border-line bg-surface p-4 shadow-card">
-          <p className="text-xs text-muted">
-            {extras > 0
-              ? `${extras} foto(s) extra(s) · ${formatBRL(valorExtras)}`
-              : 'Nenhuma foto extra selecionada.'}
-          </p>
+          <div className="space-y-1 text-xs text-muted">
+            <p>
+              Extras na seleção: <strong className="text-ink">{extras}</strong>
+              {extras > 0 ? ` · ${formatBRL(valorExtras)}` : ''}
+            </p>
+            {quantidadeCoberta > 0 ? (
+              <>
+                <p>
+                  Já cobertos: {quantidadeCoberta} · {formatBRL(valorCoberto)}
+                </p>
+                <p
+                  className={
+                    novosExtras > 0
+                      ? 'font-semibold text-amber-700'
+                      : 'text-emerald-700'
+                  }
+                >
+                  {novosExtras > 0
+                    ? `Novas agora (a pagar): ${novosExtras} · ${formatBRL(novoValor)}`
+                    : 'Nenhuma nova cobrança'}
+                </p>
+              </>
+            ) : extras > 0 ? (
+              <p className="font-semibold text-amber-700">
+                A pagar agora: {extras} foto(s) extra(s) · {formatBRL(valorExtras)}
+              </p>
+            ) : (
+              <p className="text-emerald-700">Nenhuma foto extra selecionada.</p>
+            )}
+            {extrasAbaixoDoCoberto ? (
+              <p className="font-medium text-red-600">
+                Seleção abaixo dos {quantidadeCoberta} extras já cobertos.
+                Recoloque as fotos ou fale com o estúdio.
+              </p>
+            ) : null}
+          </div>
           {erro ? (
             <p role="alert" className="mt-2 text-xs font-medium text-red-600">
               {erro}
             </p>
           ) : null}
-          <Button className="mt-3" fullWidth disabled={enviando} onClick={() => void enviar()}>
+          <Button
+            className="mt-3"
+            fullWidth
+            disabled={enviando || extrasAbaixoDoCoberto}
+            onClick={() => void enviar()}
+          >
             <CheckCircle2 className="size-4" />
             {enviando ? 'Enviando seleção…' : 'Enviar seleção'}
           </Button>

@@ -3,9 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MidiaGaleria } from '@/domain/galleries'
 import type { Pagina } from '@/shared/api/types'
 
-const { listarMidias, buscarGaleria } = vi.hoisted(() => ({
+const { listarMidias, buscarGaleria, enviarVersaoEditada } = vi.hoisted(() => ({
   listarMidias: vi.fn(),
   buscarGaleria: vi.fn(),
+  enviarVersaoEditada: vi.fn(),
 }))
 
 vi.mock('@/features/galleries/api/galeriasApi', () => ({
@@ -28,7 +29,7 @@ vi.mock('@/features/galleries/api/galeriasApi', () => ({
 
 vi.mock('@/features/galleries/api/galeriaUploadApi', () => ({
   enviarMidia: vi.fn(),
-  enviarVersaoEditada: vi.fn(),
+  enviarVersaoEditada,
   removerVersaoEditada: vi.fn(),
 }))
 
@@ -102,5 +103,68 @@ describe('galleryStore', () => {
       'm2',
       'm3',
     ])
+  })
+
+  it('envia várias versões editadas e recarrega a galeria uma única vez', async () => {
+    buscarGaleria.mockResolvedValue({
+      galeria: {
+        id: 'g1',
+        agendamentoId: 'a1',
+        status: 'em_edicao',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      },
+      links: [],
+      historico: [],
+    })
+    listarMidias.mockResolvedValue(pagina([], 0, 0))
+    enviarVersaoEditada.mockImplementation((_galeriaId: string, midiaId: string) =>
+      Promise.resolve({ ...midia(midiaId), editadaDisponivel: true }),
+    )
+
+    const itens = ['m1', 'm2', 'm3'].map((midiaId) => ({
+      midiaId,
+      file: new File(['x'], `${midiaId}.jpg`, { type: 'image/jpeg' }),
+    }))
+
+    const resultados = await useGalleryStore
+      .getState()
+      .uploadVersoesEditadas('g1', itens)
+
+    expect(enviarVersaoEditada).toHaveBeenCalledTimes(3)
+    expect(resultados.every((resultado) => resultado.ok)).toBe(true)
+    expect(listarMidias).toHaveBeenCalledTimes(1)
+  })
+
+  it('continua o lote quando uma versão falha', async () => {
+    buscarGaleria.mockResolvedValue({
+      galeria: {
+        id: 'g1',
+        agendamentoId: 'a1',
+        status: 'em_edicao',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      },
+      links: [],
+      historico: [],
+    })
+    listarMidias.mockResolvedValue(pagina([], 0, 0))
+    enviarVersaoEditada
+      .mockRejectedValueOnce(new Error('falha no upload'))
+      .mockImplementation((_galeriaId: string, midiaId: string) =>
+        Promise.resolve({ ...midia(midiaId), editadaDisponivel: true }),
+      )
+
+    const itens = ['m1', 'm2'].map((midiaId) => ({
+      midiaId,
+      file: new File(['x'], `${midiaId}.jpg`, { type: 'image/jpeg' }),
+    }))
+
+    const resultados = await useGalleryStore
+      .getState()
+      .uploadVersoesEditadas('g1', itens)
+
+    expect(resultados.filter((resultado) => resultado.ok)).toHaveLength(1)
+    expect(resultados.filter((resultado) => !resultado.ok)).toHaveLength(1)
   })
 })

@@ -260,4 +260,119 @@ describe('PublicSelectionPage', () => {
 
     expect(await screen.findByText('Extras adicionais')).toBeInTheDocument()
   })
+
+  it('separa extras cobertos das novas fotos antes do envio', async () => {
+    const fotos = Array.from({ length: 20 }, (_, indice) => ({
+      ...midia,
+      id: `m${indice + 1}`,
+      numero: indice + 1,
+      nomeArquivo: `foto-${indice + 1}.jpg`,
+    }))
+
+    consultarGaleriaPublica.mockResolvedValue({
+      link: {
+        id: 'l1',
+        tipo: 'selecao',
+        token: 'tok-1',
+        status: 'ativo',
+        expiraEm: '2026-12-01T00:00:00.000Z',
+        visualizadaEm: null,
+        protocolo: null,
+      },
+      galeria: { ...galeria, fotosInclusas: 15, valorFotoExtra: 35 },
+      midias: fotos,
+      selecao: {
+        status: 'rascunho',
+        protocolo: 'SEL-2026-0010',
+        fotoIds: fotos.map((foto) => foto.id),
+        videoIds: [],
+        fotosExtras: 5,
+        valorExtras: 175,
+        enviadaEm: '2026-01-10T00:00:00.000Z',
+      },
+      resumoExtras: {
+        quantidadeTotal: 5,
+        valorTotal: 175,
+        quantidadeCoberta: 3,
+        valorCoberto: 105,
+        quantidadePendente: 0,
+        valorPendente: 0,
+      },
+      midiasEntregues: [],
+      extras: undefined,
+      entregaDisponivel: false,
+    })
+
+    renderPage()
+
+    expect(await screen.findByText(/Extras na seleção:/)).toBeInTheDocument()
+    expect(screen.getByText(/Já cobertos: 3/)).toBeInTheDocument()
+    expect(screen.getByText(/Novas agora \(a pagar\): 2/)).toBeInTheDocument()
+    expect(screen.getByText(/R\$\s*70,00/)).toBeInTheDocument()
+  })
+
+  it('mostra o valor a pagar agora, não o total acumulado', async () => {
+    const fotos = Array.from({ length: 20 }, (_, indice) => ({
+      ...midia,
+      id: `m${indice + 1}`,
+      numero: indice + 1,
+      nomeArquivo: `foto-${indice + 1}.jpg`,
+    }))
+
+    consultarGaleriaPublica.mockResolvedValue({
+      link: {
+        id: 'l1',
+        tipo: 'selecao',
+        token: 'tok-1',
+        status: 'ativo',
+        expiraEm: '2026-12-01T00:00:00.000Z',
+        visualizadaEm: null,
+        protocolo: null,
+      },
+      galeria: {
+        ...galeria,
+        status: 'selecao_enviada',
+        fotosInclusas: 15,
+        valorFotoExtra: 35,
+      },
+      midias: fotos,
+      selecao: {
+        status: 'enviada',
+        protocolo: 'SEL-2026-0011',
+        fotoIds: fotos.map((foto) => foto.id),
+        videoIds: [],
+        fotosExtras: 5,
+        valorExtras: 175,
+        enviadaEm: '2026-01-11T00:00:00.000Z',
+      },
+      resumoExtras: {
+        quantidadeTotal: 5,
+        valorTotal: 175,
+        quantidadeCoberta: 3,
+        valorCoberto: 105,
+        quantidadePendente: 2,
+        valorPendente: 70,
+      },
+      midiasEntregues: [],
+      extras: {
+        id: 'e3',
+        quantidadeFotos: 2,
+        valorUnitario: 35,
+        valorTotal: 70,
+        status: 'pendente',
+        chavePix: 'pix-extras@teste.com',
+        instrucoesPagamento: 'Pague via Pix e anexe o comprovante.',
+      },
+      entregaDisponivel: false,
+    })
+
+    renderPage()
+
+    expect(await screen.findByText('Seleção enviada')).toBeInTheDocument()
+    expect(screen.getByText(/Total na seleção:/)).toBeInTheDocument()
+    expect(screen.getByText(/Já coberto: 3/)).toBeInTheDocument()
+    expect(screen.getByText(/A pagar agora: 2/)).toBeInTheDocument()
+    expect(screen.queryByText(/A pagar agora: 5/)).not.toBeInTheDocument()
+    expect(screen.getAllByText(/R\$\s*70,00/).length).toBeGreaterThan(0)
+  })
 })

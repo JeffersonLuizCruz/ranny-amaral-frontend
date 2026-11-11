@@ -10,6 +10,7 @@ import {
   Link2,
   RotateCcw,
   Sparkles,
+  Upload,
   Wallet,
 } from 'lucide-react'
 
@@ -26,6 +27,7 @@ import { GalleryStatusBadges } from '@/features/galleries/components/GalleryStat
 import { GalleryMediaGrid } from '@/features/galleries/components/GalleryMediaGrid'
 import { GalleryMediaUploader } from '@/features/galleries/components/GalleryMediaUploader'
 import { GalleryEditedVersionDialog } from '@/features/galleries/components/GalleryEditedVersionDialog'
+import { GalleryEditedBatchUploadDialog } from '@/features/galleries/components/GalleryEditedBatchUploadDialog'
 import { formatarNumeroFoto } from '@/features/galleries/lib/format'
 import { numerosDasFotosSelecionadas } from '@/features/galleries/lib/selection'
 
@@ -55,6 +57,7 @@ export function GalleryDetailPage() {
   const revokeRaw = useGalleryStore((state) => state.revokeRaw)
   const addToast = useToastStore((state) => state.addToast)
   const [editando, setEditando] = useState<MidiaGaleria | null>(null)
+  const [loteEditadasOpen, setLoteEditadasOpen] = useState(false)
   const [baixandoSelecao, setBaixandoSelecao] = useState(false)
 
   useEffect(() => {
@@ -119,6 +122,9 @@ export function GalleryDetailPage() {
     ...(detalhe.selecao?.videoIds ?? []),
   ])
   const fotosSelecionadas = fotos.filter((midia) => selecionadas.has(midia.id))
+  const fotosSelecionadasDisponiveis = fotosSelecionadas.filter(
+    (midia) => midia.processamentoStatus === 'disponivel',
+  )
   const numerosSelecionados = numerosDasFotosSelecionadas(
     fotos,
     detalhe.selecao?.fotoIds ?? [],
@@ -248,7 +254,20 @@ export function GalleryDetailPage() {
                   : ''}
               </p>
             </div>
-            {podeEditarMidias ? <GalleryMediaUploader galleryId={galeria.id} /> : null}
+            <div className="flex flex-wrap items-center gap-2">
+              {podeEditarMidias ? <GalleryMediaUploader galleryId={galeria.id} /> : null}
+              {podeEditarVersao ? (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => setLoteEditadasOpen(true)}
+                  disabled={fotosSelecionadasDisponiveis.length === 0}
+                >
+                  <Upload className="size-3.5" />
+                  Enviar editadas em lote
+                </Button>
+              ) : null}
+            </div>
           </div>
 
           <div className="mt-4">
@@ -373,17 +392,29 @@ export function GalleryDetailPage() {
             {pedidosExtras.length > 0 ? (
               <div className="mt-2 space-y-3 text-[11px] text-muted">
                 {detalhe.resumoExtras ? (
-                  <p className="rounded-lg bg-canvas/70 px-2.5 py-2">
-                    Já coberto:{' '}
-                    <strong className="text-ink">
-                      {detalhe.resumoExtras.quantidadeCoberta}
-                    </strong>{' '}
-                    foto(s) ({formatBRL(detalhe.resumoExtras.valorCoberto)}) · Pendente:{' '}
-                    <strong className="text-ink">
-                      {detalhe.resumoExtras.quantidadePendente}
-                    </strong>{' '}
-                    foto(s) ({formatBRL(detalhe.resumoExtras.valorPendente)})
-                  </p>
+                  <div className="space-y-1 rounded-lg bg-canvas/70 px-2.5 py-2">
+                    <p>
+                      Coberto:{' '}
+                      <strong className="text-ink">
+                        {detalhe.resumoExtras.quantidadeCoberta} extra(s)
+                      </strong>{' '}
+                      · {formatBRL(detalhe.resumoExtras.valorCoberto)}
+                    </p>
+                    <p>
+                      Pendente (a pagar):{' '}
+                      <strong className="text-ink">
+                        {detalhe.resumoExtras.quantidadePendente} extra(s)
+                      </strong>{' '}
+                      · {formatBRL(detalhe.resumoExtras.valorPendente)}
+                    </p>
+                    <p>
+                      Total na seleção:{' '}
+                      <strong className="text-ink">
+                        {detalhe.resumoExtras.quantidadeTotal} extra(s)
+                      </strong>{' '}
+                      · {formatBRL(detalhe.resumoExtras.valorTotal)}
+                    </p>
+                  </div>
                 ) : null}
 
                 {pedidosExtras.map((pedido) => (
@@ -635,6 +666,15 @@ export function GalleryDetailPage() {
           galeriaId={galeria.id}
           midia={midias.find((midia) => midia.id === editando.id) ?? editando}
           onClose={() => setEditando(null)}
+        />
+      ) : null}
+
+      {loteEditadasOpen ? (
+        <GalleryEditedBatchUploadDialog
+          open
+          galeriaId={galeria.id}
+          fotos={fotosSelecionadasDisponiveis}
+          onClose={() => setLoteEditadasOpen(false)}
         />
       ) : null}
     </div>
