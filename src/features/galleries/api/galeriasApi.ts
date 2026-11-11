@@ -6,6 +6,7 @@ import type {
   GaleriaStatus,
   MidiaGaleria,
   PedidoExtras,
+  ResumoExtras,
   SelecaoGaleria,
 } from '@/domain/galleries'
 import type { FaixaFotoExtra } from '@/domain/types'
@@ -82,6 +83,15 @@ export interface ExtrasDto {
   comprovanteUrl: string | null
 }
 
+interface ResumoExtrasDto {
+  quantidadeTotal: number
+  valorTotal: number
+  quantidadeCoberta: number
+  valorCoberto: number
+  quantidadePendente: number
+  valorPendente: number
+}
+
 interface EventoDto {
   id: string
   tipo: string
@@ -94,6 +104,8 @@ interface GaleriaDetalheDto {
   links: LinkDto[]
   selecao: SelecaoDto | null
   extras: ExtrasDto | null
+  pedidosExtras?: ExtrasDto[]
+  resumoExtras?: ResumoExtrasDto | null
   historico: EventoDto[]
 }
 
@@ -102,6 +114,8 @@ export interface GaleriaDetalhe {
   links: LinkDto[]
   selecao?: SelecaoGaleria
   extras?: PedidoExtras
+  pedidosExtras?: PedidoExtras[]
+  resumoExtras?: ResumoExtras
   historico: EventoGaleria[]
 }
 
@@ -155,6 +169,20 @@ export function toExtras(dto: ExtrasDto | null): PedidoExtras | undefined {
   }
 }
 
+export function toResumoExtras(
+  dto: ResumoExtrasDto | null | undefined,
+): ResumoExtras | undefined {
+  if (!dto) return undefined
+  return {
+    quantidadeTotal: dto.quantidadeTotal,
+    valorTotal: dto.valorTotal,
+    quantidadeCoberta: dto.quantidadeCoberta,
+    valorCoberto: dto.valorCoberto,
+    quantidadePendente: dto.quantidadePendente,
+    valorPendente: dto.valorPendente,
+  }
+}
+
 function toEntrega(
   links: LinkDto[],
   zipBaixadoEm?: string,
@@ -193,6 +221,8 @@ function toGaleria(
   selecao?: SelecaoGaleria,
   extras?: PedidoExtras,
   historico: EventoGaleria[] = [],
+  pedidosExtras?: PedidoExtras[],
+  resumoExtras?: ResumoExtras,
 ): GaleriaEnsaio {
   const linkSelecao = links.find((item) => item.tipo === 'selecao')
   return {
@@ -218,6 +248,8 @@ function toGaleria(
     midias: [],
     selecao,
     pedidoExtras: extras,
+    pedidosExtras,
+    resumoExtras,
     entrega: toEntrega(links, dto.zipBaixadoEm ?? undefined),
     historico,
     createdAt: dto.createdAt,
@@ -258,12 +290,24 @@ export async function buscarGaleria(id: string): Promise<GaleriaDetalhe> {
   const dto = await http.get<GaleriaDetalheDto>(`/galerias/${id}`)
   const selecao = toSelecao(dto.selecao)
   const extras = toExtras(dto.extras)
+  const pedidosExtras = dto.pedidosExtras?.map((item) => toExtras(item)!).filter(Boolean)
+  const resumoExtras = toResumoExtras(dto.resumoExtras)
   const historico = dto.historico.map(toEvento)
   return {
-    galeria: toGaleria(dto.galeria, dto.links, selecao, extras, historico),
+    galeria: toGaleria(
+      dto.galeria,
+      dto.links,
+      selecao,
+      extras,
+      historico,
+      pedidosExtras,
+      resumoExtras,
+    ),
     links: dto.links,
     selecao,
     extras,
+    pedidosExtras,
+    resumoExtras,
     historico,
   }
 }
@@ -346,6 +390,8 @@ export async function consultarGaleriaPublica(token: string): Promise<{
   midias: MidiaGaleria[]
   selecao?: SelecaoGaleria
   extras?: PedidoExtras
+  resumoExtras?: ResumoExtras
+  midiasEntregues?: string[]
   entregaDisponivel: boolean
 }> {
   interface PublicaDto {
@@ -354,17 +400,30 @@ export async function consultarGaleriaPublica(token: string): Promise<{
     midias: MidiaDto[]
     selecao: SelecaoDto | null
     extras: ExtrasDto | null
+    resumoExtras?: ResumoExtrasDto | null
+    midiasEntregues?: string[]
     entregaDisponivel: boolean
   }
   const dto = await http.get<PublicaDto>(`/public/galerias/${token}`)
   const selecao = toSelecao(dto.selecao)
   const extras = toExtras(dto.extras)
+  const resumoExtras = toResumoExtras(dto.resumoExtras)
   return {
     link: dto.link,
-    galeria: toGaleria(dto.galeria, [dto.link], selecao, extras),
+    galeria: toGaleria(
+      dto.galeria,
+      [dto.link],
+      selecao,
+      extras,
+      [],
+      undefined,
+      resumoExtras,
+    ),
     midias: dto.midias.map(toMidia),
     selecao,
     extras,
+    resumoExtras,
+    midiasEntregues: dto.midiasEntregues ?? [],
     entregaDisponivel: dto.entregaDisponivel,
   }
 }

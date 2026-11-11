@@ -111,7 +111,9 @@ export function GalleryDetailPage() {
   const podeEditarVersao = ['selecao_enviada', 'em_edicao', 'entregue'].includes(
     galeria.status,
   )
-  const podeReabrirSelecao = !['entregue', 'cancelada'].includes(galeria.status)
+  const podeReabrirSelecao = ['em_selecao', 'selecao_enviada', 'em_edicao'].includes(
+    galeria.status,
+  )
   const selecionadas = new Set([
     ...(detalhe.selecao?.fotoIds ?? []),
     ...(detalhe.selecao?.videoIds ?? []),
@@ -125,9 +127,10 @@ export function GalleryDetailPage() {
   const fotosEditadas = fotosSelecionadas.filter((midia) => midia.editadaDisponivel)
   const fotosSemEdicao = fotosSelecionadas.length - fotosEditadas.length
   const entregaBloqueada = !galeria.rawLiberado && fotosSemEdicao > 0
-  const extrasPendentes = detalhe.extras?.status === 'pendente'
-  const extrasQuitados =
-    !detalhe.extras || ['pago', 'isento'].includes(detalhe.extras.status) || Boolean(detalhe.extras.liberacaoManual)
+  const pedidosExtras =
+    detalhe.pedidosExtras ?? (detalhe.extras ? [detalhe.extras] : [])
+  const pedidoPendente = pedidosExtras.find((pedido) => pedido.status === 'pendente')
+  const extrasQuitados = !pedidoPendente
 
   const copiar = async (tipo: 'selecao' | 'entrega') => {
     const token = tipo === 'selecao' ? galeria.tokenSelecao : galeria.entrega?.token
@@ -178,6 +181,18 @@ export function GalleryDetailPage() {
     } catch (error) {
       addToast(mensagemDeErro(error))
     }
+  }
+
+  const reabrirSelecaoParaExtras = () => {
+    const confirmado = window.confirm(
+      'Reabrir a seleção para o cliente comprar extras?\n\n' +
+        '• Pedidos de extras pendentes serão cancelados.\n' +
+        '• Pedidos já pagos ou isentos são preservados e o novo pedido cobrará apenas a diferença.\n' +
+        '• Fotos e vídeos já entregues continuam obrigatórios na nova seleção.\n' +
+        '• Se já houver arquivos editados, eles são mantidos e as novas mídias precisarão de edição.',
+    )
+    if (!confirmado) return
+    void executar(() => reopenSelection(galeria.id), 'Seleção reaberta.')
   }
 
   const remover = async (midia: MidiaGaleria) => {
@@ -265,9 +280,7 @@ export function GalleryDetailPage() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() =>
-                        void executar(() => reopenSelection(galeria.id), 'Seleção reaberta.')
-                      }
+                      onClick={reabrirSelecaoParaExtras}
                     >
                       <RotateCcw className="size-3.5" />
                       Reabrir
@@ -294,6 +307,14 @@ export function GalleryDetailPage() {
                 </Button>
               </div>
             )}
+
+            {galeria.status === 'entregue' ? (
+              <p className="mt-2 rounded-lg bg-amber-50 px-2.5 py-2 text-[11px] text-amber-800 ring-1 ring-amber-200">
+                Para reabrir a seleção após a entrega, revogue primeiro o link de
+                entrega. O cliente mantém os arquivos já baixados e só poderá
+                acrescentar novas fotos.
+              </p>
+            ) : null}
 
             {detalhe.selecao ? (
               <div className="mt-3 rounded-xl bg-canvas/70 p-3 text-[11px] text-muted">
@@ -349,52 +370,81 @@ export function GalleryDetailPage() {
               <Wallet className="size-4 text-brand-600" />
               Extras e edição
             </h3>
-            {detalhe.extras ? (
-              <div className="mt-2 space-y-2 text-[11px] text-muted">
-                <p>
-                  {detalhe.extras.quantidadeFotos} foto(s) extra(s) ·{' '}
-                  {formatBRL(detalhe.extras.valorTotal)} · status{' '}
-                  <strong className="text-ink">{detalhe.extras.status}</strong>
-                </p>
-                {detalhe.extras.detalhamento &&
-                detalhe.extras.detalhamento.length > 0 ? (
-                  <p>
-                    {detalhe.extras.detalhamento
-                      .map(
-                        (faixa) =>
-                          `${faixa.quantidade} × ${formatBRL(faixa.valorUnitario)} = ${formatBRL(faixa.subtotal)}`,
-                      )
-                      .join(' · ')}
+            {pedidosExtras.length > 0 ? (
+              <div className="mt-2 space-y-3 text-[11px] text-muted">
+                {detalhe.resumoExtras ? (
+                  <p className="rounded-lg bg-canvas/70 px-2.5 py-2">
+                    Já coberto:{' '}
+                    <strong className="text-ink">
+                      {detalhe.resumoExtras.quantidadeCoberta}
+                    </strong>{' '}
+                    foto(s) ({formatBRL(detalhe.resumoExtras.valorCoberto)}) · Pendente:{' '}
+                    <strong className="text-ink">
+                      {detalhe.resumoExtras.quantidadePendente}
+                    </strong>{' '}
+                    foto(s) ({formatBRL(detalhe.resumoExtras.valorPendente)})
                   </p>
                 ) : null}
-                <p>
-                  Pix dos extras:{' '}
-                  {detalhe.extras.chavePix ? (
-                    <strong className="text-ink">{detalhe.extras.chavePix}</strong>
-                  ) : (
-                    'não configurada'
-                  )}{' '}
-                  ·{' '}
-                  <Link
-                    to="/contratos/configuracoes"
-                    className="font-medium text-brand-700 hover:underline"
+
+                {pedidosExtras.map((pedido) => (
+                  <div
+                    key={pedido.id}
+                    className="rounded-xl border border-line bg-canvas/60 p-2.5"
                   >
-                    Configurar
-                  </Link>
-                </p>
-                {extrasPendentes ? (
-                  <>
-                    {detalhe.extras.comprovanteEnviadoEm ? (
+                    <p>
+                      <strong className="text-ink">
+                        {pedido.quantidadeFotos} foto(s) extra(s)
+                      </strong>{' '}
+                      · {formatBRL(pedido.valorTotal)} · status{' '}
+                      <strong className="text-ink">{pedido.status}</strong>
+                    </p>
+                    {pedido.detalhamento && pedido.detalhamento.length > 0 ? (
+                      <p className="mt-0.5">
+                        {pedido.detalhamento
+                          .map(
+                            (faixa) =>
+                              `${faixa.quantidade} × ${formatBRL(faixa.valorUnitario)} = ${formatBRL(faixa.subtotal)}`,
+                          )
+                          .join(' · ')}
+                      </p>
+                    ) : null}
+                    {pedido.liberacaoManual ? (
+                      <p className="mt-0.5">
+                        Liberado manualmente por {pedido.liberacaoManual.por}:{' '}
+                        {pedido.liberacaoManual.motivo}
+                      </p>
+                    ) : null}
+                  </div>
+                ))}
+
+                {pedidoPendente ? (
+                  <div className="space-y-2">
+                    <p>
+                      Pix dos extras:{' '}
+                      {pedidoPendente.chavePix ? (
+                        <strong className="text-ink">{pedidoPendente.chavePix}</strong>
+                      ) : (
+                        'não configurada'
+                      )}{' '}
+                      ·{' '}
+                      <Link
+                        to="/contratos/configuracoes"
+                        className="font-medium text-brand-700 hover:underline"
+                      >
+                        Configurar
+                      </Link>
+                    </p>
+                    {pedidoPendente.comprovanteEnviadoEm ? (
                       <div className="rounded-xl border border-line bg-canvas/60 p-2.5">
                         <p className="text-ink">
-                          Comprovante: {detalhe.extras.comprovanteNome ?? 'arquivo'}
+                          Comprovante: {pedidoPendente.comprovanteNome ?? 'arquivo'}
                         </p>
                         <p className="mt-0.5 text-[10px]">
-                          Enviado em {formatDateTime(detalhe.extras.comprovanteEnviadoEm)}.
+                          Enviado em {formatDateTime(pedidoPendente.comprovanteEnviadoEm)}.
                         </p>
-                        {detalhe.extras.comprovanteUrl ? (
+                        {pedidoPendente.comprovanteUrl ? (
                           <a
-                            href={detalhe.extras.comprovanteUrl}
+                            href={pedidoPendente.comprovanteUrl}
                             target="_blank"
                             rel="noreferrer"
                             className="mt-1 inline-flex items-center gap-1 font-medium text-brand-700 hover:underline"
@@ -412,7 +462,7 @@ export function GalleryDetailPage() {
                     <div className="flex flex-wrap gap-2">
                       <Button
                         size="sm"
-                        disabled={!detalhe.extras.comprovanteEnviadoEm}
+                        disabled={!pedidoPendente.comprovanteEnviadoEm}
                         onClick={() =>
                           void executar(
                             () => confirmExtras(galeria.id, 'pix'),
@@ -448,7 +498,7 @@ export function GalleryDetailPage() {
                         Liberar manualmente
                       </Button>
                     </div>
-                  </>
+                  </div>
                 ) : null}
               </div>
             ) : (

@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { AlertTriangle, CheckCircle2, Images, Loader2 } from 'lucide-react'
 import { useParams } from 'react-router-dom'
 
-import type { MidiaGaleria, PedidoExtras } from '@/domain/galleries'
+import type { MidiaGaleria, PedidoExtras, ResumoExtras } from '@/domain/galleries'
 import { Button } from '@/shared/components/ui/Button'
 import { formatBRL } from '@/shared/lib/currency'
 import { mensagemDeErro } from '@/shared/api/errors'
@@ -21,6 +21,8 @@ interface PublicData {
   midias: MidiaGaleria[]
   selecao?: Awaited<ReturnType<typeof consultarGaleriaPublica>>['selecao']
   extras?: PedidoExtras
+  resumoExtras?: ResumoExtras
+  midiasEntregues: string[]
   token: string
 }
 
@@ -43,6 +45,8 @@ export function PublicSelectionPage() {
           midias: resultado.midias,
           selecao: resultado.selecao,
           extras: resultado.extras,
+          resumoExtras: resultado.resumoExtras,
+          midiasEntregues: resultado.midiasEntregues ?? [],
           token,
         })
         setFotoIds(new Set(resultado.selecao?.fotoIds ?? []))
@@ -77,6 +81,10 @@ export function PublicSelectionPage() {
     () => numerosDasFotosSelecionadas(fotos, data?.selecao?.fotoIds ?? []),
     [fotos, data?.selecao],
   )
+  const entregues = useMemo(
+    () => new Set(data?.midiasEntregues ?? []),
+    [data?.midiasEntregues],
+  )
   const fotosInclusas = data?.galeria.fotosInclusas ?? 0
   const videosInclusos = data?.galeria.videosInclusos ?? 0
   const extras = Math.max(0, fotoIds.size - fotosInclusas)
@@ -91,6 +99,9 @@ export function PublicSelectionPage() {
   const podeSelecionar = data?.galeria.status === 'em_selecao' && !selecaoEnviada
 
   const toggle = (set: Set<string>, id: string): Set<string> => {
+    // Fotos e vídeos já entregues permanecem obrigatórios: o cliente só pode
+    // acrescentar novas mídias, nunca trocar as que já baixou.
+    if (entregues.has(id)) return set
     const proximo = new Set(set)
     if (proximo.has(id)) proximo.delete(id)
     else proximo.add(id)
@@ -128,6 +139,8 @@ export function PublicSelectionPage() {
           midias: atualizado.midias,
           selecao: atualizado.selecao,
           extras: atualizado.extras,
+          resumoExtras: atualizado.resumoExtras,
+          midiasEntregues: atualizado.midiasEntregues ?? [],
           token,
         })
       } catch {
@@ -198,6 +211,11 @@ export function PublicSelectionPage() {
             <ExtrasPaymentCard
               token={data.token}
               extras={data.extras}
+              titulo={
+                data.resumoExtras && data.resumoExtras.quantidadeCoberta > 0
+                  ? 'Extras adicionais'
+                  : undefined
+              }
               onChange={(extras) =>
                 setData((atual) => (atual ? { ...atual, extras } : atual))
               }
@@ -234,6 +252,16 @@ export function PublicSelectionPage() {
         </p>
       </div>
 
+      {data.resumoExtras && data.resumoExtras.quantidadeCoberta > 0 ? (
+        <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50/70 p-3 text-[11px] leading-relaxed text-amber-800">
+          Você já comprou{' '}
+          <strong>{data.resumoExtras.quantidadeCoberta} foto(s) extra(s)</strong> (
+          {formatBRL(data.resumoExtras.valorCoberto)}). Ao adicionar mais, você paga
+          apenas a diferença. As mídias já entregues estão bloqueadas e continuam
+          selecionadas.
+        </div>
+      ) : null}
+
       <section className="space-y-4">
         <div>
           <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold text-ink">
@@ -243,6 +271,7 @@ export function PublicSelectionPage() {
           <GalleryMediaGrid
             midias={fotos}
             selectedIds={fotoIds}
+            lockedIds={entregues}
             watermark
             numerarFotos
             onToggle={(id) => setFotoIds((atual) => toggle(atual, id))}
@@ -257,6 +286,7 @@ export function PublicSelectionPage() {
             <GalleryMediaGrid
               midias={videos}
               selectedIds={videoIds}
+              lockedIds={entregues}
               onToggle={(id) => setVideoIds((atual) => toggle(atual, id))}
             />
           </div>

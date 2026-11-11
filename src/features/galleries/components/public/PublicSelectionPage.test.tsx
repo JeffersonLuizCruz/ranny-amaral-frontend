@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -164,5 +164,100 @@ describe('PublicSelectionPage', () => {
     expect(await screen.findByText('Seleção enviada')).toBeInTheDocument()
     expect(screen.getByText('SEL-2026-0001')).toBeInTheDocument()
     expect(screen.getByText('001')).toBeInTheDocument()
+  })
+
+  it('bloqueia mídias já entregues e mostra o resumo de extras', async () => {
+    consultarGaleriaPublica.mockResolvedValue({
+      link: {
+        id: 'l1',
+        tipo: 'selecao',
+        token: 'tok-1',
+        status: 'ativo',
+        expiraEm: '2026-12-01T00:00:00.000Z',
+        visualizadaEm: null,
+        protocolo: null,
+      },
+      galeria,
+      midias: [midia],
+      selecao: {
+        status: 'rascunho',
+        protocolo: 'SEL-2026-0002',
+        fotoIds: ['m1'],
+        videoIds: [],
+        fotosExtras: 1,
+        valorExtras: 50,
+        enviadaEm: '2026-01-02T00:00:00.000Z',
+      },
+      resumoExtras: {
+        quantidadeTotal: 1,
+        valorTotal: 50,
+        quantidadeCoberta: 1,
+        valorCoberto: 50,
+        quantidadePendente: 0,
+        valorPendente: 0,
+      },
+      midiasEntregues: ['m1'],
+      extras: undefined,
+      entregaDisponivel: false,
+    })
+
+    renderPage()
+
+    expect(await screen.findByText(/Você já comprou/)).toBeInTheDocument()
+    expect(screen.getByLabelText('Mídia já entregue')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByAltText('foto.jpg'))
+
+    expect(
+      screen.getByRole('heading', { name: /Fotos \(1 selecionadas\)/ }),
+    ).toBeInTheDocument()
+  })
+
+  it('rotula o pedido pendente como extras adicionais', async () => {
+    consultarGaleriaPublica.mockResolvedValue({
+      link: {
+        id: 'l1',
+        tipo: 'selecao',
+        token: 'tok-1',
+        status: 'ativo',
+        expiraEm: '2026-12-01T00:00:00.000Z',
+        visualizadaEm: null,
+        protocolo: null,
+      },
+      galeria: { ...galeria, status: 'selecao_enviada' },
+      midias: [midia],
+      selecao: {
+        status: 'enviada',
+        protocolo: 'SEL-2026-0003',
+        fotoIds: ['m1'],
+        videoIds: [],
+        fotosExtras: 2,
+        valorExtras: 100,
+        enviadaEm: '2026-01-03T00:00:00.000Z',
+      },
+      resumoExtras: {
+        quantidadeTotal: 2,
+        valorTotal: 100,
+        quantidadeCoberta: 1,
+        valorCoberto: 50,
+        quantidadePendente: 1,
+        valorPendente: 50,
+      },
+      midiasEntregues: [],
+      extras: {
+        id: 'e2',
+        quantidadeFotos: 1,
+        valorUnitario: 50,
+        valorTotal: 50,
+        status: 'pendente',
+        chavePix: 'pix-extras@teste.com',
+        instrucoesPagamento: 'Pague via Pix e anexe o comprovante.',
+      },
+      entregaDisponivel: false,
+    })
+
+    renderPage()
+
+    expect(await screen.findByText('Extras adicionais')).toBeInTheDocument()
   })
 })

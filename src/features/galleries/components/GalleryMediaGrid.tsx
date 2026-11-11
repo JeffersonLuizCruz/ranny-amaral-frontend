@@ -1,4 +1,4 @@
-import { Check, Download, Film, ImageOff, Loader2, Pencil, PlayCircle, Trash2 } from 'lucide-react'
+import { Check, Download, Film, ImageOff, Loader2, Lock, Pencil, PlayCircle, Trash2 } from 'lucide-react'
 
 import type { MidiaGaleria } from '@/domain/galleries'
 import { formatarNumeroFoto } from '@/features/galleries/lib/format'
@@ -7,6 +7,7 @@ import { cn } from '@/shared/lib/cn'
 interface GalleryMediaGridProps {
   midias: MidiaGaleria[]
   selectedIds?: Set<string>
+  lockedIds?: Set<string>
   onToggle?: (id: string) => void
   onRemove?: (midia: MidiaGaleria) => void
   onDownload?: (midia: MidiaGaleria) => void
@@ -19,6 +20,7 @@ interface GalleryMediaGridProps {
 export function GalleryMediaGrid({
   midias,
   selectedIds,
+  lockedIds,
   onToggle,
   onRemove,
   onDownload,
@@ -43,6 +45,7 @@ export function GalleryMediaGrid({
           key={midia.id}
           midia={midia}
           selected={selectedIds?.has(midia.id) ?? false}
+          locked={lockedIds?.has(midia.id) ?? false}
           onToggle={onToggle}
           onRemove={onRemove}
           onDownload={onDownload}
@@ -58,6 +61,7 @@ export function GalleryMediaGrid({
 function GalleryMediaTile({
   midia,
   selected,
+  locked,
   onToggle,
   onRemove,
   onDownload,
@@ -67,6 +71,7 @@ function GalleryMediaTile({
 }: {
   midia: MidiaGaleria
   selected: boolean
+  locked: boolean
   onToggle?: (id: string) => void
   onRemove?: (midia: MidiaGaleria) => void
   onDownload?: (midia: MidiaGaleria) => void
@@ -78,6 +83,7 @@ function GalleryMediaTile({
     midia.thumbUrl ?? midia.webUrl ?? midia.editadaUrl ?? midia.originalUrl ?? null
   const isVideo = midia.tipo === 'video'
   const numeroVisivel = numerarFotos && midia.tipo === 'foto'
+  const podeAlternar = Boolean(onToggle) && !locked
 
   return (
     <div
@@ -88,11 +94,13 @@ function GalleryMediaTile({
     >
       <button
         type="button"
-        onClick={() => onToggle?.(midia.id)}
-        disabled={!onToggle}
+        onClick={() => {
+          if (podeAlternar) onToggle?.(midia.id)
+        }}
+        disabled={!podeAlternar}
         className={cn(
           'relative block aspect-square w-full overflow-hidden text-left',
-          onToggle ? 'cursor-pointer' : 'cursor-default',
+          podeAlternar ? 'cursor-pointer' : 'cursor-default',
         )}
         aria-pressed={onToggle ? selected : undefined}
       >
@@ -147,7 +155,15 @@ function GalleryMediaTile({
           </span>
         ) : null}
 
-        {selected ? (
+        {locked ? (
+          <span
+            className="absolute right-1.5 top-1.5 grid size-5 place-items-center rounded-full bg-slate-900/80 text-white shadow"
+            title="Mídia já entregue; permanece obrigatória"
+            aria-label="Mídia já entregue"
+          >
+            <Lock className="size-3" />
+          </span>
+        ) : selected ? (
           <span className="absolute right-1.5 top-1.5 grid size-5 place-items-center rounded-full bg-brand-600 text-white shadow">
             <Check className="size-3" />
           </span>

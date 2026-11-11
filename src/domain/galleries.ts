@@ -79,6 +79,15 @@ export interface PedidoExtras {
   comprovanteUrl?: string
 }
 
+export interface ResumoExtras {
+  quantidadeTotal: number
+  valorTotal: number
+  quantidadeCoberta: number
+  valorCoberto: number
+  quantidadePendente: number
+  valorPendente: number
+}
+
 export type EntregaStatus = 'nao_publicada' | 'disponivel' | 'revogada'
 
 export interface DownloadEntrega {
@@ -146,6 +155,8 @@ export interface GaleriaEnsaio {
   midias: MidiaGaleria[]
   selecao?: SelecaoGaleria
   pedidoExtras?: PedidoExtras
+  pedidosExtras?: PedidoExtras[]
+  resumoExtras?: ResumoExtras
   entrega?: EntregaGaleria
   historico: EventoGaleria[]
   createdAt: string

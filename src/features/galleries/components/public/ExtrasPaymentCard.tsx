@@ -14,6 +14,7 @@ import { enviarComprovanteExtras } from '@/features/galleries/api/galeriaUploadA
 interface ExtrasPaymentCardProps {
   token: string
   extras: PedidoExtras
+  titulo?: string
   onChange: (extras: PedidoExtras) => void
 }
 
@@ -25,7 +26,7 @@ function formatDateTime(value?: string): string {
   }).format(new Date(value))
 }
 
-export function ExtrasPaymentCard({ token, extras, onChange }: ExtrasPaymentCardProps) {
+export function ExtrasPaymentCard({ token, extras, titulo, onChange }: ExtrasPaymentCardProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const addToast = useToastStore((state) => state.addToast)
   const [file, setFile] = useState<File | null>(null)
@@ -71,7 +72,7 @@ export function ExtrasPaymentCard({ token, extras, onChange }: ExtrasPaymentCard
     <section className="mt-4 rounded-2xl border border-line bg-surface p-4 text-left shadow-card">
       <h2 className="flex items-center gap-2 text-sm font-semibold text-ink">
         <Wallet className="size-4 text-brand-600" />
-        Pagamento dos extras
+        {titulo ?? 'Pagamento dos extras'}
       </h2>
       <p className="mt-1 text-xs text-muted">
         {extras.quantidadeFotos} foto(s) extra(s) · {formatBRL(extras.valorTotal)}

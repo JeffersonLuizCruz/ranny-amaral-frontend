@@ -107,6 +107,9 @@ aguardando_upload → em_selecao → selecao_enviada → em_edicao → entregue
 - Fotos: o cliente precisa selecionar pelo menos a quantidade inclusa, sem máximo.
 - Vídeos: exatamente a quantidade inclusa, sem vídeo extra.
 - Fotos acima do incluso geram pedido de extras.
+- O staff pode reabrir a seleção mesmo com extras já pagos ou isentos; o novo pedido cobra apenas o delta.
+- Fotos e vídeos já entregues ficam bloqueados no link público: o cliente só pode acrescentar novas mídias.
+- A compra de extras adicionais é combinada com o staff pelo WhatsApp; a página pública não tem solicitação.
 - A edição pode ser liberada manualmente pelo staff, com registro de motivo.
 - O staff vê as fotos selecionadas destacadas, a lista de números e pode baixar os originais em
   **ZIP para edição** direto do detalhe da galeria.
