@@ -25,7 +25,18 @@ const midia = {
   uploadedAt: '2026-01-01T00:00:00.000Z',
   thumbUrl: 'https://storage/thumb.jpg',
   processamentoStatus: 'disponivel',
+  liberadaEm: '2026-01-02T00:00:00.000Z',
+  disponivelParaDownload: true,
+  liberacaoAutomatica: true,
 }
+
+const estadoPublico = {
+  fase: 'selecao',
+  fotosSelecionadas: 0,
+  fotosLiberadas: 0,
+  videosSelecionados: 0,
+  videosLiberados: 0,
+} as const
 
 const galeria = {
   id: 'g1',
@@ -61,6 +72,7 @@ describe('PublicSelectionPage', () => {
 
   it('permite reselecionar quando a seleção foi reaberta', async () => {
     consultarGaleriaPublica.mockResolvedValue({
+      ...estadoPublico,
       link: {
         id: 'l1',
         tipo: 'selecao',
@@ -94,6 +106,9 @@ describe('PublicSelectionPage', () => {
 
   it('mostra a chave Pix e o upload quando há extras pendentes', async () => {
     consultarGaleriaPublica.mockResolvedValue({
+      ...estadoPublico,
+      fase: 'aguardando_pagamento',
+      fotosSelecionadas: 1,
       link: {
         id: 'l1',
         tipo: 'selecao',
@@ -135,6 +150,10 @@ describe('PublicSelectionPage', () => {
 
   it('mostra o protocolo quando a seleção já foi enviada', async () => {
     consultarGaleriaPublica.mockResolvedValue({
+      ...estadoPublico,
+      fase: 'em_liberacao',
+      fotosSelecionadas: 1,
+      fotosLiberadas: 1,
       link: {
         id: 'l1',
         tipo: 'selecao',
@@ -161,13 +180,15 @@ describe('PublicSelectionPage', () => {
 
     renderPage()
 
-    expect(await screen.findByText('Seleção enviada')).toBeInTheDocument()
-    expect(screen.getByText('SEL-2026-0001')).toBeInTheDocument()
-    expect(screen.getByText('001')).toBeInTheDocument()
+    expect(await screen.findByText('Progresso da liberação')).toBeInTheDocument()
+    expect(screen.getByText(/SEL-2026-0001/)).toBeInTheDocument()
+    expect(screen.getByText('Disponíveis para baixar (1)')).toBeInTheDocument()
+    expect(screen.getByAltText('foto.jpg')).toBeInTheDocument()
   })
 
   it('bloqueia mídias já entregues e mostra o resumo de extras', async () => {
     consultarGaleriaPublica.mockResolvedValue({
+      ...estadoPublico,
       link: {
         id: 'l1',
         tipo: 'selecao',
@@ -215,6 +236,9 @@ describe('PublicSelectionPage', () => {
 
   it('rotula o pedido pendente como extras adicionais', async () => {
     consultarGaleriaPublica.mockResolvedValue({
+      ...estadoPublico,
+      fase: 'aguardando_pagamento',
+      fotosSelecionadas: 20,
       link: {
         id: 'l1',
         tipo: 'selecao',
@@ -270,6 +294,7 @@ describe('PublicSelectionPage', () => {
     }))
 
     consultarGaleriaPublica.mockResolvedValue({
+      ...estadoPublico,
       link: {
         id: 'l1',
         tipo: 'selecao',
@@ -320,6 +345,9 @@ describe('PublicSelectionPage', () => {
     }))
 
     consultarGaleriaPublica.mockResolvedValue({
+      ...estadoPublico,
+      fase: 'aguardando_pagamento',
+      fotosSelecionadas: 20,
       link: {
         id: 'l1',
         tipo: 'selecao',
@@ -368,7 +396,7 @@ describe('PublicSelectionPage', () => {
 
     renderPage()
 
-    expect(await screen.findByText('Seleção enviada')).toBeInTheDocument()
+    expect(await screen.findByText('Progresso da liberação')).toBeInTheDocument()
     expect(screen.getByText(/Total na seleção:/)).toBeInTheDocument()
     expect(screen.getByText(/Já coberto: 3/)).toBeInTheDocument()
     expect(screen.getByText(/A pagar agora: 2/)).toBeInTheDocument()

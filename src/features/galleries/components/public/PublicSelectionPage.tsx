@@ -1,19 +1,34 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { AlertTriangle, CheckCircle2, Images, Loader2 } from 'lucide-react'
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Clock,
+  Download,
+  Images,
+  Loader2,
+  RefreshCw,
+} from 'lucide-react'
 import { useParams } from 'react-router-dom'
 
-import type { MidiaGaleria, PedidoExtras, ResumoExtras } from '@/domain/galleries'
+import type {
+  FaseGaleriaPublica,
+  MidiaGaleria,
+  PedidoExtras,
+  ResumoExtras,
+} from '@/domain/galleries'
 import { Button } from '@/shared/components/ui/Button'
 import { formatBRL } from '@/shared/lib/currency'
 import { mensagemDeErro } from '@/shared/api/errors'
 import { GalleryMediaGrid } from '@/features/galleries/components/GalleryMediaGrid'
 import { ExtrasPaymentCard } from '@/features/galleries/components/public/ExtrasPaymentCard'
-import { formatarNumeroFoto } from '@/features/galleries/lib/format'
-import { calcularValorExtras, numerosDasFotosSelecionadas } from '@/features/galleries/lib/selection'
+import { calcularValorExtras } from '@/features/galleries/lib/selection'
 import {
+  baixarMidiaPublica,
   consultarGaleriaPublica,
   enviarSelecaoPublica,
+  urlZipPublico,
+  validarZipPublico,
 } from '@/features/galleries/api/galeriasApi'
 
 interface PublicData {
@@ -22,8 +37,13 @@ interface PublicData {
   selecao?: Awaited<ReturnType<typeof consultarGaleriaPublica>>['selecao']
   extras?: PedidoExtras
   resumoExtras?: ResumoExtras
-  midiasEntregues: string[]
+  midiasEntregues?: string[]
   token: string
+  fase: FaseGaleriaPublica
+  fotosSelecionadas: number
+  fotosLiberadas: number
+  videosSelecionados: number
+  videosLiberados: number
 }
 
 export function PublicSelectionPage() {
@@ -34,21 +54,15 @@ export function PublicSelectionPage() {
   const [enviando, setEnviando] = useState(false)
   const [fotoIds, setFotoIds] = useState<Set<string>>(new Set())
   const [videoIds, setVideoIds] = useState<Set<string>>(new Set())
+  const [atualizando, setAtualizando] = useState(false)
+  const [baixandoZip, setBaixandoZip] = useState(false)
 
   useEffect(() => {
     let ativo = true
     consultarGaleriaPublica(token)
       .then((resultado) => {
         if (!ativo) return
-        setData({
-          galeria: resultado.galeria,
-          midias: resultado.midias,
-          selecao: resultado.selecao,
-          extras: resultado.extras,
-          resumoExtras: resultado.resumoExtras,
-          midiasEntregues: resultado.midiasEntregues ?? [],
-          token,
-        })
+        setData({ ...resultado, token })
         setFotoIds(new Set(resultado.selecao?.fotoIds ?? []))
         setVideoIds(new Set(resultado.selecao?.videoIds ?? []))
       })
@@ -76,10 +90,6 @@ export function PublicSelectionPage() {
         (midia) => midia.tipo === 'video' && midia.processamentoStatus === 'disponivel',
       ),
     [data],
-  )
-  const numerosSelecionados = useMemo(
-    () => numerosDasFotosSelecionadas(fotos, data?.selecao?.fotoIds ?? []),
-    [fotos, data?.selecao],
   )
   const entregues = useMemo(
     () => new Set(data?.midiasEntregues ?? []),
@@ -157,15 +167,7 @@ export function PublicSelectionPage() {
       // pública para exibir a chave Pix e o upload do comprovante na hora.
       try {
         const atualizado = await consultarGaleriaPublica(token)
-        setData({
-          galeria: atualizado.galeria,
-          midias: atualizado.midias,
-          selecao: atualizado.selecao,
-          extras: atualizado.extras,
-          resumoExtras: atualizado.resumoExtras,
-          midiasEntregues: atualizado.midiasEntregues ?? [],
-          token,
-        })
+        setData({ ...atualizado, token })
       } catch {
         // A seleção já foi enviada; a próxima visita recarrega os extras.
       }
@@ -173,6 +175,54 @@ export function PublicSelectionPage() {
       setErro(mensagemDeErro(error))
     } finally {
       setEnviando(false)
+    }
+  }
+
+  const recarregar = async () => {
+    setAtualizando(true)
+    setErro('')
+    try {
+      const resultado = await consultarGaleriaPublica(token)
+      setData({ ...resultado, token })
+      setFotoIds(new Set(resultado.selecao?.fotoIds ?? []))
+      setVideoIds(new Set(resultado.selecao?.videoIds ?? []))
+    } catch (error) {
+      setErro(mensagemDeErro(error))
+    } finally {
+      setAtualizando(false)
+    }
+  }
+
+  const baixarMidia = async (midia: MidiaGaleria) => {
+    setErro('')
+    try {
+      const { url } = await baixarMidiaPublica(token, midia.id)
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = midia.nomeArquivo
+      document.body.appendChild(anchor)
+      anchor.click()
+      anchor.remove()
+    } catch (error) {
+      setErro(mensagemDeErro(error))
+    }
+  }
+
+  const baixarZip = async () => {
+    setErro('')
+    setBaixandoZip(true)
+    try {
+      await validarZipPublico(token, 'auto')
+      const anchor = document.createElement('a')
+      anchor.href = urlZipPublico(token, 'auto')
+      anchor.download = 'galeria-disponiveis.zip'
+      document.body.appendChild(anchor)
+      anchor.click()
+      anchor.remove()
+    } catch (error) {
+      setErro(mensagemDeErro(error))
+    } finally {
+      setBaixandoZip(false)
     }
   }
 
@@ -201,60 +251,86 @@ export function PublicSelectionPage() {
   }
 
   if (data.selecao && selecaoEnviada) {
+    const disponiveis = data.midias.filter((midia) => midia.disponivelParaDownload)
+    const emLiberacao = data.midias.filter((midia) => !midia.disponivelParaDownload)
+    const total = data.fotosSelecionadas + data.videosSelecionados
+    const liberadas = data.fotosLiberadas + data.videosLiberados
+    const percentual = total > 0 ? Math.round((liberadas / total) * 100) : 0
+    const aguardandoPagamento = data.fase === 'aguardando_pagamento'
+
     return (
       <PublicShell>
-        <div className="mx-auto max-w-lg rounded-2xl border border-emerald-200 bg-emerald-50/70 p-6 text-center shadow-card">
-          <CheckCircle2 className="mx-auto size-8 text-emerald-600" />
-          <h1 className="mt-2 text-lg font-semibold text-ink">Seleção enviada</h1>
-          <p className="mt-1 text-sm text-muted">
-            Protocolo <strong className="text-ink">{data.selecao.protocolo}</strong>
-          </p>
-          <p className="mt-2 text-xs text-muted">
-            {data.selecao.fotoIds.length} fotos e {data.selecao.videoIds.length} vídeos
-            selecionados.
-          </p>
-          {numerosSelecionados.length > 0 ? (
-            <p className="mt-1 text-xs text-muted">
-              Fotos:{' '}
-              <strong className="text-ink">
-                {numerosSelecionados.map(formatarNumeroFoto).join(', ')}
-              </strong>
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+              Sua galeria
             </p>
-          ) : null}
-          {data.resumoExtras && data.resumoExtras.quantidadeTotal > 0 ? (
-            <div className="mt-2 space-y-0.5 text-xs text-muted">
-              {data.resumoExtras.quantidadeCoberta > 0 ? (
-                <>
-                  <p>
-                    Total na seleção:{' '}
-                    <strong className="text-ink">
-                      {data.resumoExtras.quantidadeTotal} extra(s) ·{' '}
-                      {formatBRL(data.resumoExtras.valorTotal)}
-                    </strong>
-                  </p>
-                  <p>
-                    Já coberto: {data.resumoExtras.quantidadeCoberta} extra(s) ·{' '}
-                    {formatBRL(data.resumoExtras.valorCoberto)}
-                  </p>
-                </>
-              ) : null}
-              {data.resumoExtras.quantidadePendente > 0 ? (
-                <p className="font-semibold text-ink">
-                  A pagar agora: {data.resumoExtras.quantidadePendente} extra(s) ·{' '}
-                  {formatBRL(data.resumoExtras.valorPendente)}
-                </p>
-              ) : null}
-            </div>
-          ) : data.selecao.fotosExtras > 0 ? (
-            <p className="mt-2 text-xs text-ink">
-              {data.selecao.fotosExtras} foto(s) extra(s) ·{' '}
-              {formatBRL(data.selecao.valorExtras)}
+            <h1 className="mt-1 text-xl font-semibold tracking-tight text-ink">
+              {data.galeria.clienteNome ?? 'Sua galeria'}
+            </h1>
+            <p className="mt-0.5 text-xs text-muted">
+              {liberadas} de {total} mídias liberadas · protocolo{' '}
+              {data.selecao.protocolo}
             </p>
-          ) : null}
+          </div>
+          <Button
+            variant="secondary"
+            onClick={() => void recarregar()}
+            disabled={atualizando}
+          >
+            <RefreshCw className={`size-4 ${atualizando ? 'animate-spin' : ''}`} />
+            {atualizando ? 'Atualizando…' : 'Atualizar'}
+          </Button>
         </div>
 
-        {data.extras ? (
-          <div className="mx-auto max-w-lg">
+        <div className="mb-4 rounded-2xl border border-line bg-surface p-4 shadow-card">
+          <div className="flex items-center justify-between gap-2 text-xs">
+            <span className="font-medium text-ink">Progresso da liberação</span>
+            <span className="text-muted">
+              {liberadas}/{total}
+            </span>
+          </div>
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
+            <div
+              className="h-full rounded-full bg-emerald-500 transition-all"
+              style={{ width: `${percentual}%` }}
+            />
+          </div>
+          <p className="mt-2 text-[11px] text-muted">
+            {aguardandoPagamento
+              ? 'As fotos já prontas serão liberadas assim que o pagamento dos extras for confirmado.'
+              : emLiberacao.length > 0
+                ? 'Você será avisado quando cada mídia ficar pronta. Não é necessário fazer nada.'
+                : 'Tudo liberado. Bom proveito!'}
+          </p>
+        </div>
+
+        {data.resumoExtras ? (
+          <div className="mb-4 rounded-2xl border border-line bg-surface p-4 text-[11px] text-muted shadow-card">
+            <p>
+              Total na seleção:{' '}
+              <strong className="text-ink">
+                {data.resumoExtras.quantidadeTotal} extra(s) ·{' '}
+                {formatBRL(data.resumoExtras.valorTotal)}
+              </strong>
+            </p>
+            {data.resumoExtras.quantidadeCoberta > 0 ? (
+              <p className="mt-0.5">
+                Já coberto: {data.resumoExtras.quantidadeCoberta} extra(s) ·{' '}
+                {formatBRL(data.resumoExtras.valorCoberto)}
+              </p>
+            ) : null}
+            {data.resumoExtras.quantidadePendente > 0 ? (
+              <p className="mt-0.5 font-semibold text-ink">
+                A pagar agora: {data.resumoExtras.quantidadePendente} extra(s) ·{' '}
+                {formatBRL(data.resumoExtras.valorPendente)}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+
+        {data.extras && data.extras.status === 'pendente' ? (
+          <div className="mb-4">
             <ExtrasPaymentCard
               token={data.token}
               extras={data.extras}
@@ -268,6 +344,58 @@ export function PublicSelectionPage() {
               }
             />
           </div>
+        ) : null}
+
+        {disponiveis.length > 0 ? (
+          <section className="mb-4 rounded-2xl border border-line bg-surface p-4 shadow-card">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 className="flex items-center gap-2 text-sm font-semibold text-ink">
+                  <CheckCircle2 className="size-4 text-emerald-600" />
+                  Disponíveis para baixar ({disponiveis.length})
+                </h2>
+                <p className="mt-0.5 text-[11px] text-muted">
+                  Baixe individualmente ou tudo de uma vez em ZIP.
+                </p>
+              </div>
+              <Button onClick={() => void baixarZip()} disabled={baixandoZip}>
+                <Download className="size-4" />
+                {baixandoZip ? 'Preparando…' : 'Baixar todas (.zip)'}
+              </Button>
+            </div>
+            <div className="mt-3">
+              <GalleryMediaGrid
+                midias={disponiveis}
+                onDownload={(midia) => void baixarMidia(midia)}
+                hideEditBadge
+              />
+            </div>
+          </section>
+        ) : null}
+
+        {emLiberacao.length > 0 ? (
+          <section className="rounded-2xl border border-line bg-surface p-4 shadow-card">
+            <h2 className="flex items-center gap-2 text-sm font-semibold text-ink">
+              <Clock className="size-4 text-amber-600" />
+              Em liberação ({emLiberacao.length})
+            </h2>
+            <p className="mt-0.5 text-[11px] text-muted">
+              Estas mídias ainda estão sendo preparadas. Avisaremos quando
+              estiverem prontas.
+            </p>
+            <div className="mt-3">
+              <GalleryMediaGrid midias={emLiberacao} hideEditBadge />
+            </div>
+          </section>
+        ) : null}
+
+        {erro ? (
+          <p
+            role="alert"
+            className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-[11px] font-medium text-red-700 ring-1 ring-red-200"
+          >
+            {erro}
+          </p>
         ) : null}
       </PublicShell>
     )
@@ -321,6 +449,7 @@ export function PublicSelectionPage() {
             lockedIds={entregues}
             watermark
             numerarFotos
+            hideEditBadge
             onToggle={(id) => setFotoIds((atual) => toggle(atual, id))}
           />
         </div>
@@ -334,6 +463,7 @@ export function PublicSelectionPage() {
               midias={videos}
               selectedIds={videoIds}
               lockedIds={entregues}
+              hideEditBadge
               onToggle={(id) => setVideoIds((atual) => toggle(atual, id))}
             />
           </div>
@@ -401,7 +531,7 @@ function PublicShell({ children }: { children: ReactNode }) {
     <div className="min-h-dvh bg-canvas">
       <header className="border-b border-line bg-surface px-4 py-3 sm:px-6">
         <p className="text-sm font-semibold text-ink">Photoizer CRM</p>
-        <p className="text-[11px] text-muted">Seleção de fotos e vídeos</p>
+        <p className="text-[11px] text-muted">Sua galeria</p>
       </header>
       <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6">{children}</main>
     </div>

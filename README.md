@@ -101,7 +101,8 @@ aguardando_upload → em_selecao → selecao_enviada → em_edicao → entregue
 ```
 
 - A publicação da seleção exige ensaio realizado, entrada e saldo quitados e mídia mínima enviada.
-- Link de seleção: 30 dias, reabrindo o mesmo token.
+- **Link único:** o cliente usa o mesmo token na seleção e na entrega; a publicação vale 30 dias e o envio da
+  seleção estende o link para 90 dias. As rotas antigas `/selecao` e `/entrega` redirecionam para `/galeria`.
 - Cada foto recebe um número estável exibido no grid público e no detalhe do staff; o mesmo número nomeia
   o arquivo no ZIP de edição.
 - Fotos: o cliente precisa selecionar pelo menos a quantidade inclusa, sem máximo.
@@ -113,13 +114,16 @@ aguardando_upload → em_selecao → selecao_enviada → em_edicao → entregue
 - A edição pode ser liberada manualmente pelo staff, com registro de motivo.
 - O staff vê as fotos selecionadas destacadas, a lista de números e pode baixar os originais em
   **ZIP para edição** direto do detalhe da galeria.
-- Cada foto selecionada pode receber uma **versão editada** (JPEG/PNG/WebP até 50 MB).
+- Cada foto pode receber uma **versão editada** (JPEG/PNG/WebP até 50 MB), inclusive **antes** da seleção.
 - O staff pode enviar as versões editadas **em lote**, associando os arquivos pelo número da foto
   (padrão `001_nome.jpg`) ou pelo nome original, com até 3 uploads simultâneos e reenvio dos que falharem.
+- No upload da versão editada há o checkbox **“Liberar automaticamente quando o cliente selecionar”**.
+  Ligado, a mídia pronta é liberada após a seleção e a quitação dos extras; desligado, o staff libera manualmente.
 - O staff pode **liberar os RAW** de forma explícita, auditada e revogável.
-- A publicação da entrega exige versão editada ou RAW liberado para cada foto selecionada.
-- A entrega baixa as versões editadas e/ou os RAW, individualmente ou em **ZIP streaming**.
-- Link de entrega: 90 dias, com downloads registrados.
+- A entrega é **progressiva**: cada mídia liberada aparece em “Disponíveis” e as demais em “Em liberação”.
+  O cliente nunca vê os rótulos “editada” ou “RAW”; o backend resolve a melhor versão.
+- O staff pode liberar em lote, revogar uma liberação e finalizar a entrega; o link único é renovado por 90 dias.
+- A entrega baixa as mídias disponíveis, individualmente ou em **ZIP streaming**.
 
 ## Mocks de backend
 
@@ -133,8 +137,8 @@ aguardando_upload → em_selecao → selecao_enviada → em_edicao → entregue
 - `/trocar-senha` — troca obrigatória no primeiro acesso.
 - `/usuarios` — gestão de usuários (somente `ADMIN`).
 - `/assinar/:token` — aceite do contrato (público).
-- `/selecao/:token` — seleção de fotos e vídeos (público).
-- `/entrega/:token` — download das versões editadas e RAW (público).
+- `/galeria/:token` — galeria pública unificada: seleção, liberação progressiva e download.
+- `/selecao/:token` e `/entrega/:token` — redirecionam para `/galeria/:token` (compatibilidade).
 
 ## Limitações do protótipo
 

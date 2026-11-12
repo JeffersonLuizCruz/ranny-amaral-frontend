@@ -18,6 +18,9 @@ export interface MidiaDto {
   editadaUrl: string | null
   editadaDisponivel: boolean
   editadaProcessando: boolean
+  liberadaEm: string | null
+  disponivelParaDownload: boolean
+  liberacaoAutomatica: boolean
   createdAt: string
 }
 
@@ -37,6 +40,9 @@ export function toMidia(dto: MidiaDto): MidiaGaleria {
     editadaUrl: dto.editadaUrl ?? undefined,
     editadaDisponivel: dto.editadaDisponivel,
     editadaProcessando: dto.editadaProcessando,
+    liberadaEm: dto.liberadaEm ?? undefined,
+    disponivelParaDownload: dto.disponivelParaDownload ?? false,
+    liberacaoAutomatica: dto.liberacaoAutomatica ?? true,
     processamentoStatus: dto.status as MidiaGaleria['processamentoStatus'],
     erroProcessamento: dto.erroProcessamento ?? undefined,
   }

@@ -38,6 +38,9 @@ export function GalleryEditedVersionDialog({
   const [progress, setProgress] = useState<UploadProgressValue>()
   const [uploading, setUploading] = useState(false)
   const [removendo, setRemovendo] = useState(false)
+  const [liberarAutomaticamente, setLiberarAutomaticamente] = useState(
+    midia.liberacaoAutomatica ?? true,
+  )
 
   const selecionar = (selecionado: File | null) => {
     if (!selecionado) return
@@ -54,7 +57,13 @@ export function GalleryEditedVersionDialog({
     setUploading(true)
     setProgress(undefined)
     try {
-      await uploadVersaoEditada(galeriaId, midia.id, file, { onProgress: setProgress })
+      await uploadVersaoEditada(
+        galeriaId,
+        midia.id,
+        file,
+        { onProgress: setProgress },
+        liberarAutomaticamente,
+      )
       addToast('Versão editada enviada.')
       setFile(null)
       onClose()
@@ -146,6 +155,25 @@ export function GalleryEditedVersionDialog({
         </button>
 
         {progress ? <UploadProgress progress={progress} /> : null}
+
+        <label className="flex items-start gap-2 rounded-xl border border-line bg-canvas/60 p-3 text-[11px] text-muted">
+          <input
+            type="checkbox"
+            checked={liberarAutomaticamente}
+            onChange={(event) => setLiberarAutomaticamente(event.target.checked)}
+            disabled={uploading}
+            className="mt-0.5 size-4 accent-brand-600"
+          />
+          <span>
+            <strong className="text-ink">
+              Liberar automaticamente quando o cliente selecionar
+            </strong>
+            <span className="mt-0.5 block">
+              Se desmarcado, a foto fica pronta, mas só é liberada quando você
+              clicar em “Liberar”.
+            </span>
+          </span>
+        </label>
 
         <div className="flex flex-wrap justify-end gap-2 border-t border-line pt-3">
           {midia.editadaDisponivel ? (

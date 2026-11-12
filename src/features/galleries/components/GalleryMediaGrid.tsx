@@ -15,6 +15,7 @@ interface GalleryMediaGridProps {
   emptyLabel?: string
   watermark?: boolean
   numerarFotos?: boolean
+  hideEditBadge?: boolean
 }
 
 export function GalleryMediaGrid({
@@ -28,6 +29,7 @@ export function GalleryMediaGrid({
   emptyLabel = 'Nenhuma mídia enviada ainda.',
   watermark = false,
   numerarFotos = false,
+  hideEditBadge = false,
 }: GalleryMediaGridProps) {
   if (midias.length === 0) {
     return (
@@ -52,6 +54,7 @@ export function GalleryMediaGrid({
           onEdit={onEdit}
           watermark={watermark}
           numerarFotos={numerarFotos}
+          hideEditBadge={hideEditBadge}
         />
       ))}
     </div>
@@ -68,6 +71,7 @@ function GalleryMediaTile({
   onEdit,
   watermark,
   numerarFotos,
+  hideEditBadge,
 }: {
   midia: MidiaGaleria
   selected: boolean
@@ -78,6 +82,7 @@ function GalleryMediaTile({
   onEdit?: (midia: MidiaGaleria) => void
   watermark?: boolean
   numerarFotos?: boolean
+  hideEditBadge?: boolean
 }) {
   const url =
     midia.thumbUrl ?? midia.webUrl ?? midia.editadaUrl ?? midia.originalUrl ?? null
@@ -169,7 +174,7 @@ function GalleryMediaTile({
           </span>
         ) : null}
 
-        {midia.editadaDisponivel ? (
+        {!hideEditBadge && midia.editadaDisponivel ? (
           <span
             className={cn(
               'absolute left-1.5 inline-flex items-center gap-1 rounded-full bg-emerald-600/90 px-1.5 py-0.5 text-[9px] font-semibold text-white shadow',

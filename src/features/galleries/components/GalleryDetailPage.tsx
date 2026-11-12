@@ -55,6 +55,13 @@ export function GalleryDetailPage() {
   const revokeDelivery = useGalleryStore((state) => state.revokeDelivery)
   const releaseRaw = useGalleryStore((state) => state.releaseRaw)
   const revokeRaw = useGalleryStore((state) => state.revokeRaw)
+  const liberarProntas = useGalleryStore((state) => state.liberarProntas)
+  const liberarLote = useGalleryStore((state) => state.liberarLote)
+  const revogarLiberacao = useGalleryStore((state) => state.revogarLiberacao)
+  const renovarLink = useGalleryStore((state) => state.renovarLink)
+  const definirAutoLiberacao = useGalleryStore(
+    (state) => state.definirAutoLiberacao,
+  )
   const addToast = useToastStore((state) => state.addToast)
   const [editando, setEditando] = useState<MidiaGaleria | null>(null)
   const [loteEditadasOpen, setLoteEditadasOpen] = useState(false)
@@ -111,9 +118,13 @@ export function GalleryDetailPage() {
   const videos = midias.filter((midia) => midia.tipo === 'video')
   const disponiveis = midias.filter((midia) => midia.processamentoStatus === 'disponivel')
   const podeEditarMidias = ['aguardando_upload', 'em_selecao'].includes(galeria.status)
-  const podeEditarVersao = ['selecao_enviada', 'em_edicao', 'entregue'].includes(
-    galeria.status,
-  )
+  const podeEditarVersao = [
+    'aguardando_upload',
+    'em_selecao',
+    'selecao_enviada',
+    'em_edicao',
+    'entregue',
+  ].includes(galeria.status)
   const podeReabrirSelecao = ['em_selecao', 'selecao_enviada', 'em_edicao'].includes(
     galeria.status,
   )
@@ -131,20 +142,36 @@ export function GalleryDetailPage() {
   )
   const selecaoEnviada = detalhe.selecao?.status === 'enviada'
   const fotosEditadas = fotosSelecionadas.filter((midia) => midia.editadaDisponivel)
-  const fotosSemEdicao = fotosSelecionadas.length - fotosEditadas.length
-  const entregaBloqueada = !galeria.rawLiberado && fotosSemEdicao > 0
+  const fotosParaEditar = selecaoEnviada
+    ? fotosSelecionadasDisponiveis
+    : disponiveis.filter((midia) => midia.tipo === 'foto')
+  const selecionadasMidias = midias.filter((midia) => selecionadas.has(midia.id))
+  const midiaPronta = (midia: MidiaGaleria) =>
+    midia.tipo === 'video'
+      ? midia.processamentoStatus === 'disponivel'
+      : Boolean(midia.editadaDisponivel || galeria.rawLiberado)
+  const liberadas = selecionadasMidias.filter((midia) => midia.liberadaEm)
+  const naoLiberadas = selecionadasMidias.filter((midia) => !midia.liberadaEm)
+  const prontasNaoLiberadas = naoLiberadas.filter(midiaPronta)
+  const midiasNaoProntas = naoLiberadas.filter((midia) => !midiaPronta(midia))
+  const entregaBloqueada =
+    midiasNaoProntas.length > 0 ||
+    naoLiberadas.some(
+      (midia) => midiaPronta(midia) && !(midia.liberacaoAutomatica ?? true),
+    )
+  const linkCliente = galeria.tokenGaleria ?? galeria.tokenSelecao
   const pedidosExtras =
     detalhe.pedidosExtras ?? (detalhe.extras ? [detalhe.extras] : [])
   const pedidoPendente = pedidosExtras.find((pedido) => pedido.status === 'pendente')
-  const extrasQuitados = !pedidoPendente
+  const liberacaoBloqueada = Boolean(pedidoPendente)
 
-  const copiar = async (tipo: 'selecao' | 'entrega') => {
-    const token = tipo === 'selecao' ? galeria.tokenSelecao : galeria.entrega?.token
-    if (!token) return
-    const path = tipo === 'selecao' ? `/selecao/${token}` : `/entrega/${token}`
+  const copiarLinkCliente = async () => {
+    if (!linkCliente) return
     try {
-      await navigator.clipboard.writeText(`${window.location.origin}${path}`)
-      addToast(`Link de ${tipo} copiado.`)
+      await navigator.clipboard.writeText(
+        `${window.location.origin}/galeria/${linkCliente}`,
+      )
+      addToast('Link do cliente copiado.')
     } catch {
       addToast('Não foi possível copiar o link.')
     }
@@ -261,7 +288,7 @@ export function GalleryDetailPage() {
                   size="sm"
                   variant="secondary"
                   onClick={() => setLoteEditadasOpen(true)}
-                  disabled={fotosSelecionadasDisponiveis.length === 0}
+                  disabled={fotosParaEditar.length === 0}
                 >
                   <Upload className="size-3.5" />
                   Enviar editadas em lote
@@ -281,19 +308,193 @@ export function GalleryDetailPage() {
           </div>
         </section>
 
+        {selecionadasMidias.length > 0 ? (
+          <section className="rounded-2xl border border-line bg-surface p-4 shadow-card">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-semibold text-ink">
+                  Liberação progressiva
+                </h3>
+                <p className="mt-0.5 text-[11px] text-muted">
+                  {liberadas.length} de {selecionadasMidias.length} mídias
+                  selecionadas liberadas
+                  {midiasNaoProntas.length > 0
+                    ? ` · ${midiasNaoProntas.length} em produção`
+                    : ''}
+                  .
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() =>
+                    void executar(
+                      () => liberarProntas(galeria.id),
+                      'Mídias prontas liberadas.',
+                    )
+                  }
+                  disabled={
+                    prontasNaoLiberadas.length === 0 || liberacaoBloqueada
+                  }
+                >
+                  <Sparkles className="size-3.5" />
+                  Liberar prontas ({prontasNaoLiberadas.length})
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() =>
+                    void executar(
+                      () => publishDelivery(galeria.id),
+                      'Entrega finalizada.',
+                    )
+                  }
+                  disabled={naoLiberadas.length > 0 || liberacaoBloqueada}
+                >
+                  <CheckCircle2 className="size-3.5" />
+                  {galeria.status === 'entregue'
+                    ? 'Entrega finalizada'
+                    : 'Finalizar entrega'}
+                </Button>
+              </div>
+            </div>
+
+            {liberacaoBloqueada ? (
+              <p className="mt-2 rounded-xl bg-amber-50 px-3 py-2 text-[11px] text-amber-800 ring-1 ring-amber-200">
+                Confirme ou isente os extras para liberar os downloads.
+              </p>
+            ) : naoLiberadas.length > 0 ? (
+              <p className="mt-2 rounded-xl bg-canvas/70 px-3 py-2 text-[11px] text-muted">
+                {midiasNaoProntas.length > 0
+                  ? `${midiasNaoProntas.length} mídia(s) ainda não têm versão final. Envie as editadas ou libere os RAW.`
+                  : 'Todas as mídias estão prontas. Libere o lote para liberar o download.'}
+              </p>
+            ) : null}
+
+            <div className="mt-3 space-y-2">
+              {selecionadasMidias.map((midia) => {
+                const pronta = midiaPronta(midia)
+                return (
+                  <div
+                    key={midia.id}
+                    className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-canvas/60 p-2.5"
+                  >
+                    {midia.thumbUrl || midia.webUrl || midia.editadaUrl ? (
+                      <img
+                        src={
+                          midia.thumbUrl ??
+                          midia.webUrl ??
+                          midia.editadaUrl ??
+                          undefined
+                        }
+                        alt={midia.nomeArquivo}
+                        className="size-10 shrink-0 rounded-lg object-cover"
+                      />
+                    ) : (
+                      <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-slate-100 text-muted">
+                        <Images className="size-4" />
+                      </span>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[11px] font-medium text-ink">
+                        {midia.tipo === 'foto'
+                          ? `${formatarNumeroFoto(midia.numero)} · `
+                          : ''}
+                        {midia.nomeArquivo}
+                      </p>
+                      <p className="text-[10px] text-muted">
+                        {midia.liberadaEm
+                          ? 'Liberada para download'
+                          : pronta
+                            ? 'Pronta para liberar'
+                            : 'Em produção'}
+                      </p>
+                    </div>
+                    {midia.tipo === 'foto' ? (
+                      <label className="flex items-center gap-1 text-[10px] text-muted">
+                        <input
+                          type="checkbox"
+                          checked={midia.liberacaoAutomatica ?? true}
+                          onChange={(event) =>
+                            void executar(
+                              () =>
+                                definirAutoLiberacao(
+                                  galeria.id,
+                                  midia.id,
+                                  event.target.checked,
+                                ),
+                              'Auto-liberação atualizada.',
+                            )
+                          }
+                          className="size-3.5 accent-brand-600"
+                        />
+                        auto
+                      </label>
+                    ) : null}
+                    {midia.liberadaEm ? (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() =>
+                          void executar(
+                            () => revogarLiberacao(galeria.id, [midia.id]),
+                            'Liberação revogada.',
+                          )
+                        }
+                      >
+                        <RotateCcw className="size-3.5" />
+                        Revogar
+                      </Button>
+                    ) : pronta ? (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        disabled={liberacaoBloqueada}
+                        onClick={() =>
+                          void executar(
+                            () => liberarLote(galeria.id, [midia.id]),
+                            'Mídia liberada.',
+                          )
+                        }
+                      >
+                        <Download className="size-3.5" />
+                        Liberar
+                      </Button>
+                    ) : null}
+                  </div>
+                )
+              })}
+            </div>
+          </section>
+        ) : null}
+
         <section className="grid gap-4 lg:grid-cols-2">
           <div className="rounded-2xl border border-line bg-surface p-4 shadow-card">
             <h3 className="flex items-center gap-2 text-sm font-semibold text-ink">
               <Link2 className="size-4 text-brand-600" />
               Seleção
             </h3>
-            {galeria.tokenSelecao ? (
+            {linkCliente ? (
               <div className="mt-2 space-y-2 text-[11px] text-muted">
-                <p>Disponível até {formatDateTime(galeria.prazoSelecaoEm)}.</p>
+                <p>Link único do cliente · disponível até {formatDateTime(galeria.prazoSelecaoEm)}.</p>
                 <div className="flex flex-wrap gap-2">
-                  <Button size="sm" variant="secondary" onClick={() => void copiar('selecao')}>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => void copiarLinkCliente()}
+                  >
                     <Copy className="size-3.5" />
-                    Copiar link
+                    Copiar link do cliente
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() =>
+                      void executar(() => renovarLink(galeria.id), 'Link renovado.')
+                    }
+                  >
+                    <Sparkles className="size-3.5" />
+                    Renovar
                   </Button>
                   {podeReabrirSelecao ? (
                     <Button
@@ -538,63 +739,54 @@ export function GalleryDetailPage() {
               </p>
             )}
 
-            <div className="mt-3 flex flex-wrap gap-2">
-              {galeria.status === 'em_edicao' && extrasQuitados ? (
-                <Button
-                  size="sm"
-                  onClick={() =>
-                    void executar(
-                      () => publishDelivery(galeria.id),
-                      'Link de entrega publicado.',
-                    )
-                  }
-                  disabled={entregaBloqueada}
-                >
-                  Publicar entrega
-                </Button>
-              ) : null}
-            </div>
           </div>
         </section>
 
         <section className="rounded-2xl border border-line bg-surface p-4 shadow-card">
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <h3 className="text-sm font-semibold text-ink">Entrega</h3>
-            {galeria.entrega?.token ? (
+            {linkCliente ? (
               <div className="flex gap-2">
-                <Button size="sm" variant="secondary" onClick={() => void copiar('entrega')}>
-                  <Copy className="size-3.5" />
-                  Copiar link
-                </Button>
                 <Button
                   size="sm"
-                  variant="ghost"
-                  onClick={() =>
-                    void executar(() => revokeDelivery(galeria.id), 'Entrega revogada.')
-                  }
+                  variant="secondary"
+                  onClick={() => void copiarLinkCliente()}
                 >
-                  Revogar
+                  <Copy className="size-3.5" />
+                  Link do cliente
                 </Button>
+                {galeria.status === 'entregue' ? (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() =>
+                      void executar(() => revokeDelivery(galeria.id), 'Entrega revogada.')
+                    }
+                  >
+                    Revogar
+                  </Button>
+                ) : null}
               </div>
             ) : null}
           </div>
           <p className="mt-2 text-[11px] text-muted">
-            {galeria.entrega?.token
-              ? `Disponível até ${formatDateTime(galeria.entrega.expiraEm)}.`
-              : 'Ainda não publicada. Marque como pronta e publique após os extras.'}
+            {galeria.status === 'entregue'
+              ? 'Entrega finalizada. O cliente baixa tudo pelo link único.'
+              : liberadas.length > 0
+                ? `${liberadas.length} mídia(s) liberadas para download pelo link único.`
+                : 'Ainda não publicada. Libere as mídias prontas e finalize a entrega.'}
           </p>
-          {galeria.zipBaixadoEm || galeria.entrega?.token ? (
+          {galeria.zipBaixadoEm ? (
             <p className="mt-1 text-[11px] text-muted">
-              {galeria.zipBaixadoEm
-                ? `Cliente baixou o ZIP em ${formatDateTime(galeria.zipBaixadoEm)}.`
-                : 'Cliente ainda não baixou o ZIP da entrega.'}
+              Cliente baixou o ZIP em {formatDateTime(galeria.zipBaixadoEm)}.
             </p>
           ) : null}
 
           {entregaBloqueada ? (
             <p className="mt-2 rounded-xl bg-amber-50 px-3 py-2 text-[11px] text-amber-800 ring-1 ring-amber-200">
-              {fotosSemEdicao} foto(s) selecionada(s) sem versão editada. Envie as
-              versões ou libere os RAW antes de publicar a entrega.
+              {midiasNaoProntas.length > 0
+                ? `${midiasNaoProntas.length} mídia(s) selecionada(s) ainda não têm versão final. Envie as versões editadas ou libere os RAW antes de finalizar.`
+                : 'Há mídias prontas com auto-liberação desativada. Use “Liberar prontas” antes de finalizar.'}
             </p>
           ) : null}
 
@@ -673,7 +865,7 @@ export function GalleryDetailPage() {
         <GalleryEditedBatchUploadDialog
           open
           galeriaId={galeria.id}
-          fotos={fotosSelecionadasDisponiveis}
+          fotos={fotosParaEditar}
           onClose={() => setLoteEditadasOpen(false)}
         />
       ) : null}

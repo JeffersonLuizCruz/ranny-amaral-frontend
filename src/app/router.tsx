@@ -1,4 +1,9 @@
-import { Navigate, RouterProvider, createBrowserRouter } from 'react-router-dom'
+import {
+  Navigate,
+  RouterProvider,
+  createBrowserRouter,
+  useParams,
+} from 'react-router-dom'
 
 import { AppShell } from '@/app/layout/AppShell'
 import { AgendaPage } from '@/features/agenda/components/AgendaPage'
@@ -16,7 +21,6 @@ import { DashboardPage } from '@/features/dashboard/components/DashboardPage'
 import { FinancePage } from '@/features/finance/components/FinancePage'
 import { GalleriesPage } from '@/features/galleries/components/GalleriesPage'
 import { GalleryDetailPage } from '@/features/galleries/components/GalleryDetailPage'
-import { PublicDeliveryPage } from '@/features/galleries/components/public/PublicDeliveryPage'
 import { PublicSelectionPage } from '@/features/galleries/components/public/PublicSelectionPage'
 import { PackagesPage } from '@/features/packages/components/PackagesPage'
 import { UsersPage } from '@/features/users/components/UsersPage'
@@ -27,12 +31,16 @@ const router = createBrowserRouter([
     element: <PublicContractPage />,
   },
   {
-    path: '/selecao/:token',
+    path: '/galeria/:token',
     element: <PublicSelectionPage />,
   },
   {
+    path: '/selecao/:token',
+    element: <RedirecionarParaGaleria />,
+  },
+  {
     path: '/entrega/:token',
-    element: <PublicDeliveryPage />,
+    element: <RedirecionarParaGaleria />,
   },
   {
     path: '/login',
@@ -83,6 +91,11 @@ const router = createBrowserRouter([
     ],
   },
 ])
+
+function RedirecionarParaGaleria() {
+  const { token = '' } = useParams()
+  return <Navigate to={`/galeria/${token}`} replace />
+}
 
 export function AppRouter() {
   return <RouterProvider router={router} />

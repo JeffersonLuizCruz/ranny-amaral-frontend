@@ -2,6 +2,7 @@ import type {
   EntregaGaleria,
   EventoGaleria,
   FaixaAplicada,
+  FaseGaleriaPublica,
   GaleriaEnsaio,
   GaleriaStatus,
   MidiaGaleria,
@@ -41,7 +42,7 @@ interface GaleriaDto {
 
 interface LinkDto {
   id: string
-  tipo: 'selecao' | 'entrega'
+  tipo: 'selecao' | 'entrega' | 'galeria'
   token: string
   status: 'ativo' | 'expirado' | 'revogado'
   expiraEm: string
@@ -224,7 +225,9 @@ function toGaleria(
   pedidosExtras?: PedidoExtras[],
   resumoExtras?: ResumoExtras,
 ): GaleriaEnsaio {
-  const linkSelecao = links.find((item) => item.tipo === 'selecao')
+  const linkSelecao =
+    links.find((item) => item.tipo === 'galeria') ??
+    links.find((item) => item.tipo === 'selecao')
   return {
     id: dto.id,
     agendamentoId: dto.agendamentoId,
@@ -244,6 +247,7 @@ function toGaleria(
     rawLiberadoPor: dto.rawLiberadoPor ?? undefined,
     zipBaixadoEm: dto.zipBaixadoEm ?? undefined,
     tokenSelecao: linkSelecao?.token,
+    tokenGaleria: linkSelecao?.token,
     prazoSelecaoEm: linkSelecao?.expiraEm,
     midias: [],
     selecao,
@@ -363,6 +367,53 @@ export async function revogarEntrega(galeriaId: string): Promise<void> {
   await http.post(`/galerias/${galeriaId}/entrega/revogar`)
 }
 
+export interface LiberarLoteResultado {
+  quantidadeLiberada: number
+  totalLiberado: number
+  totalSelecionado: number
+}
+
+export async function liberarLote(
+  galeriaId: string,
+  midiaIds: string[],
+): Promise<LiberarLoteResultado> {
+  return http.post<LiberarLoteResultado>(`/galerias/${galeriaId}/entrega/liberar`, {
+    midiaIds,
+  })
+}
+
+export async function liberarProntas(
+  galeriaId: string,
+): Promise<LiberarLoteResultado> {
+  return http.post<LiberarLoteResultado>(
+    `/galerias/${galeriaId}/entrega/liberar-prontas`,
+  )
+}
+
+export async function revogarLiberacao(
+  galeriaId: string,
+  midiaIds: string[],
+): Promise<LiberarLoteResultado> {
+  return http.post<LiberarLoteResultado>(
+    `/galerias/${galeriaId}/entrega/revogar-liberacao`,
+    { midiaIds },
+  )
+}
+
+export async function renovarLink(galeriaId: string): Promise<LinkDto> {
+  return http.post<LinkDto>(`/galerias/${galeriaId}/link/renovar`)
+}
+
+export async function definirAutoLiberacao(
+  galeriaId: string,
+  midiaId: string,
+  liberarAutomaticamente: boolean,
+): Promise<void> {
+  await http.post(`/galerias/${galeriaId}/midias/${midiaId}/auto-liberacao`, {
+    liberarAutomaticamente,
+  })
+}
+
 export async function liberarRaw(galeriaId: string, por?: string): Promise<void> {
   await http.post(`/galerias/${galeriaId}/entrega/liberar-raw`, { por })
 }
@@ -393,6 +444,11 @@ export async function consultarGaleriaPublica(token: string): Promise<{
   resumoExtras?: ResumoExtras
   midiasEntregues?: string[]
   entregaDisponivel: boolean
+  fase: FaseGaleriaPublica
+  fotosSelecionadas: number
+  fotosLiberadas: number
+  videosSelecionados: number
+  videosLiberados: number
 }> {
   interface PublicaDto {
     link: LinkDto
@@ -403,28 +459,44 @@ export async function consultarGaleriaPublica(token: string): Promise<{
     resumoExtras?: ResumoExtrasDto | null
     midiasEntregues?: string[]
     entregaDisponivel: boolean
+    fase: FaseGaleriaPublica
+    fotosSelecionadas: number
+    fotosLiberadas: number
+    videosSelecionados: number
+    videosLiberados: number
   }
   const dto = await http.get<PublicaDto>(`/public/galerias/${token}`)
   const selecao = toSelecao(dto.selecao)
   const extras = toExtras(dto.extras)
   const resumoExtras = toResumoExtras(dto.resumoExtras)
+  const galeria = toGaleria(
+    dto.galeria,
+    [dto.link],
+    selecao,
+    extras,
+    [],
+    undefined,
+    resumoExtras,
+  )
+  galeria.fase = dto.fase
+  galeria.fotosSelecionadas = dto.fotosSelecionadas
+  galeria.fotosLiberadas = dto.fotosLiberadas
+  galeria.videosSelecionados = dto.videosSelecionados
+  galeria.videosLiberados = dto.videosLiberados
   return {
     link: dto.link,
-    galeria: toGaleria(
-      dto.galeria,
-      [dto.link],
-      selecao,
-      extras,
-      [],
-      undefined,
-      resumoExtras,
-    ),
+    galeria,
     midias: dto.midias.map(toMidia),
     selecao,
     extras,
     resumoExtras,
     midiasEntregues: dto.midiasEntregues ?? [],
     entregaDisponivel: dto.entregaDisponivel,
+    fase: dto.fase,
+    fotosSelecionadas: dto.fotosSelecionadas,
+    fotosLiberadas: dto.fotosLiberadas,
+    videosSelecionados: dto.videosSelecionados,
+    videosLiberados: dto.videosLiberados,
   }
 }
 
@@ -443,7 +515,7 @@ export async function enviarSelecaoPublica(
 export async function baixarMidiaPublica(
   token: string,
   midiaId: string,
-  versao: 'editada' | 'original' = 'editada',
+  versao: 'auto' | 'editada' | 'original' = 'auto',
 ): Promise<{ url: string; expiraEm: string; nomeArquivo: string }> {
   return http.post(`/public/galerias/${token}/download`, { midiaId, versao })
 }
@@ -451,7 +523,7 @@ export async function baixarMidiaPublica(
 /** Valida o ZIP antes da navegacao; devolve a quantidade de arquivos. */
 export async function validarZipPublico(
   token: string,
-  versao: 'editada' | 'original',
+  versao: 'auto' | 'editada' | 'original' = 'auto',
 ): Promise<number> {
   const dto = await http.get<{ quantidade: number }>(
     `/public/galerias/${token}/download-zip/validar?versao=${versao}`,
@@ -462,7 +534,7 @@ export async function validarZipPublico(
 /** URL do ZIP streaming; usada em navegacao direta para nao carregar em memoria. */
 export function urlZipPublico(
   token: string,
-  versao: 'editada' | 'original',
+  versao: 'auto' | 'editada' | 'original' = 'auto',
 ): string {
   return apiUrl(`/public/galerias/${token}/download-zip?versao=${versao}`)
 }

@@ -1,6 +1,13 @@
 import type { FormaPagamentoSaldo } from './payments'
 import type { FaixaFotoExtra } from './types'
 
+export type FaseGaleriaPublica =
+  | 'selecao'
+  | 'aguardando_pagamento'
+  | 'em_liberacao'
+  | 'entregue'
+  | 'cancelada'
+
 export type GaleriaStatus =
   | 'nao_criada'
   | 'aguardando_upload'
@@ -30,6 +37,9 @@ export interface MidiaGaleria {
   editadaUrl?: string
   editadaDisponivel?: boolean
   editadaProcessando?: boolean
+  liberadaEm?: string
+  disponivelParaDownload?: boolean
+  liberacaoAutomatica?: boolean
   processamentoStatus?: 'enviando' | 'processando' | 'disponivel' | 'falha' | 'removida'
   erroProcessamento?: string
 }
@@ -121,6 +131,9 @@ export type EventoGaleriaTipo =
   | 'pronta_entrega'
   | 'entrega_publicada'
   | 'entrega_revogada'
+  | 'entrega_lote_liberado'
+  | 'entrega_liberacao_revogada'
+  | 'liberacao_automatica_alterada'
   | 'download_registrado'
   | 'comprovante_extras_enviado'
   | 'cancelada'
@@ -151,7 +164,13 @@ export interface GaleriaEnsaio {
   rawLiberadoPor?: string
   zipBaixadoEm?: string
   tokenSelecao?: string
+  tokenGaleria?: string
   prazoSelecaoEm?: string
+  fotosSelecionadas?: number
+  fotosLiberadas?: number
+  videosSelecionados?: number
+  videosLiberados?: number
+  fase?: FaseGaleriaPublica
   midias: MidiaGaleria[]
   selecao?: SelecaoGaleria
   pedidoExtras?: PedidoExtras

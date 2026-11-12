@@ -49,6 +49,7 @@ export function GalleryEditedBatchUploadDialog({
   const [arquivos, setArquivos] = useState<File[]>([])
   const [progressos, setProgressos] = useState<Progressos>({})
   const [enviando, setEnviando] = useState(false)
+  const [liberarAutomaticamente, setLiberarAutomaticamente] = useState(true)
 
   const associacao = useMemo(
     () => associarArquivosEditados(fotos, arquivos),
@@ -136,6 +137,7 @@ export function GalleryEditedBatchUploadDialog({
         (midiaId, progresso) => {
           setProgressos((atuais) => ({ ...atuais, [midiaId]: progresso }))
         },
+        liberarAutomaticamente,
       )
       const sucessos = resultados.filter((resultado) => resultado.ok).length
       const falhasResultado = resultados.length - sucessos
@@ -345,6 +347,25 @@ export function GalleryEditedBatchUploadDialog({
             automaticamente, assim como o nome original da foto.
           </p>
         )}
+
+        <label className="flex items-start gap-2 rounded-xl border border-line bg-canvas/60 p-3 text-[11px] text-muted">
+          <input
+            type="checkbox"
+            checked={liberarAutomaticamente}
+            onChange={(event) => setLiberarAutomaticamente(event.target.checked)}
+            disabled={enviando}
+            className="mt-0.5 size-4 accent-brand-600"
+          />
+          <span>
+            <strong className="text-ink">
+              Liberar automaticamente quando o cliente selecionar
+            </strong>
+            <span className="mt-0.5 block">
+              Vale para todas as fotos deste lote. Se desmarcado, elas ficam
+              prontas, mas só são liberadas quando você clicar em “Liberar”.
+            </span>
+          </span>
+        </label>
 
         <div className="flex flex-wrap justify-end gap-2 border-t border-line pt-3">
           {arquivos.length > 0 && !enviando ? (

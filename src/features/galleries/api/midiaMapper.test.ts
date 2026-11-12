@@ -22,6 +22,9 @@ describe('toMidia', () => {
       editadaUrl: null,
       editadaDisponivel: false,
       editadaProcessando: false,
+      liberadaEm: null,
+      disponivelParaDownload: false,
+      liberacaoAutomatica: true,
       createdAt: '2026-11-06T10:00:00Z',
     })
 
@@ -53,6 +56,9 @@ describe('toMidia', () => {
       editadaUrl: 'https://storage/editada.jpg',
       editadaDisponivel: true,
       editadaProcessando: true,
+      liberadaEm: null,
+      disponivelParaDownload: false,
+      liberacaoAutomatica: true,
       createdAt: '2026-11-06T10:00:00Z',
     })
 

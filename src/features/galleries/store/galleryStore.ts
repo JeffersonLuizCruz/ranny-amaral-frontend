@@ -8,8 +8,11 @@ import {
   buscarGaleria,
   confirmarExtras,
   criarGaleria,
+  definirAutoLiberacao as definirAutoLiberacaoApi,
   isentarExtras,
   liberarEdicao,
+  liberarLote as liberarLoteApi,
+  liberarProntas as liberarProntasApi,
   liberarRaw,
   listarGalerias,
   listarMidias,
@@ -17,10 +20,13 @@ import {
   publicarSelecao,
   reabrirSelecao,
   removerMidia,
+  renovarLink as renovarLinkApi,
   revogarEntrega,
+  revogarLiberacao as revogarLiberacaoApi,
   revogarRaw,
   type GaleriaDetalhe,
   type GaleriasFiltros,
+  type LiberarLoteResultado,
 } from '@/features/galleries/api/galeriasApi'
 import { enviarMidia, enviarVersaoEditada, removerVersaoEditada } from '@/features/galleries/api/galeriaUploadApi'
 import type {
@@ -53,11 +59,13 @@ interface GalleryState {
     midiaId: string,
     file: File,
     options?: UploadOptions,
+    liberarAutomaticamente?: boolean,
   ) => Promise<MidiaGaleria>
   uploadVersoesEditadas: (
     id: string,
     itens: UploadEditadaLoteItem[],
     onProgress?: (midiaId: string, progresso: UploadEditadaLoteProgresso) => void,
+    liberarAutomaticamente?: boolean,
   ) => Promise<UploadEditadaLoteResultado[]>
   removeVersaoEditada: (id: string, midiaId: string) => Promise<void>
   removeMedia: (id: string, midiaId: string) => Promise<void>
@@ -70,6 +78,11 @@ interface GalleryState {
   revokeDelivery: (id: string) => Promise<void>
   releaseRaw: (id: string, por?: string) => Promise<void>
   revokeRaw: (id: string) => Promise<void>
+  liberarLote: (id: string, midiaIds: string[]) => Promise<LiberarLoteResultado>
+  liberarProntas: (id: string) => Promise<LiberarLoteResultado>
+  revogarLiberacao: (id: string, midiaIds: string[]) => Promise<LiberarLoteResultado>
+  renovarLink: (id: string) => Promise<string>
+  definirAutoLiberacao: (id: string, midiaId: string, value: boolean) => Promise<void>
   recarregar: () => Promise<void>
 }
 
@@ -162,8 +175,14 @@ export const useGalleryStore = create<GalleryState>()((set, get) => ({
     return midia
   },
 
-  uploadVersaoEditada: async (id, midiaId, file, options) => {
-    const midia = await enviarVersaoEditada(id, midiaId, file, options)
+  uploadVersaoEditada: async (id, midiaId, file, options, liberarAutomaticamente = true) => {
+    const midia = await enviarVersaoEditada(
+      id,
+      midiaId,
+      file,
+      options,
+      liberarAutomaticamente,
+    )
     set((state) => ({
       midias: state.midias.map((item) => (item.id === midia.id ? midia : item)),
     }))
@@ -171,7 +190,7 @@ export const useGalleryStore = create<GalleryState>()((set, get) => ({
     return midia
   },
 
-  uploadVersoesEditadas: async (id, itens, onProgress) => {
+  uploadVersoesEditadas: async (id, itens, onProgress, liberarAutomaticamente = true) => {
     const resultados: UploadEditadaLoteResultado[] = Array.from(
       { length: itens.length },
       (_, indice) => ({
@@ -191,13 +210,19 @@ export const useGalleryStore = create<GalleryState>()((set, get) => ({
         const item = itens[indice]
         onProgress?.(item.midiaId, { status: 'enviando', percentual: 0 })
         try {
-          const midia = await enviarVersaoEditada(id, item.midiaId, item.file, {
-            onProgress: (progresso) =>
-              onProgress?.(item.midiaId, {
-                status: 'enviando',
-                percentual: progresso.percentual,
-              }),
-          })
+          const midia = await enviarVersaoEditada(
+            id,
+            item.midiaId,
+            item.file,
+            {
+              onProgress: (progresso) =>
+                onProgress?.(item.midiaId, {
+                  status: 'enviando',
+                  percentual: progresso.percentual,
+                }),
+            },
+            liberarAutomaticamente,
+          )
           onProgress?.(item.midiaId, { status: 'concluido', percentual: 100 })
           set((state) => ({
             midias: state.midias.map((atual) =>
@@ -276,6 +301,35 @@ export const useGalleryStore = create<GalleryState>()((set, get) => ({
 
   revokeRaw: async (id) => {
     await revogarRaw(id)
+    await get().carregarGaleria(id)
+  },
+
+  liberarLote: async (id, midiaIds) => {
+    const resultado = await liberarLoteApi(id, midiaIds)
+    await get().carregarGaleria(id)
+    return resultado
+  },
+
+  liberarProntas: async (id) => {
+    const resultado = await liberarProntasApi(id)
+    await get().carregarGaleria(id)
+    return resultado
+  },
+
+  revogarLiberacao: async (id, midiaIds) => {
+    const resultado = await revogarLiberacaoApi(id, midiaIds)
+    await get().carregarGaleria(id)
+    return resultado
+  },
+
+  renovarLink: async (id) => {
+    const link = await renovarLinkApi(id)
+    await get().carregarGaleria(id)
+    return link.token
+  },
+
+  definirAutoLiberacao: async (id, midiaId, value) => {
+    await definirAutoLiberacaoApi(id, midiaId, value)
     await get().carregarGaleria(id)
   },
 

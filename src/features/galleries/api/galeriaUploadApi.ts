@@ -1,31 +1,10 @@
 import type { MidiaGaleria, PedidoExtras } from '@/domain/galleries'
 import { toExtras, type ExtrasDto } from '@/features/galleries/api/galeriasApi'
-import { toMidia } from '@/features/galleries/api/midiaMapper'
+import { toMidia, type MidiaDto } from '@/features/galleries/api/midiaMapper'
 import { http } from '@/shared/api/httpClient'
 import { sha256File } from '@/shared/upload/sha256'
 import type { UploadOptions, UploadSession, UploadedPart } from '@/shared/upload/types'
 import { enviarArquivo } from '@/shared/upload/uploadClient'
-
-interface MidiaDto {
-  id: string
-  tipo: 'foto' | 'video'
-  nomeOriginal: string
-  mimeType: string
-  tamanho: number
-  largura: number | null
-  altura: number | null
-  duracaoSegundos: number | null
-  ordem: number
-  status: string
-  erroProcessamento: string | null
-  thumbUrl: string | null
-  webUrl: string | null
-  originalUrl: string | null
-  editadaUrl: string | null
-  editadaDisponivel: boolean
-  editadaProcessando: boolean
-  createdAt: string
-}
 
 export async function iniciarUploadMidia(
   galeriaId: string,
@@ -111,6 +90,7 @@ export async function iniciarUploadEditada(
   galeriaId: string,
   midiaId: string,
   file: File,
+  liberarAutomaticamente = true,
 ): Promise<UploadSession> {
   const checksumSha256 = await sha256File(file)
   return http.post<UploadSession>(
@@ -120,6 +100,7 @@ export async function iniciarUploadEditada(
       mimeType: file.type,
       tamanho: file.size,
       checksumSha256,
+      liberarAutomaticamente,
     },
   )
 }
@@ -152,6 +133,7 @@ export async function enviarVersaoEditada(
   midiaId: string,
   file: File,
   options: UploadOptions = {},
+  liberarAutomaticamente = true,
 ): Promise<MidiaGaleria> {
   options.onProgress?.({
     fase: 'preparando',
@@ -161,7 +143,12 @@ export async function enviarVersaoEditada(
     velocidadeBps: 0,
   })
 
-  const sessao = await iniciarUploadEditada(galeriaId, midiaId, file)
+  const sessao = await iniciarUploadEditada(
+    galeriaId,
+    midiaId,
+    file,
+    liberarAutomaticamente,
+  )
   let partes: UploadedPart[] = []
   try {
     partes = await enviarArquivo(file, sessao, options)
