@@ -23,6 +23,7 @@ import { GalleriesPage } from '@/features/galleries/components/GalleriesPage'
 import { GalleryDetailPage } from '@/features/galleries/components/GalleryDetailPage'
 import { PublicSelectionPage } from '@/features/galleries/components/public/PublicSelectionPage'
 import { PackagesPage } from '@/features/packages/components/PackagesPage'
+import { StoragePage } from '@/features/storage/components/StoragePage'
 import { UsersPage } from '@/features/users/components/UsersPage'
 
 const router = createBrowserRouter([
@@ -68,6 +69,7 @@ const router = createBrowserRouter([
       { path: 'clientes', element: <ClientsPage /> },
       { path: 'galerias', element: <GalleriesPage /> },
       { path: 'galerias/:galeriaId', element: <GalleryDetailPage /> },
+      { path: 'armazenamento', element: <StoragePage /> },
       { path: 'financeiro', element: <FinancePage /> },
       {
         path: 'usuarios',

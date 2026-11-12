@@ -6,6 +6,7 @@ import {
   Copy,
   Download,
   ExternalLink,
+  HardDrive,
   Images,
   Link2,
   RotateCcw,
@@ -18,11 +19,14 @@ import type { MidiaGaleria } from '@/domain/galleries'
 import { Button } from '@/shared/components/ui/Button'
 import { EmptyState } from '@/shared/components/ui/EmptyState'
 import { formatBRL } from '@/shared/lib/currency'
+import { formatBytes } from '@/shared/lib/bytes'
 import { useToastStore } from '@/shared/store/toastStore'
 import { mensagemDeErro } from '@/shared/api/errors'
 import { apiUrl } from '@/shared/api/httpClient'
 import { prepararDownloadSelecao } from '@/features/galleries/api/galeriasApi'
+import { useAuthStore } from '@/features/auth/store/authStore'
 import { useGalleryStore } from '@/features/galleries/store/galleryStore'
+import { ExpurgoDialog } from '@/features/storage/components/ExpurgoDialog'
 import { GalleryStatusBadges } from '@/features/galleries/components/GalleryStatusBadges'
 import { GalleryMediaGrid } from '@/features/galleries/components/GalleryMediaGrid'
 import { GalleryMediaUploader } from '@/features/galleries/components/GalleryMediaUploader'
@@ -63,9 +67,11 @@ export function GalleryDetailPage() {
     (state) => state.definirAutoLiberacao,
   )
   const addToast = useToastStore((state) => state.addToast)
+  const isAdmin = useAuthStore((state) => state.usuario?.role === 'admin')
   const [editando, setEditando] = useState<MidiaGaleria | null>(null)
   const [loteEditadasOpen, setLoteEditadasOpen] = useState(false)
   const [baixandoSelecao, setBaixandoSelecao] = useState(false)
+  const [expurgoOpen, setExpurgoOpen] = useState(false)
 
   useEffect(() => {
     void carregarGaleria(galeriaId).catch(() => undefined)
@@ -839,6 +845,32 @@ export function GalleryDetailPage() {
         </section>
 
         <section className="rounded-2xl border border-line bg-surface p-4 shadow-card">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div>
+              <h3 className="flex items-center gap-2 text-sm font-semibold text-ink">
+                <HardDrive className="size-4 text-brand-600" />
+                Armazenamento
+              </h3>
+              <p className="mt-0.5 text-[11px] text-muted">
+                {galeria.status === 'expurgada'
+                  ? `Binários removidos${galeria.expurgoEfetivadoEm ? ` em ${formatDateTime(galeria.expurgoEfetivadoEm)}` : ''} · ${formatBytes(galeria.bytesExpurgados ?? 0)} liberados. Metadados e financeiro preservados.`
+                  : galeria.zipConcluidoEm
+                    ? `Cliente concluiu o ZIP em ${formatDateTime(galeria.zipConcluidoEm)}.`
+                    : galeria.zipBaixadoEm
+                      ? `ZIP iniciado em ${formatDateTime(galeria.zipBaixadoEm)}, sem conclusão registrada.`
+                      : 'O expurgo fica disponível após o cliente concluir o download do ZIP.'}
+              </p>
+            </div>
+            {isAdmin && galeria.status === 'entregue' ? (
+              <Button size="sm" variant="secondary" onClick={() => setExpurgoOpen(true)}>
+                <HardDrive className="size-3.5" />
+                Expurgar binários
+              </Button>
+            ) : null}
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-line bg-surface p-4 shadow-card">
           <h3 className="text-sm font-semibold text-ink">Histórico</h3>
           <ul className="mt-2 space-y-1.5 text-[11px] text-muted">
             {detalhe.historico.map((evento) => (
@@ -867,6 +899,17 @@ export function GalleryDetailPage() {
           galeriaId={galeria.id}
           fotos={fotosParaEditar}
           onClose={() => setLoteEditadasOpen(false)}
+        />
+      ) : null}
+
+      {expurgoOpen ? (
+        <ExpurgoDialog
+          galeriaId={galeria.id}
+          onClose={() => setExpurgoOpen(false)}
+          onConcluido={() => {
+            setExpurgoOpen(false)
+            void carregarGaleria(galeriaId).catch(() => undefined)
+          }}
         />
       ) : null}
     </div>

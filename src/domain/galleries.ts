@@ -16,6 +16,14 @@ export type GaleriaStatus =
   | 'em_edicao'
   | 'entregue'
   | 'cancelada'
+  | 'expurgada'
+
+export type ExpurgoStatus =
+  | 'nenhum'
+  | 'agendado'
+  | 'executando'
+  | 'executado'
+  | 'cancelado'
 
 export type MidiaTipo = 'foto' | 'video'
 export type MidiaStatus = 'original' | 'editada'
@@ -136,6 +144,9 @@ export type EventoGaleriaTipo =
   | 'liberacao_automatica_alterada'
   | 'download_registrado'
   | 'comprovante_extras_enviado'
+  | 'expurgo_solicitado'
+  | 'expurgo_executado'
+  | 'expurgo_cancelado'
   | 'cancelada'
 
 export interface EventoGaleria {
@@ -163,6 +174,11 @@ export interface GaleriaEnsaio {
   rawLiberadoEm?: string
   rawLiberadoPor?: string
   zipBaixadoEm?: string
+  zipConcluidoEm?: string
+  expurgoStatus?: ExpurgoStatus
+  expurgoSolicitadoEm?: string
+  expurgoEfetivadoEm?: string
+  bytesExpurgados?: number
   tokenSelecao?: string
   tokenGaleria?: string
   prazoSelecaoEm?: string
@@ -240,6 +256,12 @@ export const GALERIA_STATUS_META: Record<GaleriaStatusVisual, GaleriaStatusMeta>
     badge: 'bg-red-50 text-red-700 ring-red-200',
     dot: 'bg-red-500',
   },
+  expurgada: {
+    label: 'Expurgada',
+    description: 'Os binários foram removidos do storage; metadados e financeiro permanecem.',
+    badge: 'bg-slate-800 text-slate-100 ring-slate-700',
+    dot: 'bg-slate-400',
+  },
 }
 
 export const GALERIA_STATUS_ORDER: GaleriaStatus[] = [
@@ -248,6 +270,7 @@ export const GALERIA_STATUS_ORDER: GaleriaStatus[] = [
   'selecao_enviada',
   'em_edicao',
   'entregue',
+  'expurgada',
   'cancelada',
 ]
 

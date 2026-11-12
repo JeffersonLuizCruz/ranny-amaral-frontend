@@ -3,6 +3,7 @@ import {
   Camera,
   Download,
   FileSignature,
+  HardDrive,
   Images,
   LayoutDashboard,
   Package,
@@ -44,6 +45,7 @@ const NAV_ITEMS = [
   { to: '/clientes', label: 'Clientes', icon: Users, end: false },
   { to: '/contratos', label: 'Contratos', icon: FileSignature, end: false },
   { to: '/galerias', label: 'Galerias', icon: Images, end: false },
+  { to: '/armazenamento', label: 'Armazenamento', icon: HardDrive, end: false },
   { to: '/financeiro', label: 'Financeiro', icon: Wallet, end: false },
 ]
 

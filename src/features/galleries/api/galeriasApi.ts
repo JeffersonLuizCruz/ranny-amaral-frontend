@@ -35,6 +35,11 @@ interface GaleriaDto {
   rawLiberadoEm: string | null
   rawLiberadoPor: string | null
   zipBaixadoEm: string | null
+  zipConcluidoEm?: string | null
+  expurgoStatus?: string | null
+  expurgoSolicitadoEm?: string | null
+  expurgoEfetivadoEm?: string | null
+  bytesExpurgados?: number | null
   capaUrl: string | null
   createdAt: string
   updatedAt: string
@@ -246,6 +251,11 @@ function toGaleria(
     rawLiberadoEm: dto.rawLiberadoEm ?? undefined,
     rawLiberadoPor: dto.rawLiberadoPor ?? undefined,
     zipBaixadoEm: dto.zipBaixadoEm ?? undefined,
+    zipConcluidoEm: dto.zipConcluidoEm ?? undefined,
+    expurgoStatus: (dto.expurgoStatus ?? 'nenhum') as GaleriaEnsaio['expurgoStatus'],
+    expurgoSolicitadoEm: dto.expurgoSolicitadoEm ?? undefined,
+    expurgoEfetivadoEm: dto.expurgoEfetivadoEm ?? undefined,
+    bytesExpurgados: dto.bytesExpurgados ?? 0,
     tokenSelecao: linkSelecao?.token,
     tokenGaleria: linkSelecao?.token,
     prazoSelecaoEm: linkSelecao?.expiraEm,
