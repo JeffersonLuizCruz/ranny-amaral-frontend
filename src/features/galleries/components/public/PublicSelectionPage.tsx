@@ -111,6 +111,10 @@ export function PublicSelectionPage() {
     Math.round((valorExtras - valorCoberto) * 100) / 100,
   )
   const extrasAbaixoDoCoberto = extras < quantidadeCoberta
+  const podeEnviar =
+    fotoIds.size >= fotosInclusas &&
+    videoIds.size === videosInclusos &&
+    !extrasAbaixoDoCoberto
   // Uma seleção reaberta continua disponível para edição; só bloqueia quando
   // o cliente já enviou a seleção atual.
   const selecaoEnviada = data?.selecao?.status === 'enviada'
@@ -305,7 +309,9 @@ export function PublicSelectionPage() {
           </p>
         </div>
 
-        {data.resumoExtras ? (
+        {data.resumoExtras &&
+        (data.resumoExtras.quantidadeTotal > 0 ||
+          data.resumoExtras.quantidadePendente > 0) ? (
           <div className="mb-4 rounded-2xl border border-line bg-surface p-4 text-[11px] text-muted shadow-card">
             <p>
               Total na seleção:{' '}
@@ -422,8 +428,9 @@ export function PublicSelectionPage() {
           {data.galeria.clienteNome ?? 'Sua galeria'}
         </h1>
         <p className="mt-0.5 text-xs text-muted">
-          {fotosInclusas} fotos e {videosInclusos} vídeos inclusos. As fotos estão
-          numeradas; use o número para se referir a cada uma.
+          {fotosInclusas} {fotosInclusas === 1 ? 'foto' : 'fotos'} e{' '}
+          {videosInclusos} {videosInclusos === 1 ? 'vídeo' : 'vídeos'} inclusos.
+          As fotos estão numeradas; use o número para se referir a cada uma.
         </p>
       </div>
 
@@ -514,12 +521,19 @@ export function PublicSelectionPage() {
           <Button
             className="mt-3"
             fullWidth
-            disabled={enviando || extrasAbaixoDoCoberto}
+            disabled={enviando || !podeEnviar}
             onClick={() => void enviar()}
           >
             <CheckCircle2 className="size-4" />
             {enviando ? 'Enviando seleção…' : 'Enviar seleção'}
           </Button>
+          {!podeEnviar && !extrasAbaixoDoCoberto ? (
+            <p className="mt-2 text-[11px] text-muted">
+              Selecione pelo menos {fotosInclusas}{' '}
+              {fotosInclusas === 1 ? 'foto' : 'fotos'} e {videosInclusos}{' '}
+              {videosInclusos === 1 ? 'vídeo' : 'vídeos'} para enviar.
+            </p>
+          ) : null}
         </div>
       </section>
     </PublicShell>
