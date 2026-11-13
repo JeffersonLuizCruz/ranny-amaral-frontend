@@ -114,14 +114,22 @@ aguardando_upload → em_selecao → selecao_enviada → em_edicao → entregue
 - A edição pode ser liberada manualmente pelo staff, com registro de motivo.
 - O staff vê as fotos selecionadas destacadas, a lista de números e pode baixar os originais em
   **ZIP para edição** direto do detalhe da galeria.
-- Cada foto pode receber uma **versão editada** (JPEG/PNG/WebP até 50 MB), inclusive **antes** da seleção.
+- Cada foto pode ser publicada com uma de duas finalidades:
+  - **Para edição:** o arquivo enviado é o original; depois da seleção o staff envia a versão editada.
+  - **Já editada (pronta):** o arquivo enviado já é a versão final; não existe segunda versão.
+  As duas finalidades contam na mesma cota do pacote e nos extras.
+- Cada foto **para edição** pode receber uma **versão editada** (JPEG/PNG/WebP até 50 MB). Fotos já editadas não recebem segunda versão: para corrigir, remova a mídia e envie novamente.
 - O staff pode enviar as versões editadas **em lote**, associando os arquivos pelo número da foto
   (padrão `001_nome.jpg`) ou pelo nome original, com até 3 uploads simultâneos e reenvio dos que falharem.
 - No upload da versão editada há o checkbox **“Liberar automaticamente quando o cliente selecionar”**.
   Ligado, a mídia pronta é liberada após a seleção e a quitação dos extras; desligado, o staff libera manualmente.
 - O staff pode **liberar os RAW** de forma explícita, auditada e revogável.
 - A entrega é **progressiva**: cada mídia liberada aparece em “Disponíveis” e as demais em “Em liberação”.
-  O cliente nunca vê os rótulos “editada” ou “RAW”; o backend resolve a melhor versão.
+  Na seleção, o cliente vê os grupos “Para edição” e “Prontas para baixar”; na entrega, o backend resolve a
+  melhor versão sem expor os rótulos técnicos “editada” ou “RAW”.
+- **Marca d'água:** todas as prévias de fotos publicadas usam um derivado com o nome do estúdio aplicado
+  na imagem. O download entrega sempre o arquivo limpo. Fotos já editadas ficam disponíveis sem marca
+  logo após a seleção (e a quitação dos extras, se houver).
 - O staff pode liberar em lote, revogar uma liberação e finalizar a entrega; o link único é renovado por 90 dias.
 - A entrega baixa as mídias disponíveis, individualmente ou em **ZIP streaming**.
 

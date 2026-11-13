@@ -14,6 +14,7 @@ function foto(id: string, numero: number, nomeArquivo: string): MidiaGaleria {
     mimeType: 'image/jpeg',
     tamanho: 10,
     status: 'original',
+    finalidade: 'edicao',
     numero,
     uploadedAt: '2026-01-01T00:00:00.000Z',
     processamentoStatus: 'disponivel',

@@ -9,6 +9,7 @@ import {
   HardDrive,
   Images,
   Link2,
+  Pencil,
   RotateCcw,
   Sparkles,
   Upload,
@@ -18,6 +19,7 @@ import {
 import type { MidiaGaleria } from '@/domain/galleries'
 import { Button } from '@/shared/components/ui/Button'
 import { EmptyState } from '@/shared/components/ui/EmptyState'
+import { cn } from '@/shared/lib/cn'
 import { formatBRL } from '@/shared/lib/currency'
 import { formatBytes } from '@/shared/lib/bytes'
 import { useToastStore } from '@/shared/store/toastStore'
@@ -66,12 +68,16 @@ export function GalleryDetailPage() {
   const definirAutoLiberacao = useGalleryStore(
     (state) => state.definirAutoLiberacao,
   )
+  const alterarFinalidade = useGalleryStore((state) => state.alterarFinalidade)
   const addToast = useToastStore((state) => state.addToast)
   const isAdmin = useAuthStore((state) => state.usuario?.role === 'admin')
   const [editando, setEditando] = useState<MidiaGaleria | null>(null)
   const [loteEditadasOpen, setLoteEditadasOpen] = useState(false)
   const [baixandoSelecao, setBaixandoSelecao] = useState(false)
   const [expurgoOpen, setExpurgoOpen] = useState(false)
+  const [filtroMidias, setFiltroMidias] = useState<
+    'todas' | 'edicao' | 'prontas' | 'liberadas'
+  >('todas')
 
   useEffect(() => {
     void carregarGaleria(galeriaId).catch(() => undefined)
@@ -122,7 +128,7 @@ export function GalleryDetailPage() {
   const galeria = detalhe.galeria
   const fotos = midias.filter((midia) => midia.tipo === 'foto')
   const videos = midias.filter((midia) => midia.tipo === 'video')
-  const disponiveis = midias.filter((midia) => midia.processamentoStatus === 'disponivel')
+  const processadas = midias.filter((midia) => midia.processamentoStatus === 'disponivel')
   const podeEditarMidias = ['aguardando_upload', 'em_selecao'].includes(galeria.status)
   const podeEditarVersao = [
     'aguardando_upload',
@@ -138,28 +144,58 @@ export function GalleryDetailPage() {
     ...(detalhe.selecao?.fotoIds ?? []),
     ...(detalhe.selecao?.videoIds ?? []),
   ])
+  const selecionadasMidias = midias.filter((midia) => selecionadas.has(midia.id))
   const fotosSelecionadas = fotos.filter((midia) => selecionadas.has(midia.id))
-  const fotosSelecionadasDisponiveis = fotosSelecionadas.filter(
-    (midia) => midia.processamentoStatus === 'disponivel',
-  )
   const numerosSelecionados = numerosDasFotosSelecionadas(
     fotos,
     detalhe.selecao?.fotoIds ?? [],
   )
   const selecaoEnviada = detalhe.selecao?.status === 'enviada'
-  const fotosEditadas = fotosSelecionadas.filter((midia) => midia.editadaDisponivel)
-  const fotosParaEditar = selecaoEnviada
-    ? fotosSelecionadasDisponiveis
-    : disponiveis.filter((midia) => midia.tipo === 'foto')
-  const selecionadasMidias = midias.filter((midia) => selecionadas.has(midia.id))
-  const midiaPronta = (midia: MidiaGaleria) =>
-    midia.tipo === 'video'
+  const midiaPronta = (midia: MidiaGaleria) => {
+    if (midia.finalidade === 'pronta') {
+      return midia.processamentoStatus === 'disponivel'
+    }
+    return midia.tipo === 'video'
       ? midia.processamentoStatus === 'disponivel'
       : Boolean(midia.editadaDisponivel || galeria.rawLiberado)
+  }
+  const aguardandoFinal = selecionadasMidias.filter((midia) => !midiaPronta(midia))
+  const filaEdicao = aguardandoFinal.filter((midia) => midia.finalidade !== 'pronta')
+  const emProcessamento = aguardandoFinal.filter((midia) => midia.finalidade === 'pronta')
+  const prontas = selecionadasMidias.filter(midiaPronta)
   const liberadas = selecionadasMidias.filter((midia) => midia.liberadaEm)
   const naoLiberadas = selecionadasMidias.filter((midia) => !midia.liberadaEm)
-  const prontasNaoLiberadas = naoLiberadas.filter(midiaPronta)
-  const midiasNaoProntas = naoLiberadas.filter((midia) => !midiaPronta(midia))
+  const prontasNaoLiberadas = prontas.filter((midia) => !midia.liberadaEm)
+  const midiasNaoProntas = aguardandoFinal
+  const fotosParaEditar = filaEdicao.filter((midia) => midia.tipo === 'foto')
+  const fotosProntas = fotosSelecionadas.filter(midiaPronta)
+  const midiasParaEdicao = midias.filter(
+    (midia) => midia.finalidade !== 'pronta' && !midiaPronta(midia),
+  )
+  const midiasProntas = midias.filter(midiaPronta)
+  const midiasLiberadas = midias.filter((midia) => midia.liberadaEm)
+  const midiasFiltradas =
+    filtroMidias === 'edicao'
+      ? midiasParaEdicao
+      : filtroMidias === 'prontas'
+        ? midiasProntas
+        : filtroMidias === 'liberadas'
+          ? midiasLiberadas
+          : midias
+  const filtrosMidias = [
+    { valor: 'todas' as const, rotulo: 'Todas', quantidade: midias.length },
+    {
+      valor: 'edicao' as const,
+      rotulo: 'Para edição',
+      quantidade: midiasParaEdicao.length,
+    },
+    { valor: 'prontas' as const, rotulo: 'Prontas', quantidade: midiasProntas.length },
+    {
+      valor: 'liberadas' as const,
+      rotulo: 'Liberadas',
+      quantidade: midiasLiberadas.length,
+    },
+  ]
   const entregaBloqueada =
     midiasNaoProntas.length > 0 ||
     naoLiberadas.some(
@@ -234,6 +270,25 @@ export function GalleryDetailPage() {
     void executar(() => reopenSelection(galeria.id), 'Seleção reaberta.')
   }
 
+  const alternarFinalidade = (midia: MidiaGaleria) => {
+    if (!podeEditarMidias) return
+    if (midia.finalidade === 'edicao' && midia.editadaDisponivel) {
+      addToast('Remova a versão editada antes de marcar esta foto como pronta.')
+      return
+    }
+    const nova = midia.finalidade === 'pronta' ? 'edicao' : 'pronta'
+    const confirmado = window.confirm(
+      nova === 'pronta'
+        ? 'Marcar esta foto como já editada? Ela será liberada para download após a seleção.'
+        : 'Marcar esta foto como original para edição?',
+    )
+    if (!confirmado) return
+    void executar(
+      () => alterarFinalidade(galeria.id, midia.id, nova),
+      'Finalidade atualizada.',
+    )
+  }
+
   const remover = async (midia: MidiaGaleria) => {
     if (!window.confirm(`Remover "${midia.nomeArquivo}"?`)) return
     await executar(() => removeMedia(galeria.id, midia.id), 'Mídia removida.')
@@ -280,107 +335,246 @@ export function GalleryDetailPage() {
                 Mídias
               </h3>
               <p className="mt-0.5 text-[11px] text-muted">
-                {fotos.length} fotos · {videos.length} vídeos · {disponiveis.length}{' '}
-                disponíveis
+                {fotos.length} fotos · {videos.length} vídeos · {processadas.length}{' '}
+                processadas
                 {fotosSelecionadas.length > 0
-                  ? ` · ${fotosEditadas.length}/${fotosSelecionadas.length} selecionadas editadas`
+                  ? ` · ${fotosProntas.length}/${fotosSelecionadas.length} prontas · ${filaEdicao.length} para editar${
+                      emProcessamento.length > 0
+                        ? ` · ${emProcessamento.length} processando`
+                        : ''
+                    }`
                   : ''}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              {podeEditarMidias ? <GalleryMediaUploader galleryId={galeria.id} /> : null}
-              {podeEditarVersao ? (
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => setLoteEditadasOpen(true)}
-                  disabled={fotosParaEditar.length === 0}
-                >
-                  <Upload className="size-3.5" />
-                  Enviar editadas em lote
-                </Button>
+              {podeEditarMidias ? (
+                <>
+                  <GalleryMediaUploader
+                    galleryId={galeria.id}
+                    label="Enviar para edição"
+                    finalidade="edicao"
+                  />
+                  <GalleryMediaUploader
+                    galleryId={galeria.id}
+                    label="Enviar já editadas"
+                    finalidade="pronta"
+                  />
+                </>
               ) : null}
             </div>
           </div>
 
-          <div className="mt-4">
+          {podeEditarMidias ? (
+            <p className="mt-2 text-[10px] text-muted">
+              Use o botão de troca em cada foto para corrigir “para edição” × “já
+              editada” antes de publicar a seleção.
+            </p>
+          ) : null}
+
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {filtrosMidias.map((filtro) => (
+              <button
+                key={filtro.valor}
+                type="button"
+                aria-pressed={filtroMidias === filtro.valor}
+                onClick={() => setFiltroMidias(filtro.valor)}
+                className={cn(
+                  'rounded-full px-2.5 py-1 text-[11px] font-medium ring-1 transition',
+                  filtroMidias === filtro.valor
+                    ? 'bg-brand-600 text-white ring-brand-600'
+                    : 'bg-canvas/70 text-muted ring-line hover:text-ink',
+                )}
+              >
+                {filtro.rotulo} ({filtro.quantidade})
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-3">
             <GalleryMediaGrid
-              midias={midias}
+              midias={midiasFiltradas}
               selectedIds={selecionadas}
               numerarFotos
               onRemove={podeEditarMidias ? (midia) => void remover(midia) : undefined}
-              onEdit={podeEditarVersao ? (midia) => setEditando(midia) : undefined}
+              onEdit={
+                podeEditarVersao
+                  ? (midia) => {
+                      if (midia.finalidade === 'pronta') return
+                      setEditando(midia)
+                    }
+                  : undefined
+              }
+              onChangeFinalidade={
+                podeEditarMidias ? (midia) => alternarFinalidade(midia) : undefined
+              }
             />
           </div>
         </section>
 
         {selecionadasMidias.length > 0 ? (
-          <section className="rounded-2xl border border-line bg-surface p-4 shadow-card">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <h3 className="text-sm font-semibold text-ink">
-                  Liberação progressiva
-                </h3>
-                <p className="mt-0.5 text-[11px] text-muted">
-                  {liberadas.length} de {selecionadasMidias.length} mídias
-                  selecionadas liberadas
-                  {midiasNaoProntas.length > 0
-                    ? ` · ${midiasNaoProntas.length} em produção`
-                    : ''}
-                  .
+          <>
+            <section className="rounded-2xl border border-line bg-surface p-4 shadow-card">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-ink">Fila de edição</h3>
+                  <p className="mt-0.5 text-[11px] text-muted">
+                    {filaEdicao.length} aguardando edição · {fotosProntas.length} de{' '}
+                    {fotosSelecionadas.length} fotos prontas
+                  </p>
+                </div>
+                {podeEditarVersao ? (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => setLoteEditadasOpen(true)}
+                    disabled={fotosParaEditar.length === 0}
+                  >
+                    <Upload className="size-3.5" />
+                    Enviar editadas em lote ({fotosParaEditar.length})
+                  </Button>
+                ) : null}
+              </div>
+
+              {filaEdicao.length === 0 ? (
+                <p className="mt-3 rounded-xl bg-emerald-50 px-3 py-2 text-[11px] text-emerald-700 ring-1 ring-emerald-200">
+                  {emProcessamento.length > 0
+                    ? 'Nenhuma mídia aguardando edição. As fotos já editadas ainda estão sendo processadas.'
+                    : 'Todas as mídias selecionadas já têm versão final.'}
                 </p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() =>
-                    void executar(
-                      () => liberarProntas(galeria.id),
-                      'Mídias prontas liberadas.',
+              ) : (
+                <div className="mt-3 space-y-2">
+                  {filaEdicao.map((midia) => {
+                    const processando = midia.processamentoStatus !== 'disponivel'
+                    return (
+                      <div
+                        key={midia.id}
+                        className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-canvas/60 p-2.5"
+                      >
+                        {midia.thumbUrl || midia.webUrl || midia.editadaUrl ? (
+                          <img
+                            src={
+                              midia.thumbUrl ??
+                              midia.webUrl ??
+                              midia.editadaUrl ??
+                              undefined
+                            }
+                            alt={midia.nomeArquivo}
+                            className="size-10 shrink-0 rounded-lg object-cover"
+                          />
+                        ) : (
+                          <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-slate-100 text-muted">
+                            <Images className="size-4" />
+                          </span>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[11px] font-medium text-ink">
+                            {midia.tipo === 'foto'
+                              ? `${formatarNumeroFoto(midia.numero)} · `
+                              : ''}
+                            {midia.nomeArquivo}
+                          </p>
+                          <p className="text-[10px] text-muted">
+                            {processando ? 'Processando original' : 'Precisa de edição'}
+                          </p>
+                        </div>
+                        {podeEditarVersao && midia.tipo === 'foto' ? (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            disabled={processando}
+                            onClick={() => setEditando(midia)}
+                          >
+                            <Pencil className="size-3.5" />
+                            Editar
+                          </Button>
+                        ) : null}
+                      </div>
                     )
-                  }
-                  disabled={
-                    prontasNaoLiberadas.length === 0 || liberacaoBloqueada
-                  }
-                >
-                  <Sparkles className="size-3.5" />
-                  Liberar prontas ({prontasNaoLiberadas.length})
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() =>
-                    void executar(
-                      () => publishDelivery(galeria.id),
-                      'Entrega finalizada.',
-                    )
-                  }
-                  disabled={naoLiberadas.length > 0 || liberacaoBloqueada}
-                >
-                  <CheckCircle2 className="size-3.5" />
-                  {galeria.status === 'entregue'
-                    ? 'Entrega finalizada'
-                    : 'Finalizar entrega'}
-                </Button>
+                  })}
+                </div>
+              )}
+
+              {emProcessamento.length > 0 ? (
+                <p className="mt-2 rounded-xl bg-canvas/70 px-3 py-2 text-[11px] text-muted">
+                  {emProcessamento.length} foto(s) já editadas ainda estão sendo
+                  processadas. Elas entram em “Prontas para baixar” automaticamente.
+                </p>
+              ) : null}
+            </section>
+
+            <section className="rounded-2xl border border-line bg-surface p-4 shadow-card">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-ink">
+                    Prontas para baixar
+                  </h3>
+                  <p className="mt-0.5 text-[11px] text-muted">
+                    {prontas.length} pronta(s) · {liberadas.length} liberada(s)
+                    {prontasNaoLiberadas.length > 0
+                      ? ` · ${prontasNaoLiberadas.length} aguardando liberação`
+                      : ''}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() =>
+                      void executar(
+                        () => liberarProntas(galeria.id),
+                        'Mídias prontas liberadas.',
+                      )
+                    }
+                    disabled={
+                      prontasNaoLiberadas.length === 0 || liberacaoBloqueada
+                    }
+                  >
+                    <Sparkles className="size-3.5" />
+                    Liberar prontas ({prontasNaoLiberadas.length})
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() =>
+                      void executar(
+                        () => publishDelivery(galeria.id),
+                        'Entrega finalizada.',
+                      )
+                    }
+                    disabled={naoLiberadas.length > 0 || liberacaoBloqueada}
+                  >
+                    <CheckCircle2 className="size-3.5" />
+                    {galeria.status === 'entregue'
+                      ? 'Entrega finalizada'
+                      : 'Finalizar entrega'}
+                  </Button>
+                </div>
               </div>
-            </div>
 
-            {liberacaoBloqueada ? (
-              <p className="mt-2 rounded-xl bg-amber-50 px-3 py-2 text-[11px] text-amber-800 ring-1 ring-amber-200">
-                Confirme ou isente os extras para liberar os downloads.
-              </p>
-            ) : naoLiberadas.length > 0 ? (
-              <p className="mt-2 rounded-xl bg-canvas/70 px-3 py-2 text-[11px] text-muted">
-                {midiasNaoProntas.length > 0
-                  ? `${midiasNaoProntas.length} mídia(s) ainda não têm versão final. Envie as editadas ou libere os RAW.`
-                  : 'Todas as mídias estão prontas. Libere o lote para liberar o download.'}
-              </p>
-            ) : null}
+              {liberacaoBloqueada ? (
+                <p className="mt-2 rounded-xl bg-amber-50 px-3 py-2 text-[11px] text-amber-800 ring-1 ring-amber-200">
+                  Confirme ou isente os extras para liberar os downloads.
+                </p>
+              ) : prontas.length === 0 ? (
+                <p className="mt-3 rounded-xl bg-canvas/70 px-3 py-2 text-[11px] text-muted">
+                  Nenhuma mídia pronta ainda. Envie as versões editadas ou cadastre
+                  fotos já editadas.
+                </p>
+              ) : prontasNaoLiberadas.length > 0 ? (
+                <p className="mt-2 rounded-xl bg-canvas/70 px-3 py-2 text-[11px] text-muted">
+                  Libere o lote para disponibilizar o download sem marca d'água.
+                </p>
+              ) : null}
 
-            <div className="mt-3 space-y-2">
-              {selecionadasMidias.map((midia) => {
-                const pronta = midiaPronta(midia)
-                return (
+              {!podeEditarMidias &&
+              prontas.some((midia) => midia.finalidade === 'pronta') ? (
+                <p className="mt-2 text-[10px] text-muted">
+                  Para substituir uma foto já editada depois da seleção, reabra a
+                  seleção primeiro.
+                </p>
+              ) : null}
+
+              <div className="mt-3 space-y-2">
+                {prontas.map((midia) => (
                   <div
                     key={midia.id}
                     className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-canvas/60 p-2.5"
@@ -411,9 +605,12 @@ export function GalleryDetailPage() {
                       <p className="text-[10px] text-muted">
                         {midia.liberadaEm
                           ? 'Liberada para download'
-                          : pronta
-                            ? 'Pronta para liberar'
-                            : 'Em produção'}
+                          : 'Pronta para liberar'}
+                        {midia.tipo === 'video'
+                          ? ' · vídeo original'
+                          : midia.finalidade === 'pronta'
+                            ? ' · já editada na origem'
+                            : ' · versão editada recebida'}
                       </p>
                     </div>
                     {midia.tipo === 'foto' ? (
@@ -451,7 +648,7 @@ export function GalleryDetailPage() {
                         <RotateCcw className="size-3.5" />
                         Revogar
                       </Button>
-                    ) : pronta ? (
+                    ) : (
                       <Button
                         size="sm"
                         variant="secondary"
@@ -466,12 +663,12 @@ export function GalleryDetailPage() {
                         <Download className="size-3.5" />
                         Liberar
                       </Button>
-                    ) : null}
+                    )}
                   </div>
-                )
-              })}
-            </div>
-          </section>
+                ))}
+              </div>
+            </section>
+          </>
         ) : null}
 
         <section className="grid gap-4 lg:grid-cols-2">
@@ -805,7 +1002,7 @@ export function GalleryDetailPage() {
                 <p className="mt-0.5 text-[11px] text-muted">
                   {galeria.rawLiberado
                     ? `Liberados por ${galeria.rawLiberadoPor ?? 'equipe'} em ${formatDateTime(galeria.rawLiberadoEm)}.`
-                    : 'Não liberados. O cliente recebe apenas as versões editadas.'}
+                    : 'Não liberados. O cliente recebe as versões finais: editadas ou já publicadas prontas.'}
                 </p>
               </div>
               {podeEditarVersao ? (

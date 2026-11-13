@@ -1,4 +1,4 @@
-import type { MidiaGaleria, PedidoExtras } from '@/domain/galleries'
+import type { MidiaFinalidade, MidiaGaleria, PedidoExtras } from '@/domain/galleries'
 import { toExtras, type ExtrasDto } from '@/features/galleries/api/galeriasApi'
 import { toMidia, type MidiaDto } from '@/features/galleries/api/midiaMapper'
 import { http } from '@/shared/api/httpClient'
@@ -10,6 +10,7 @@ export async function iniciarUploadMidia(
   galeriaId: string,
   file: File,
   tipo: 'foto' | 'video',
+  finalidade: MidiaFinalidade = 'edicao',
 ): Promise<UploadSession> {
   const checksumSha256 = await sha256File(file)
   return http.post<UploadSession>(`/galerias/${galeriaId}/midias/upload`, {
@@ -18,6 +19,7 @@ export async function iniciarUploadMidia(
     tamanho: file.size,
     checksumSha256,
     tipo,
+    finalidade,
   })
 }
 
@@ -26,10 +28,11 @@ export async function concluirUploadMidia(
   arquivoId: string,
   partes: UploadedPart[],
   tipo: 'foto' | 'video',
+  finalidade: MidiaFinalidade = 'edicao',
 ): Promise<MidiaGaleria> {
   const dto = await http.post<MidiaDto>(
     `/galerias/${galeriaId}/midias/upload/${arquivoId}/complete`,
-    { partes, tipo },
+    { partes, tipo, finalidade },
   )
   return toMidia(dto)
 }
@@ -48,6 +51,7 @@ export async function enviarMidia(
   galeriaId: string,
   file: File,
   tipo: 'foto' | 'video',
+  finalidade: MidiaFinalidade = 'edicao',
   options: UploadOptions = {},
 ): Promise<MidiaGaleria> {
   options.onProgress?.({
@@ -58,7 +62,7 @@ export async function enviarMidia(
     velocidadeBps: 0,
   })
 
-  const sessao = await iniciarUploadMidia(galeriaId, file, tipo)
+  const sessao = await iniciarUploadMidia(galeriaId, file, tipo, finalidade)
   let partes: UploadedPart[] = []
   try {
     partes = await enviarArquivo(file, sessao, options)
@@ -75,7 +79,13 @@ export async function enviarMidia(
     velocidadeBps: 0,
   })
 
-  const midia = await concluirUploadMidia(galeriaId, sessao.arquivoId, partes, tipo)
+  const midia = await concluirUploadMidia(
+    galeriaId,
+    sessao.arquivoId,
+    partes,
+    tipo,
+    finalidade,
+  )
   options.onProgress?.({
     fase: 'concluido',
     enviado: file.size,

@@ -1,9 +1,10 @@
 import { create } from 'zustand'
 
-import type { GaleriaEnsaio, MidiaGaleria } from '@/domain/galleries'
+import type { GaleriaEnsaio, MidiaFinalidade, MidiaGaleria } from '@/domain/galleries'
 import type { Pagina } from '@/shared/api/types'
 import { mensagemDeErro } from '@/shared/api/errors'
 import {
+  alterarFinalidade as alterarFinalidadeApi,
   atualizarGaleriaNaLista,
   buscarGaleria,
   confirmarExtras,
@@ -52,6 +53,7 @@ interface GalleryState {
     id: string,
     file: File,
     tipo: 'foto' | 'video',
+    finalidade?: MidiaFinalidade,
     options?: UploadOptions,
   ) => Promise<MidiaGaleria>
   uploadVersaoEditada: (
@@ -83,6 +85,11 @@ interface GalleryState {
   revogarLiberacao: (id: string, midiaIds: string[]) => Promise<LiberarLoteResultado>
   renovarLink: (id: string) => Promise<string>
   definirAutoLiberacao: (id: string, midiaId: string, value: boolean) => Promise<void>
+  alterarFinalidade: (
+    id: string,
+    midiaId: string,
+    finalidade: MidiaFinalidade,
+  ) => Promise<void>
   recarregar: () => Promise<void>
 }
 
@@ -169,8 +176,8 @@ export const useGalleryStore = create<GalleryState>()((set, get) => ({
     return criada
   },
 
-  uploadMidia: async (id, file, tipo, options) => {
-    const midia = await enviarMidia(id, file, tipo, options)
+  uploadMidia: async (id, file, tipo, finalidade = 'edicao', options) => {
+    const midia = await enviarMidia(id, file, tipo, finalidade, options)
     set((state) => ({ midias: [...state.midias, midia] }))
     return midia
   },
@@ -330,6 +337,14 @@ export const useGalleryStore = create<GalleryState>()((set, get) => ({
 
   definirAutoLiberacao: async (id, midiaId, value) => {
     await definirAutoLiberacaoApi(id, midiaId, value)
+    await get().carregarGaleria(id)
+  },
+
+  alterarFinalidade: async (id, midiaId, finalidade) => {
+    const midia = await alterarFinalidadeApi(id, midiaId, finalidade)
+    set((state) => ({
+      midias: state.midias.map((item) => (item.id === midia.id ? midia : item)),
+    }))
     await get().carregarGaleria(id)
   },
 

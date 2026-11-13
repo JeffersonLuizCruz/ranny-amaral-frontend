@@ -27,6 +27,7 @@ export type ExpurgoStatus =
 
 export type MidiaTipo = 'foto' | 'video'
 export type MidiaStatus = 'original' | 'editada'
+export type MidiaFinalidade = 'edicao' | 'pronta'
 
 export interface MidiaGaleria {
   id: string
@@ -36,6 +37,8 @@ export interface MidiaGaleria {
   tamanho: number
   arquivoKey?: string
   status: MidiaStatus
+  /** edicao = original que sera editado; pronta = arquivo final publicado pelo estudio. */
+  finalidade: MidiaFinalidade
   originalId?: string
   numero: number
   uploadedAt: string
@@ -45,6 +48,8 @@ export interface MidiaGaleria {
   editadaUrl?: string
   editadaDisponivel?: boolean
   editadaProcessando?: boolean
+  /** Indica que a previa publica ja tem a marca d'agua aplicada na imagem. */
+  previaMarcada?: boolean
   liberadaEm?: string
   disponivelParaDownload?: boolean
   liberacaoAutomatica?: boolean
@@ -129,6 +134,7 @@ export type EventoGaleriaTipo =
   | 'midia_removida'
   | 'midia_editada'
   | 'midia_editada_removida'
+  | 'midia_finalidade_alterada'
   | 'selecao_publicada'
   | 'selecao_reaberta'
   | 'selecao_enviada'
@@ -183,6 +189,7 @@ export interface GaleriaEnsaio {
   tokenGaleria?: string
   prazoSelecaoEm?: string
   fotosSelecionadas?: number
+  fotosProntas?: number
   fotosLiberadas?: number
   videosSelecionados?: number
   videosLiberados?: number

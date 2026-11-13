@@ -38,6 +38,7 @@ interface PublicData {
   extras?: PedidoExtras
   resumoExtras?: ResumoExtras
   midiasEntregues?: string[]
+  estudioNome: string
   token: string
   fase: FaseGaleriaPublica
   fotosSelecionadas: number
@@ -91,6 +92,8 @@ export function PublicSelectionPage() {
       ),
     [data],
   )
+  const fotosParaEdicao = fotos.filter((midia) => midia.finalidade !== 'pronta')
+  const fotosProntas = fotos.filter((midia) => midia.finalidade === 'pronta')
   const entregues = useMemo(
     () => new Set(data?.midiasEntregues ?? []),
     [data?.midiasEntregues],
@@ -232,7 +235,7 @@ export function PublicSelectionPage() {
 
   if (loading) {
     return (
-      <PublicShell>
+      <PublicShell studioName={data?.estudioNome}>
         <div className="grid min-h-[50dvh] place-items-center">
           <span className="flex items-center gap-2 text-sm text-muted">
             <Loader2 className="size-4 animate-spin" />
@@ -263,7 +266,7 @@ export function PublicSelectionPage() {
     const aguardandoPagamento = data.fase === 'aguardando_pagamento'
 
     return (
-      <PublicShell>
+      <PublicShell studioName={data?.estudioNome}>
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-muted">
@@ -373,6 +376,8 @@ export function PublicSelectionPage() {
               <GalleryMediaGrid
                 midias={disponiveis}
                 onDownload={(midia) => void baixarMidia(midia)}
+                watermark
+                watermarkText={data.estudioNome}
                 hideEditBadge
               />
             </div>
@@ -390,7 +395,12 @@ export function PublicSelectionPage() {
               estiverem prontas.
             </p>
             <div className="mt-3">
-              <GalleryMediaGrid midias={emLiberacao} hideEditBadge />
+              <GalleryMediaGrid
+                midias={emLiberacao}
+                watermark
+                watermarkText={data.estudioNome}
+                hideEditBadge
+              />
             </div>
           </section>
         ) : null}
@@ -409,7 +419,7 @@ export function PublicSelectionPage() {
 
   if (!podeSelecionar) {
     return (
-      <PublicShell>
+      <PublicShell studioName={data?.estudioNome}>
         <StatusCard
           title="Seleção indisponível"
           description="O estúdio ainda não liberou esta galeria para seleção."
@@ -419,7 +429,7 @@ export function PublicSelectionPage() {
   }
 
   return (
-    <PublicShell>
+    <PublicShell studioName={data.estudioNome}>
       <div className="mb-4">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted">
           Seleção de fotos e vídeos
@@ -446,20 +456,57 @@ export function PublicSelectionPage() {
 
       <section className="space-y-4">
         <div>
-          <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold text-ink">
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-ink">
             <Images className="size-4 text-brand-600" />
             Fotos ({fotoIds.size} selecionadas)
           </h2>
-          <GalleryMediaGrid
-            midias={fotos}
-            selectedIds={fotoIds}
-            lockedIds={entregues}
-            watermark
-            numerarFotos
-            hideEditBadge
-            onToggle={(id) => setFotoIds((atual) => toggle(atual, id))}
-          />
+          <p className="mt-0.5 text-[11px] text-muted">
+            As duas listas contam na mesma cota do pacote.
+          </p>
         </div>
+
+        {fotosParaEdicao.length > 0 ? (
+          <div>
+            <h3 className="mb-1 text-sm font-semibold text-ink">
+              Para edição ({fotosParaEdicao.length})
+            </h3>
+            <p className="mb-2 text-[11px] text-muted">
+              Estas fotos ainda serão editadas pelo estúdio após o envio da seleção.
+            </p>
+            <GalleryMediaGrid
+              midias={fotosParaEdicao}
+              selectedIds={fotoIds}
+              lockedIds={entregues}
+              watermark
+              watermarkText={data.estudioNome}
+              numerarFotos
+              hideEditBadge
+              onToggle={(id) => setFotoIds((atual) => toggle(atual, id))}
+            />
+          </div>
+        ) : null}
+
+        {fotosProntas.length > 0 ? (
+          <div>
+            <h3 className="mb-1 text-sm font-semibold text-ink">
+              Prontas para baixar ({fotosProntas.length})
+            </h3>
+            <p className="mb-2 text-[11px] text-muted">
+              Estas fotos já estão editadas e ficam disponíveis para download
+              após o envio da seleção.
+            </p>
+            <GalleryMediaGrid
+              midias={fotosProntas}
+              selectedIds={fotoIds}
+              lockedIds={entregues}
+              watermark
+              watermarkText={data.estudioNome}
+              numerarFotos
+              hideEditBadge
+              onToggle={(id) => setFotoIds((atual) => toggle(atual, id))}
+            />
+          </div>
+        ) : null}
 
         {videos.length > 0 ? (
           <div>
@@ -540,11 +587,19 @@ export function PublicSelectionPage() {
   )
 }
 
-function PublicShell({ children }: { children: ReactNode }) {
+function PublicShell({
+  children,
+  studioName,
+}: {
+  children: ReactNode
+  studioName?: string
+}) {
   return (
     <div className="min-h-dvh bg-canvas">
       <header className="border-b border-line bg-surface px-4 py-3 sm:px-6">
-        <p className="text-sm font-semibold text-ink">Photoizer CRM</p>
+        <p className="text-sm font-semibold text-ink">
+          {studioName ?? 'Photoizer CRM'}
+        </p>
         <p className="text-[11px] text-muted">Sua galeria</p>
       </header>
       <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6">{children}</main>

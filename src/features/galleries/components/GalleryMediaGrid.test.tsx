@@ -12,6 +12,7 @@ function midia(overrides: Partial<MidiaGaleria> = {}): MidiaGaleria {
     mimeType: 'image/jpeg',
     tamanho: 1,
     status: 'original',
+    finalidade: 'edicao',
     numero: 7,
     uploadedAt: '2026-01-01T00:00:00.000Z',
     processamentoStatus: 'disponivel',

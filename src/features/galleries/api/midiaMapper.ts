@@ -11,6 +11,7 @@ export interface MidiaDto {
   duracaoSegundos: number | null
   ordem: number
   status: string
+  finalidade?: string | null
   erroProcessamento: string | null
   thumbUrl: string | null
   webUrl: string | null
@@ -18,6 +19,7 @@ export interface MidiaDto {
   editadaUrl: string | null
   editadaDisponivel: boolean
   editadaProcessando: boolean
+  previaMarcada?: boolean
   liberadaEm: string | null
   disponivelParaDownload: boolean
   liberacaoAutomatica: boolean
@@ -32,6 +34,7 @@ export function toMidia(dto: MidiaDto): MidiaGaleria {
     mimeType: dto.mimeType,
     tamanho: dto.tamanho,
     status: dto.editadaDisponivel || dto.editadaUrl ? 'editada' : 'original',
+    finalidade: dto.finalidade === 'pronta' ? 'pronta' : 'edicao',
     numero: dto.ordem,
     uploadedAt: dto.createdAt,
     thumbUrl: dto.thumbUrl ?? undefined,
@@ -40,6 +43,7 @@ export function toMidia(dto: MidiaDto): MidiaGaleria {
     editadaUrl: dto.editadaUrl ?? undefined,
     editadaDisponivel: dto.editadaDisponivel,
     editadaProcessando: dto.editadaProcessando,
+    previaMarcada: dto.previaMarcada ?? false,
     liberadaEm: dto.liberadaEm ?? undefined,
     disponivelParaDownload: dto.disponivelParaDownload ?? false,
     liberacaoAutomatica: dto.liberacaoAutomatica ?? true,

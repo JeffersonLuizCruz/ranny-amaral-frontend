@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { Loader2, Upload } from 'lucide-react'
 
+import type { MidiaFinalidade } from '@/domain/galleries'
 import { Button } from '@/shared/components/ui/Button'
 import { UploadProgress } from '@/shared/components/ui/UploadProgress'
 import { useToastStore } from '@/shared/store/toastStore'
@@ -15,9 +16,14 @@ import {
 interface GalleryMediaUploaderProps {
   galleryId: string
   label?: string
+  finalidade?: MidiaFinalidade
 }
 
-export function GalleryMediaUploader({ galleryId, label }: GalleryMediaUploaderProps) {
+export function GalleryMediaUploader({
+  galleryId,
+  label,
+  finalidade = 'edicao',
+}: GalleryMediaUploaderProps) {
   const uploadMidia = useGalleryStore((state) => state.uploadMidia)
   const addToast = useToastStore((state) => state.addToast)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -40,9 +46,15 @@ export function GalleryMediaUploader({ galleryId, label }: GalleryMediaUploaderP
           continue
         }
 
+        const tipo = mediaTipoFromFile(file)
+        if (finalidade === 'pronta' && tipo === 'video') {
+          addToast(`${file.name}: vídeos não entram como foto pronta.`)
+          continue
+        }
+
         setCurrentName(file.name)
         setProgress(undefined)
-        await uploadMidia(galleryId, file, mediaTipoFromFile(file), {
+        await uploadMidia(galleryId, file, tipo, finalidade, {
           onProgress: setProgress,
         })
         enviados += 1
@@ -90,8 +102,9 @@ export function GalleryMediaUploader({ galleryId, label }: GalleryMediaUploaderP
       {progress ? <UploadProgress progress={progress} /> : null}
 
       <p className="mt-1.5 text-[10px] text-muted">
-        Fotos até 50 MB (JPEG/PNG/WebP) e vídeos até 500 MB (MP4/MOV). Upload direto
-        ao storage com progresso.
+        {finalidade === 'pronta'
+          ? 'Fotos já editadas entram direto na fila de download; não passam pela edição. Até 50 MB cada.'
+          : 'Fotos até 50 MB (JPEG/PNG/WebP) e vídeos até 500 MB (MP4/MOV). Upload direto ao storage com progresso.'}
       </p>
     </div>
   )

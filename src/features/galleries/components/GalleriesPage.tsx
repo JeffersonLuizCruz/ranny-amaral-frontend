@@ -188,6 +188,23 @@ export function GalleriesPage() {
                       vídeos
                     </span>
                   </div>
+                  {galeria.fotosSelecionadas ? (
+                    <p className="mt-2 border-t border-line pt-2 text-[11px] text-muted">
+                      {galeria.status === 'entregue'
+                        ? 'Entregue'
+                        : galeria.status === 'selecao_enviada'
+                          ? 'Seleção enviada'
+                          : 'Em edição'}{' '}
+                      ·{' '}
+                      <strong className="text-ink">
+                        {galeria.fotosProntas ?? 0}/{galeria.fotosSelecionadas}
+                      </strong>{' '}
+                      prontas
+                      {galeria.fotosLiberadas
+                        ? ` · ${galeria.fotosLiberadas} liberadas`
+                        : ''}
+                    </p>
+                  ) : null}
                   {galeria.zipBaixadoEm ? (
                     <p className="mt-2 border-t border-line pt-2 text-[11px] text-muted">
                       ZIP baixado em{' '}

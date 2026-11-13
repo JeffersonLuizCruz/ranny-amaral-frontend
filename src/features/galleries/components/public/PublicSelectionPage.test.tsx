@@ -21,6 +21,7 @@ const midia = {
   mimeType: 'image/jpeg',
   tamanho: 10,
   status: 'original',
+  finalidade: 'edicao',
   numero: 1,
   uploadedAt: '2026-01-01T00:00:00.000Z',
   thumbUrl: 'https://storage/thumb.jpg',
@@ -36,6 +37,7 @@ const estadoPublico = {
   fotosLiberadas: 0,
   videosSelecionados: 0,
   videosLiberados: 0,
+  estudioNome: 'Estúdio Teste',
 } as const
 
 const galeria = {
@@ -334,6 +336,39 @@ describe('PublicSelectionPage', () => {
     expect(screen.getByText(/Já cobertos: 3/)).toBeInTheDocument()
     expect(screen.getByText(/Novas agora \(a pagar\): 2/)).toBeInTheDocument()
     expect(screen.getByText(/R\$\s*70,00/)).toBeInTheDocument()
+  })
+
+  it('separa fotos para edição das fotos já prontas', async () => {
+    const pronta = {
+      ...midia,
+      id: 'm2',
+      numero: 2,
+      nomeArquivo: 'foto-pronta.jpg',
+      finalidade: 'pronta',
+    }
+
+    consultarGaleriaPublica.mockResolvedValue({
+      ...estadoPublico,
+      link: {
+        id: 'l1',
+        tipo: 'selecao',
+        token: 'tok-1',
+        status: 'ativo',
+        expiraEm: '2026-12-01T00:00:00.000Z',
+        visualizadaEm: null,
+        protocolo: null,
+      },
+      galeria: { ...galeria, fotosInclusas: 2 },
+      midias: [midia, pronta],
+      selecao: undefined,
+      extras: undefined,
+      entregaDisponivel: false,
+    })
+
+    renderPage()
+
+    expect(await screen.findByText('Para edição (1)')).toBeInTheDocument()
+    expect(screen.getByText('Prontas para baixar (1)')).toBeInTheDocument()
   })
 
   it('mostra o valor a pagar agora, não o total acumulado', async () => {

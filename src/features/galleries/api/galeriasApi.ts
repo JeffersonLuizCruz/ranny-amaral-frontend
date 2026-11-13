@@ -5,6 +5,7 @@ import type {
   FaseGaleriaPublica,
   GaleriaEnsaio,
   GaleriaStatus,
+  MidiaFinalidade,
   MidiaGaleria,
   PedidoExtras,
   ResumoExtras,
@@ -31,6 +32,9 @@ interface GaleriaDto {
   totalVideos: number
   fotosDisponiveis: number
   videosDisponiveis: number
+  fotosSelecionadas?: number
+  fotosProntas?: number
+  fotosLiberadas?: number
   rawLiberado: boolean
   rawLiberadoEm: string | null
   rawLiberadoPor: string | null
@@ -247,6 +251,9 @@ function toGaleria(
     totalVideos: dto.totalVideos,
     fotosDisponiveis: dto.fotosDisponiveis,
     videosDisponiveis: dto.videosDisponiveis,
+    fotosSelecionadas: dto.fotosSelecionadas ?? 0,
+    fotosProntas: dto.fotosProntas ?? 0,
+    fotosLiberadas: dto.fotosLiberadas ?? 0,
     rawLiberado: dto.rawLiberado,
     rawLiberadoEm: dto.rawLiberadoEm ?? undefined,
     rawLiberadoPor: dto.rawLiberadoPor ?? undefined,
@@ -424,6 +431,18 @@ export async function definirAutoLiberacao(
   })
 }
 
+export async function alterarFinalidade(
+  galeriaId: string,
+  midiaId: string,
+  finalidade: MidiaFinalidade,
+): Promise<MidiaGaleria> {
+  const dto = await http.post<MidiaDto>(
+    `/galerias/${galeriaId}/midias/${midiaId}/finalidade`,
+    { finalidade },
+  )
+  return toMidia(dto)
+}
+
 export async function liberarRaw(galeriaId: string, por?: string): Promise<void> {
   await http.post(`/galerias/${galeriaId}/entrega/liberar-raw`, { por })
 }
@@ -459,6 +478,7 @@ export async function consultarGaleriaPublica(token: string): Promise<{
   fotosLiberadas: number
   videosSelecionados: number
   videosLiberados: number
+  estudioNome: string
 }> {
   interface PublicaDto {
     link: LinkDto
@@ -474,6 +494,7 @@ export async function consultarGaleriaPublica(token: string): Promise<{
     fotosLiberadas: number
     videosSelecionados: number
     videosLiberados: number
+    estudioNome?: string | null
   }
   const dto = await http.get<PublicaDto>(`/public/galerias/${token}`)
   const selecao = toSelecao(dto.selecao)
@@ -507,6 +528,7 @@ export async function consultarGaleriaPublica(token: string): Promise<{
     fotosLiberadas: dto.fotosLiberadas,
     videosSelecionados: dto.videosSelecionados,
     videosLiberados: dto.videosLiberados,
+    estudioNome: dto.estudioNome?.trim() || 'Photoizer CRM',
   }
 }
 

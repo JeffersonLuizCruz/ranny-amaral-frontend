@@ -1,4 +1,15 @@
-import { Check, Download, Film, ImageOff, Loader2, Lock, Pencil, PlayCircle, Trash2 } from 'lucide-react'
+import {
+  Check,
+  Download,
+  Film,
+  ImageOff,
+  Loader2,
+  Lock,
+  Pencil,
+  PlayCircle,
+  RefreshCw,
+  Trash2,
+} from 'lucide-react'
 
 import type { MidiaGaleria } from '@/domain/galleries'
 import { formatarNumeroFoto } from '@/features/galleries/lib/format'
@@ -12,8 +23,10 @@ interface GalleryMediaGridProps {
   onRemove?: (midia: MidiaGaleria) => void
   onDownload?: (midia: MidiaGaleria) => void
   onEdit?: (midia: MidiaGaleria) => void
+  onChangeFinalidade?: (midia: MidiaGaleria) => void
   emptyLabel?: string
   watermark?: boolean
+  watermarkText?: string
   numerarFotos?: boolean
   hideEditBadge?: boolean
 }
@@ -26,8 +39,10 @@ export function GalleryMediaGrid({
   onRemove,
   onDownload,
   onEdit,
+  onChangeFinalidade,
   emptyLabel = 'Nenhuma mídia enviada ainda.',
   watermark = false,
+  watermarkText,
   numerarFotos = false,
   hideEditBadge = false,
 }: GalleryMediaGridProps) {
@@ -52,7 +67,9 @@ export function GalleryMediaGrid({
           onRemove={onRemove}
           onDownload={onDownload}
           onEdit={onEdit}
+          onChangeFinalidade={onChangeFinalidade}
           watermark={watermark}
+          watermarkText={watermarkText}
           numerarFotos={numerarFotos}
           hideEditBadge={hideEditBadge}
         />
@@ -69,7 +86,9 @@ function GalleryMediaTile({
   onRemove,
   onDownload,
   onEdit,
+  onChangeFinalidade,
   watermark,
+  watermarkText,
   numerarFotos,
   hideEditBadge,
 }: {
@@ -80,7 +99,9 @@ function GalleryMediaTile({
   onRemove?: (midia: MidiaGaleria) => void
   onDownload?: (midia: MidiaGaleria) => void
   onEdit?: (midia: MidiaGaleria) => void
+  onChangeFinalidade?: (midia: MidiaGaleria) => void
   watermark?: boolean
+  watermarkText?: string
   numerarFotos?: boolean
   hideEditBadge?: boolean
 }) {
@@ -132,13 +153,13 @@ function GalleryMediaTile({
           </span>
         )}
 
-        {watermark ? (
+        {watermark && !midia.previaMarcada ? (
           <span
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 grid place-items-center overflow-hidden"
           >
             <span className="-rotate-12 text-[10px] font-bold uppercase tracking-[0.25em] text-white/45 drop-shadow">
-              prévia
+              {watermarkText ?? 'prévia'}
             </span>
           </span>
         ) : null}
@@ -174,7 +195,7 @@ function GalleryMediaTile({
           </span>
         ) : null}
 
-        {!hideEditBadge && midia.editadaDisponivel ? (
+        {!hideEditBadge && (midia.finalidade === 'pronta' || midia.editadaDisponivel) ? (
           <span
             className={cn(
               'absolute left-1.5 inline-flex items-center gap-1 rounded-full bg-emerald-600/90 px-1.5 py-0.5 text-[9px] font-semibold text-white shadow',
@@ -182,7 +203,7 @@ function GalleryMediaTile({
             )}
           >
             <Check className="size-2.5" />
-            editada
+            {midia.finalidade === 'pronta' ? 'pronta' : 'editada'}
           </span>
         ) : null}
       </button>
@@ -209,7 +230,7 @@ function GalleryMediaTile({
             <PlayCircle className="size-3" />
           </a>
         ) : null}
-        {onEdit && !isVideo ? (
+        {onEdit && !isVideo && midia.finalidade !== 'pronta' ? (
           <button
             type="button"
             onClick={() => onEdit(midia)}
@@ -217,6 +238,21 @@ function GalleryMediaTile({
             className="grid size-6 shrink-0 place-items-center rounded-full bg-white/90 text-purple-700 transition hover:bg-white"
           >
             <Pencil className="size-3" />
+          </button>
+        ) : null}
+        {onChangeFinalidade && !isVideo ? (
+          <button
+            type="button"
+            onClick={() => onChangeFinalidade(midia)}
+            aria-label={`Alterar finalidade de ${midia.nomeArquivo}`}
+            title={
+              midia.finalidade === 'pronta'
+                ? 'Marcar como foto para edição'
+                : 'Marcar como foto já editada'
+            }
+            className="grid size-6 shrink-0 place-items-center rounded-full bg-white/90 text-sky-700 transition hover:bg-white"
+          >
+            <RefreshCw className="size-3" />
           </button>
         ) : null}
         {onDownload ? (

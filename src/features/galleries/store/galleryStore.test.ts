@@ -43,6 +43,7 @@ function midia(id: string): MidiaGaleria {
     mimeType: 'image/jpeg',
     tamanho: 1,
     status: 'original',
+    finalidade: 'edicao',
     numero: 1,
     uploadedAt: '2026-01-01T00:00:00.000Z',
   }
