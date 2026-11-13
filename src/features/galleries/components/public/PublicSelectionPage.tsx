@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { ReactNode } from 'react'
 import {
   AlertTriangle,
   CheckCircle2,
   Clock,
   Download,
   Images,
-  Loader2,
   RefreshCw,
+  Sparkles,
 } from 'lucide-react'
 import { useParams } from 'react-router-dom'
 
@@ -20,8 +19,12 @@ import type {
 import { Button } from '@/shared/components/ui/Button'
 import { formatBRL } from '@/shared/lib/currency'
 import { mensagemDeErro } from '@/shared/api/errors'
-import { GalleryMediaGrid } from '@/features/galleries/components/GalleryMediaGrid'
 import { ExtrasPaymentCard } from '@/features/galleries/components/public/ExtrasPaymentCard'
+import { PublicConfirmDialog } from '@/features/galleries/components/public/PublicConfirmDialog'
+import { PublicGalleryShell } from '@/features/galleries/components/public/PublicGalleryShell'
+import { PublicMediaGrid } from '@/features/galleries/components/public/PublicMediaGrid'
+import { PublicPhotoViewer } from '@/features/galleries/components/public/PublicPhotoViewer'
+import { PublicSelectionBar } from '@/features/galleries/components/public/PublicSelectionBar'
 import { calcularValorExtras } from '@/features/galleries/lib/selection'
 import {
   baixarMidiaPublica,
@@ -48,6 +51,8 @@ interface PublicData {
   videosLiberados: number
 }
 
+type ViewerState = { tipo: 'foto' | 'video'; index: number }
+
 export function PublicSelectionPage() {
   const { token = '' } = useParams()
   const [data, setData] = useState<PublicData | null>(null)
@@ -58,6 +63,8 @@ export function PublicSelectionPage() {
   const [videoIds, setVideoIds] = useState<Set<string>>(new Set())
   const [atualizando, setAtualizando] = useState(false)
   const [baixandoZip, setBaixandoZip] = useState(false)
+  const [confirmarOpen, setConfirmarOpen] = useState(false)
+  const [viewer, setViewer] = useState<ViewerState | null>(null)
 
   useEffect(() => {
     let ativo = true
@@ -123,6 +130,7 @@ export function PublicSelectionPage() {
   // o cliente já enviou a seleção atual.
   const selecaoEnviada = data?.selecao?.status === 'enviada'
   const podeSelecionar = data?.galeria.status === 'em_selecao' && !selecaoEnviada
+  const viewerMidias = viewer?.tipo === 'video' ? videos : fotos
 
   const toggle = (set: Set<string>, id: string): Set<string> => {
     // Fotos e vídeos já entregues permanecem obrigatórios: o cliente só pode
@@ -134,38 +142,38 @@ export function PublicSelectionPage() {
     return proximo
   }
 
-  const enviar = async () => {
+  const abrirMidia = (midia: MidiaGaleria) => {
+    const lista = midia.tipo === 'video' ? videos : fotos
+    const index = lista.findIndex((item) => item.id === midia.id)
+    if (index >= 0) setViewer({ tipo: midia.tipo, index })
+  }
+
+  const validarSelecao = (): boolean => {
     setErro('')
     if (fotoIds.size < fotosInclusas) {
       setErro(`Selecione todas as ${fotosInclusas} fotos inclusas.`)
-      return
+      return false
     }
     if (videoIds.size !== videosInclusos) {
       setErro(`Selecione exatamente ${videosInclusos} vídeo(s).`)
-      return
+      return false
     }
     if (extrasAbaixoDoCoberto) {
       setErro(
         `Sua seleção tem ${extras} extra(s), abaixo dos ${quantidadeCoberta} já cobertos. ` +
           'Recoloque as fotos ou fale com o estúdio.',
       )
-      return
+      return false
     }
+    return true
+  }
 
-    const confirmado = window.confirm(
-      extras > 0
-        ? quantidadeCoberta > 0
-          ? `Enviar ${fotoIds.size} fotos e ${videoIds.size} vídeos?\n\n` +
-            `Já cobertos: ${quantidadeCoberta} extra(s) · ${formatBRL(valorCoberto)}.\n` +
-            (novoValor > 0
-              ? `Novas agora: ${novosExtras} extra(s) · ${formatBRL(novoValor)}.\n`
-              : 'Nenhuma nova cobrança.\n') +
-            `Total da seleção: ${extras} extra(s) · ${formatBRL(valorExtras)}.`
-          : `Enviar ${fotoIds.size} fotos e ${videoIds.size} vídeos? Serão cobradas ${extras} foto(s) extra(s), total de ${formatBRL(valorExtras)}.`
-        : `Enviar ${fotoIds.size} fotos e ${videoIds.size} vídeos?`,
-    )
-    if (!confirmado) return
+  const abrirConfirmacao = () => {
+    if (validarSelecao()) setConfirmarOpen(true)
+  }
 
+  const enviar = async () => {
+    setConfirmarOpen(false)
     setEnviando(true)
     try {
       const selecao = await enviarSelecaoPublica(token, [...fotoIds], [...videoIds])
@@ -236,25 +244,33 @@ export function PublicSelectionPage() {
 
   if (loading) {
     return (
-      <PublicShell studioName={data?.estudioNome}>
-        <div className="grid min-h-[50dvh] place-items-center">
-          <span className="flex items-center gap-2 text-sm text-muted">
-            <Loader2 className="size-4 animate-spin" />
-            Carregando seleção…
-          </span>
+      <PublicGalleryShell>
+        <div className="animate-pulse space-y-6 pt-4">
+          <div className="h-3 w-32 rounded-full bg-[#E7DAC9]" />
+          <div className="h-16 w-3/4 rounded-2xl bg-[#E7DAC9]" />
+          <div className="h-4 w-1/2 rounded-full bg-[#E7DAC9]" />
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <div
+                key={index}
+                className="aspect-[4/5] rounded-[1.15rem] bg-[#E7DAC9]"
+              />
+            ))}
+          </div>
         </div>
-      </PublicShell>
+        <span className="sr-only">Carregando seleção…</span>
+      </PublicGalleryShell>
     )
   }
 
   if (!data) {
     return (
-      <PublicShell>
+      <PublicGalleryShell>
         <StatusCard
           title="Não foi possível abrir a seleção"
           description={erro || 'Link inválido ou expirado.'}
         />
-      </PublicShell>
+      </PublicGalleryShell>
     )
   }
 
@@ -267,59 +283,69 @@ export function PublicSelectionPage() {
     const aguardandoPagamento = data.fase === 'aguardando_pagamento'
 
     return (
-      <PublicShell studioName={data?.estudioNome}>
-        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-              Sua galeria
-            </p>
-            <h1 className="mt-1 text-xl font-semibold tracking-tight text-ink">
-              {data.galeria.clienteNome ?? 'Sua galeria'}
-            </h1>
-            <p className="mt-0.5 text-xs text-muted">
-              {data.pacoteNome ?? 'Pacote'} · {liberadas} de {total} mídias
-              liberadas · protocolo {data.selecao.protocolo}
-            </p>
+      <PublicGalleryShell
+        studioName={data.estudioNome}
+        accent={data.galeria.pacoteCorHex}
+      >
+        <section className="pb-8">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="text-[10px] font-medium uppercase tracking-[0.28em] text-[#A08B72]">
+                Sua galeria
+              </p>
+              <h1 className="mt-3 font-display text-4xl leading-[1.05] tracking-[-0.02em] text-[#2B241D] sm:text-6xl">
+                {data.galeria.clienteNome ?? 'Sua galeria'}
+              </h1>
+              <p className="mt-3 max-w-xl text-sm leading-relaxed text-[#7A6A59]">
+                {data.pacoteNome ?? 'Pacote'} · {liberadas} de {total} mídias
+                liberadas · protocolo {data.selecao.protocolo}
+              </p>
+            </div>
+            <Button
+              variant="secondary"
+              onClick={() => void recarregar()}
+              disabled={atualizando}
+              className="border-[#E1D3C1] bg-white/70"
+            >
+              <RefreshCw
+                className={`size-4 ${atualizando ? 'animate-spin' : ''}`}
+              />
+              {atualizando ? 'Atualizando…' : 'Atualizar'}
+            </Button>
           </div>
-          <Button
-            variant="secondary"
-            onClick={() => void recarregar()}
-            disabled={atualizando}
-          >
-            <RefreshCw className={`size-4 ${atualizando ? 'animate-spin' : ''}`} />
-            {atualizando ? 'Atualizando…' : 'Atualizar'}
-          </Button>
-        </div>
+        </section>
 
-        <div className="mb-4 rounded-2xl border border-line bg-surface p-4 shadow-card">
+        <section className="rounded-[1.5rem] border border-[#E7DCCD] bg-white/70 p-5 shadow-[0_24px_60px_-40px_rgba(60,42,25,0.55)] backdrop-blur">
           <div className="flex items-center justify-between gap-2 text-xs">
-            <span className="font-medium text-ink">Progresso da liberação</span>
-            <span className="text-muted">
+            <h2 className="font-semibold text-[#2B241D]">
+              Progresso da liberação
+            </h2>
+            <span className="text-[#7A6A59]">
               {liberadas}/{total}
             </span>
           </div>
-          <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
+          <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-[#EADCCB]">
             <div
-              className="h-full rounded-full bg-emerald-500 transition-all"
+              className="h-full rounded-full bg-[var(--gallery-accent)] transition-all duration-700"
               style={{ width: `${percentual}%` }}
             />
           </div>
-          <p className="mt-2 text-[11px] text-muted">
+          <p className="mt-2 text-[11px] leading-relaxed text-[#7A6A59]">
             {aguardandoPagamento
               ? 'As fotos já prontas serão liberadas assim que o pagamento dos extras for confirmado.'
               : emLiberacao.length > 0
                 ? 'Você será avisado quando cada mídia ficar pronta. Não é necessário fazer nada.'
                 : 'Tudo liberado. Bom proveito!'}
           </p>
-        </div>
+        </section>
 
         {data.resumoExtras &&
         (data.resumoExtras.quantidadeTotal > 0 ||
           data.resumoExtras.quantidadePendente > 0) ? (
-          <div className="mb-4 rounded-2xl border border-line bg-surface p-4 text-[11px] text-muted shadow-card">
+          <section className="mt-4 rounded-[1.5rem] border border-[#E7DCCD] bg-white/60 p-4 text-[11px] leading-relaxed text-[#7A6A59] backdrop-blur">
             <p>
               Total na seleção:{' '}
-              <strong className="text-ink">
+              <strong className="text-[#2B241D]">
                 {data.resumoExtras.quantidadeTotal} extra(s) ·{' '}
                 {formatBRL(data.resumoExtras.valorTotal)}
               </strong>
@@ -331,16 +357,16 @@ export function PublicSelectionPage() {
               </p>
             ) : null}
             {data.resumoExtras.quantidadePendente > 0 ? (
-              <p className="mt-0.5 font-semibold text-ink">
+              <p className="mt-0.5 font-semibold text-[#8A5A18]">
                 A pagar agora: {data.resumoExtras.quantidadePendente} extra(s) ·{' '}
                 {formatBRL(data.resumoExtras.valorPendente)}
               </p>
             ) : null}
-          </div>
+          </section>
         ) : null}
 
         {data.extras && data.extras.status === 'pendente' ? (
-          <div className="mb-4">
+          <div className="mt-4">
             <ExtrasPaymentCard
               token={data.token}
               extras={data.extras}
@@ -349,272 +375,364 @@ export function PublicSelectionPage() {
                   ? 'Extras adicionais'
                   : undefined
               }
-              onChange={(extras) =>
-                setData((atual) => (atual ? { ...atual, extras } : atual))
+              onChange={(extrasAtualizados) =>
+                setData((atual) =>
+                  atual ? { ...atual, extras: extrasAtualizados } : atual,
+                )
               }
             />
           </div>
         ) : null}
 
         {disponiveis.length > 0 ? (
-          <section className="mb-4 rounded-2xl border border-line bg-surface p-4 shadow-card">
-            <div className="flex flex-wrap items-center justify-between gap-2">
+          <section className="mt-10">
+            <div className="flex flex-wrap items-end justify-between gap-3 border-b border-[#E7DCCD] pb-3">
               <div>
-                <h2 className="flex items-center gap-2 text-sm font-semibold text-ink">
-                  <CheckCircle2 className="size-4 text-emerald-600" />
+                <p className="text-[10px] uppercase tracking-[0.24em] text-[#A08B72]">
+                  Prontas para você
+                </p>
+                <h2 className="mt-1 flex items-center gap-2 font-display text-2xl text-[#2B241D]">
+                  <CheckCircle2 className="size-5 text-[#5F7A5B]" />
                   Disponíveis para baixar ({disponiveis.length})
                 </h2>
-                <p className="mt-0.5 text-[11px] text-muted">
+                <p className="mt-1 text-xs text-[#7A6A59]">
                   Baixe individualmente ou tudo de uma vez em ZIP.
                 </p>
               </div>
-              <Button onClick={() => void baixarZip()} disabled={baixandoZip}>
+              <Button
+                onClick={() => void baixarZip()}
+                disabled={baixandoZip}
+                className="bg-[#2B241D] hover:bg-[#40352B] active:bg-[#1F1914]"
+              >
                 <Download className="size-4" />
                 {baixandoZip ? 'Preparando…' : 'Baixar todas (.zip)'}
               </Button>
             </div>
-            <div className="mt-3">
-              <GalleryMediaGrid
+            <div className="mt-5">
+              <PublicMediaGrid
                 midias={disponiveis}
                 onDownload={(midia) => void baixarMidia(midia)}
+                onZoom={abrirMidia}
                 watermark
                 watermarkText={data.estudioNome}
-                hideEditBadge
               />
             </div>
           </section>
         ) : null}
 
         {emLiberacao.length > 0 ? (
-          <section className="rounded-2xl border border-line bg-surface p-4 shadow-card">
-            <h2 className="flex items-center gap-2 text-sm font-semibold text-ink">
-              <Clock className="size-4 text-amber-600" />
-              Em liberação ({emLiberacao.length})
-            </h2>
-            <p className="mt-0.5 text-[11px] text-muted">
-              Estas mídias ainda estão sendo preparadas. Avisaremos quando
-              estiverem prontas.
-            </p>
-            <div className="mt-3">
-              <GalleryMediaGrid
+          <section className="mt-10">
+            <div className="border-b border-[#E7DCCD] pb-3">
+              <p className="text-[10px] uppercase tracking-[0.24em] text-[#A08B72]">
+                Quase lá
+              </p>
+              <h2 className="mt-1 flex items-center gap-2 font-display text-2xl text-[#2B241D]">
+                <Clock className="size-5 text-[#B07A2A]" />
+                Em liberação ({emLiberacao.length})
+              </h2>
+              <p className="mt-1 text-xs text-[#7A6A59]">
+                Estas mídias ainda estão sendo preparadas. Avisaremos quando
+                estiverem prontas.
+              </p>
+            </div>
+            <div className="mt-5">
+              <PublicMediaGrid
                 midias={emLiberacao}
+                onZoom={abrirMidia}
                 watermark
                 watermarkText={data.estudioNome}
-                hideEditBadge
               />
             </div>
           </section>
         ) : null}
 
-        {erro ? (
-          <p
-            role="alert"
-            className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-[11px] font-medium text-red-700 ring-1 ring-red-200"
-          >
-            {erro}
-          </p>
+        {erro ? <ErrorAlert mensagem={erro} /> : null}
+
+        {viewer && viewerMidias[viewer.index] ? (
+          <PublicPhotoViewer
+            midias={viewerMidias}
+            initialIndex={viewer.index}
+            onClose={() => setViewer(null)}
+            watermark
+            watermarkText={data.estudioNome}
+          />
         ) : null}
-      </PublicShell>
+      </PublicGalleryShell>
     )
   }
 
   if (!podeSelecionar) {
     return (
-      <PublicShell studioName={data?.estudioNome}>
+      <PublicGalleryShell
+        studioName={data.estudioNome}
+        accent={data.galeria.pacoteCorHex}
+      >
         <StatusCard
           title="Seleção indisponível"
           description="O estúdio ainda não liberou esta galeria para seleção."
         />
-      </PublicShell>
+      </PublicGalleryShell>
     )
   }
 
   return (
-    <PublicShell studioName={data.estudioNome}>
-      <div className="mb-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-          Seleção de fotos e vídeos
-        </p>
-        <h1 className="mt-1 text-xl font-semibold tracking-tight text-ink">
+    <PublicGalleryShell
+      studioName={data.estudioNome}
+      accent={data.galeria.pacoteCorHex}
+    >
+      <section className="pb-8 pt-2 sm:pb-12">
+        <div className="flex flex-wrap items-center gap-2 text-[10px] font-medium uppercase tracking-[0.26em] text-[#A08B72]">
+          <span>Seleção de fotos</span>
+          <span className="h-px w-8 bg-[#D9C8B4]" />
+          <span className="inline-flex items-center gap-1.5">
+            <Sparkles className="size-3" />
+            escolha com calma
+          </span>
+        </div>
+        <h1 className="mt-4 max-w-3xl font-display text-4xl leading-[1.02] tracking-[-0.02em] text-[#2B241D] sm:text-6xl">
           {data.galeria.clienteNome ?? 'Sua galeria'}
         </h1>
-        <p className="mt-0.5 text-xs text-muted">
-          {data.pacoteNome ?? 'Pacote'} · {fotosInclusas}{' '}
-          {fotosInclusas === 1 ? 'foto' : 'fotos'} e {videosInclusos}{' '}
-          {videosInclusos === 1 ? 'vídeo' : 'vídeos'} inclusos. As fotos estão
-          numeradas; use o número para se referir a cada uma.
+        <p className="mt-4 max-w-xl text-sm leading-relaxed text-[#7A6A59] sm:text-base">
+          Estas são as suas fotos. Toque para escolher, amplie para ver cada
+          detalhe e envie a seleção quando estiver pronta.
         </p>
-      </div>
+        <div className="mt-6 flex flex-wrap items-center gap-2 text-xs text-[#7A6A59]">
+          <span className="inline-flex items-center gap-2 rounded-full border border-[#E4D6C4] bg-white/60 px-3 py-1.5 backdrop-blur">
+            <span className="size-2 rounded-full bg-[var(--gallery-accent)]" />
+            {data.pacoteNome ?? 'Pacote'}
+          </span>
+          <span className="rounded-full border border-[#E4D6C4] bg-white/60 px-3 py-1.5 backdrop-blur">
+            {fotosInclusas} {fotosInclusas === 1 ? 'foto' : 'fotos'} inclusas
+          </span>
+          <span className="rounded-full border border-[#E4D6C4] bg-white/60 px-3 py-1.5 backdrop-blur">
+            {fotoIds.size} {fotoIds.size === 1 ? 'selecionada' : 'selecionadas'}
+          </span>
+        </div>
+      </section>
 
       {data.resumoExtras && data.resumoExtras.quantidadeCoberta > 0 ? (
-        <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50/70 p-3 text-[11px] leading-relaxed text-amber-800">
+        <div className="mb-8 rounded-2xl border border-[#E8D2A8] bg-[#FFF7E8]/80 p-4 text-[11px] leading-relaxed text-[#8A5A18]">
           Você já comprou{' '}
-          <strong>{data.resumoExtras.quantidadeCoberta} foto(s) extra(s)</strong> (
-          {formatBRL(data.resumoExtras.valorCoberto)}). Ao adicionar mais, você paga
-          apenas a diferença. As mídias já entregues estão bloqueadas e continuam
-          selecionadas.
+          <strong>
+            {data.resumoExtras.quantidadeCoberta} foto(s) extra(s)
+          </strong>{' '}
+          ({formatBRL(data.resumoExtras.valorCoberto)}). Ao adicionar mais, você
+          paga apenas a diferença. As mídias já entregues estão bloqueadas e
+          continuam selecionadas.
         </div>
       ) : null}
 
-      <section className="space-y-4">
+      <section className="space-y-10">
         <div>
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-ink">
-            <Images className="size-4 text-brand-600" />
-            Fotos ({fotoIds.size} selecionadas)
-          </h2>
-          <p className="mt-0.5 text-[11px] text-muted">
-            As duas listas contam na mesma cota do pacote.
-          </p>
+          <div className="flex flex-wrap items-end justify-between gap-3 border-b border-[#E7DCCD] pb-3">
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.24em] text-[#A08B72]">
+                Sua seleção
+              </p>
+              <h2 className="mt-1 flex items-center gap-2 font-display text-2xl text-[#2B241D]">
+                <Images className="size-5 text-[var(--gallery-accent)]" />
+                Fotos ({fotoIds.size} selecionadas)
+              </h2>
+            </div>
+            <p className="hidden text-[11px] text-[#8A7863] sm:block">
+              As duas listas contam na mesma cota do pacote
+            </p>
+          </div>
+
+          {fotosParaEdicao.length > 0 ? (
+            <div className="mt-6">
+              <h3 className="text-base font-semibold text-[#2B241D]">
+                Para edição ({fotosParaEdicao.length})
+              </h3>
+              <p className="mt-1 text-xs leading-relaxed text-[#7A6A59]">
+                Estas fotos ainda serão editadas pelo estúdio após o envio da
+                seleção.
+              </p>
+              <div className="mt-4">
+                <PublicMediaGrid
+                  midias={fotosParaEdicao}
+                  selectedIds={fotoIds}
+                  lockedIds={entregues}
+                  watermark
+                  watermarkText={data.estudioNome}
+                  numerarFotos
+                  onToggle={(id) =>
+                    setFotoIds((atual) => toggle(atual, id))
+                  }
+                  onZoom={abrirMidia}
+                />
+              </div>
+            </div>
+          ) : null}
+
+          {fotosProntas.length > 0 ? (
+            <div className="mt-8">
+              <h3 className="text-base font-semibold text-[#2B241D]">
+                Prontas para baixar ({fotosProntas.length})
+              </h3>
+              <p className="mt-1 text-xs leading-relaxed text-[#7A6A59]">
+                Estas fotos já estão editadas e ficam disponíveis para download
+                após o envio da seleção.
+              </p>
+              <div className="mt-4">
+                <PublicMediaGrid
+                  midias={fotosProntas}
+                  selectedIds={fotoIds}
+                  lockedIds={entregues}
+                  watermark
+                  watermarkText={data.estudioNome}
+                  numerarFotos
+                  onToggle={(id) =>
+                    setFotoIds((atual) => toggle(atual, id))
+                  }
+                  onZoom={abrirMidia}
+                />
+              </div>
+            </div>
+          ) : null}
         </div>
-
-        {fotosParaEdicao.length > 0 ? (
-          <div>
-            <h3 className="mb-1 text-sm font-semibold text-ink">
-              Para edição ({fotosParaEdicao.length})
-            </h3>
-            <p className="mb-2 text-[11px] text-muted">
-              Estas fotos ainda serão editadas pelo estúdio após o envio da seleção.
-            </p>
-            <GalleryMediaGrid
-              midias={fotosParaEdicao}
-              selectedIds={fotoIds}
-              lockedIds={entregues}
-              watermark
-              watermarkText={data.estudioNome}
-              numerarFotos
-              hideEditBadge
-              onToggle={(id) => setFotoIds((atual) => toggle(atual, id))}
-            />
-          </div>
-        ) : null}
-
-        {fotosProntas.length > 0 ? (
-          <div>
-            <h3 className="mb-1 text-sm font-semibold text-ink">
-              Prontas para baixar ({fotosProntas.length})
-            </h3>
-            <p className="mb-2 text-[11px] text-muted">
-              Estas fotos já estão editadas e ficam disponíveis para download
-              após o envio da seleção.
-            </p>
-            <GalleryMediaGrid
-              midias={fotosProntas}
-              selectedIds={fotoIds}
-              lockedIds={entregues}
-              watermark
-              watermarkText={data.estudioNome}
-              numerarFotos
-              hideEditBadge
-              onToggle={(id) => setFotoIds((atual) => toggle(atual, id))}
-            />
-          </div>
-        ) : null}
 
         {videos.length > 0 ? (
           <div>
-            <h2 className="mb-2 text-sm font-semibold text-ink">
-              Vídeos ({videoIds.size} selecionados)
-            </h2>
-            <GalleryMediaGrid
-              midias={videos}
-              selectedIds={videoIds}
-              lockedIds={entregues}
-              hideEditBadge
-              onToggle={(id) => setVideoIds((atual) => toggle(atual, id))}
-            />
+            <div className="border-b border-[#E7DCCD] pb-3">
+              <p className="text-[10px] uppercase tracking-[0.24em] text-[#A08B72]">
+                Movimento
+              </p>
+              <h2 className="mt-1 font-display text-2xl text-[#2B241D]">
+                Vídeos ({videoIds.size} selecionados)
+              </h2>
+            </div>
+            <div className="mt-5">
+              <PublicMediaGrid
+                midias={videos}
+                selectedIds={videoIds}
+                lockedIds={entregues}
+                onToggle={(id) => setVideoIds((atual) => toggle(atual, id))}
+                onZoom={abrirMidia}
+              />
+            </div>
           </div>
         ) : null}
 
-        <div className="rounded-2xl border border-line bg-surface p-4 shadow-card">
-          <div className="space-y-1 text-xs text-muted">
-            <p>
-              Extras na seleção: <strong className="text-ink">{extras}</strong>
-              {extras > 0 ? ` · ${formatBRL(valorExtras)}` : ''}
-            </p>
-            {quantidadeCoberta > 0 ? (
-              <>
-                <p>
-                  Já cobertos: {quantidadeCoberta} · {formatBRL(valorCoberto)}
-                </p>
-                <p
-                  className={
-                    novoValor > 0
-                      ? 'font-semibold text-amber-700'
-                      : 'text-emerald-700'
-                  }
-                >
-                  {novoValor > 0
-                    ? `Novas agora (a pagar): ${novosExtras} · ${formatBRL(novoValor)}`
-                    : 'Nenhuma nova cobrança'}
-                </p>
-              </>
-            ) : extras > 0 ? (
-              <p className="font-semibold text-amber-700">
-                A pagar agora: {extras} foto(s) extra(s) · {formatBRL(valorExtras)}
+        {erro ? <ErrorAlert mensagem={erro} /> : null}
+      </section>
+
+      <section className="mt-10 rounded-[1.5rem] border border-[#E7DCCD] bg-white/70 p-5 text-xs leading-relaxed text-[#7A6A59] shadow-[0_24px_60px_-45px_rgba(60,42,25,0.5)] backdrop-blur">
+        <p className="text-[10px] font-medium uppercase tracking-[0.24em] text-[#A08B72]">
+          Resumo da seleção
+        </p>
+        <div className="mt-3 space-y-1">
+          <p>
+            Extras na seleção: <strong className="text-[#2B241D]">{extras}</strong>
+            {extras > 0 ? ` · ${formatBRL(valorExtras)}` : ''}
+          </p>
+          {quantidadeCoberta > 0 ? (
+            <>
+              <p>
+                Já cobertos: {quantidadeCoberta} · {formatBRL(valorCoberto)}
               </p>
-            ) : (
-              <p className="text-emerald-700">Nenhuma foto extra selecionada.</p>
-            )}
-            {extrasAbaixoDoCoberto ? (
-              <p className="font-medium text-red-600">
-                Seleção abaixo dos {quantidadeCoberta} extras já cobertos.
-                Recoloque as fotos ou fale com o estúdio.
+              <p
+                className={
+                  novoValor > 0
+                    ? 'font-semibold text-[#8A5A18]'
+                    : 'text-[#4C7048]'
+                }
+              >
+                {novoValor > 0
+                  ? `Novas agora (a pagar): ${novosExtras} · ${formatBRL(novoValor)}`
+                  : 'Nenhuma nova cobrança'}
               </p>
-            ) : null}
-          </div>
-          {erro ? (
-            <p role="alert" className="mt-2 text-xs font-medium text-red-600">
-              {erro}
+            </>
+          ) : extras > 0 ? (
+            <p className="font-semibold text-[#8A5A18]">
+              A pagar agora: {extras} foto(s) extra(s) · {formatBRL(valorExtras)}
             </p>
-          ) : null}
-          <Button
-            className="mt-3"
-            fullWidth
-            disabled={enviando || !podeEnviar}
-            onClick={() => void enviar()}
-          >
-            <CheckCircle2 className="size-4" />
-            {enviando ? 'Enviando seleção…' : 'Enviar seleção'}
-          </Button>
-          {!podeEnviar && !extrasAbaixoDoCoberto ? (
-            <p className="mt-2 text-[11px] text-muted">
-              Selecione pelo menos {fotosInclusas}{' '}
-              {fotosInclusas === 1 ? 'foto' : 'fotos'} e {videosInclusos}{' '}
-              {videosInclusos === 1 ? 'vídeo' : 'vídeos'} para enviar.
+          ) : (
+            <p className="text-[#4C7048]">Nenhuma foto extra selecionada.</p>
+          )}
+          {extrasAbaixoDoCoberto ? (
+            <p className="font-medium text-red-600">
+              Seleção abaixo dos {quantidadeCoberta} extras já cobertos.
+              Recoloque as fotos ou fale com o estúdio.
             </p>
           ) : null}
         </div>
       </section>
-    </PublicShell>
+
+      <PublicSelectionBar
+        fotosSelecionadas={fotoIds.size}
+        fotosInclusas={fotosInclusas}
+        videosSelecionados={videoIds.size}
+        videosInclusos={videosInclusos}
+        extras={extras}
+        valorExtras={valorExtras}
+        podeEnviar={podeEnviar}
+        enviando={enviando}
+        onEnviar={abrirConfirmacao}
+      />
+
+      <PublicConfirmDialog
+        open={confirmarOpen}
+        onClose={() => setConfirmarOpen(false)}
+        onConfirm={() => void enviar()}
+        enviando={enviando}
+        fotos={fotoIds.size}
+        videos={videoIds.size}
+        fotosInclusas={fotosInclusas}
+        videosInclusos={videosInclusos}
+        extras={extras}
+        valorExtras={valorExtras}
+        quantidadeCoberta={quantidadeCoberta}
+        valorCoberto={valorCoberto}
+        novosExtras={novosExtras}
+        novoValor={novoValor}
+      />
+
+      {viewer && viewerMidias[viewer.index] ? (
+        <PublicPhotoViewer
+          midias={viewerMidias}
+          initialIndex={viewer.index}
+          selectedIds={viewer.tipo === 'video' ? videoIds : fotoIds}
+          lockedIds={entregues}
+          onToggle={
+            viewer.tipo === 'video'
+              ? (id) => setVideoIds((atual) => toggle(atual, id))
+              : (id) => setFotoIds((atual) => toggle(atual, id))
+          }
+          onClose={() => setViewer(null)}
+          watermark
+          watermarkText={data.estudioNome}
+        />
+      ) : null}
+    </PublicGalleryShell>
   )
 }
 
-function PublicShell({
-  children,
-  studioName,
+function ErrorAlert({ mensagem }: { mensagem: string }) {
+  return (
+    <p
+      role="alert"
+      className="rounded-xl border border-red-200 bg-red-50/90 px-3 py-2 text-[11px] font-medium text-red-700"
+    >
+      {mensagem}
+    </p>
+  )
+}
+
+function StatusCard({
+  title,
+  description,
 }: {
-  children: ReactNode
-  studioName?: string
+  title: string
+  description: string
 }) {
   return (
-    <div className="min-h-dvh bg-canvas">
-      <header className="border-b border-line bg-surface px-4 py-3 sm:px-6">
-        <p className="text-sm font-semibold text-ink">
-          {studioName ?? 'Photoizer CRM'}
-        </p>
-        <p className="text-[11px] text-muted">Sua galeria</p>
-      </header>
-      <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6">{children}</main>
-    </div>
-  )
-}
-
-function StatusCard({ title, description }: { title: string; description: string }) {
-  return (
-    <div className="mx-auto max-w-lg rounded-2xl border border-line bg-surface p-6 text-center shadow-card">
-      <AlertTriangle className="mx-auto size-7 text-amber-600" />
-      <h1 className="mt-2 text-base font-semibold text-ink">{title}</h1>
-      <p className="mt-1 text-xs leading-relaxed text-muted">{description}</p>
+    <div className="mx-auto max-w-lg rounded-[1.75rem] border border-[#E7DCCD] bg-white/80 p-8 text-center shadow-[0_28px_70px_-45px_rgba(60,42,25,0.55)] backdrop-blur">
+      <AlertTriangle className="mx-auto size-8 text-[#B07A2A]" />
+      <h1 className="mt-3 font-display text-2xl text-[#2B241D]">{title}</h1>
+      <p className="mt-2 text-xs leading-relaxed text-[#7A6A59]">
+        {description}
+      </p>
     </div>
   )
 }

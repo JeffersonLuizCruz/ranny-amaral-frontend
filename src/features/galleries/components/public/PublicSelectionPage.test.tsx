@@ -108,6 +108,43 @@ describe('PublicSelectionPage', () => {
     expect(screen.getByText('001')).toBeInTheDocument()
   })
 
+  it('amplia a foto, seleciona pelo visualizador e atualiza a barra fixa', async () => {
+    consultarGaleriaPublica.mockResolvedValue({
+      ...estadoPublico,
+      link: {
+        id: 'l1',
+        tipo: 'selecao',
+        token: 'tok-1',
+        status: 'ativo',
+        expiraEm: '2026-12-01T00:00:00.000Z',
+        visualizadaEm: null,
+        protocolo: null,
+      },
+      galeria,
+      midias: [midia],
+      selecao: undefined,
+      extras: undefined,
+      entregaDisponivel: false,
+    })
+
+    renderPage()
+
+    expect(await screen.findByText('0 de 1 foto · 0/0 vídeos')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByLabelText('Ampliar foto 001'))
+    expect(
+      screen.getByRole('dialog', { name: 'Visualizador da galeria' }),
+    ).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Selecionar foto' }))
+    fireEvent.click(screen.getByLabelText('Fechar visualizador'))
+
+    expect(
+      screen.getByRole('heading', { name: /Fotos \(1 selecionadas\)/ }),
+    ).toBeInTheDocument()
+    expect(screen.getByText('1 de 1 foto · 0/0 vídeos')).toBeInTheDocument()
+  })
+
   it('mostra a chave Pix e o upload quando há extras pendentes', async () => {
     consultarGaleriaPublica.mockResolvedValue({
       ...estadoPublico,
