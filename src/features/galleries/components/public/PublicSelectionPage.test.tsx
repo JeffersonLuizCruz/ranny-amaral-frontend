@@ -38,6 +38,7 @@ const estadoPublico = {
   videosSelecionados: 0,
   videosLiberados: 0,
   estudioNome: 'Estúdio Teste',
+  pacoteNome: 'Promocional Teste',
 } as const
 
 const galeria = {
@@ -103,6 +104,7 @@ describe('PublicSelectionPage', () => {
 
     expect(await screen.findByText('Enviar seleção')).toBeInTheDocument()
     expect(screen.queryByText('Seleção enviada')).not.toBeInTheDocument()
+    expect(screen.getByText(/Promocional Teste/)).toBeInTheDocument()
     expect(screen.getByText('001')).toBeInTheDocument()
   })
 

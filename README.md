@@ -115,6 +115,8 @@ aguardando_upload → em_selecao → selecao_enviada → em_edicao → entregue
 - A edição pode ser liberada manualmente pelo staff, com registro de motivo.
 - O staff vê as fotos selecionadas destacadas, a lista de números e pode baixar os originais em
   **ZIP para edição** direto do detalhe da galeria.
+- O nome do pacote vinculado ao ensaio é exibido no cabeçalho da galeria do cliente e no detalhe da
+  galeria do staff.
 - Cada foto pode ser publicada com uma de duas finalidades:
   - **Para edição:** o arquivo enviado é o original; depois da seleção o staff envia a versão editada.
   - **Já editada (pronta):** o arquivo enviado já é a versão final; não existe segunda versão.

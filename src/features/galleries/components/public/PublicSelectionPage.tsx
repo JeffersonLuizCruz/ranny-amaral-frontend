@@ -39,6 +39,7 @@ interface PublicData {
   resumoExtras?: ResumoExtras
   midiasEntregues?: string[]
   estudioNome: string
+  pacoteNome?: string
   token: string
   fase: FaseGaleriaPublica
   fotosSelecionadas: number
@@ -276,8 +277,8 @@ export function PublicSelectionPage() {
               {data.galeria.clienteNome ?? 'Sua galeria'}
             </h1>
             <p className="mt-0.5 text-xs text-muted">
-              {liberadas} de {total} mídias liberadas · protocolo{' '}
-              {data.selecao.protocolo}
+              {data.pacoteNome ?? 'Pacote'} · {liberadas} de {total} mídias
+              liberadas · protocolo {data.selecao.protocolo}
             </p>
           </div>
           <Button
@@ -438,9 +439,10 @@ export function PublicSelectionPage() {
           {data.galeria.clienteNome ?? 'Sua galeria'}
         </h1>
         <p className="mt-0.5 text-xs text-muted">
-          {fotosInclusas} {fotosInclusas === 1 ? 'foto' : 'fotos'} e{' '}
-          {videosInclusos} {videosInclusos === 1 ? 'vídeo' : 'vídeos'} inclusos.
-          As fotos estão numeradas; use o número para se referir a cada uma.
+          {data.pacoteNome ?? 'Pacote'} · {fotosInclusas}{' '}
+          {fotosInclusas === 1 ? 'foto' : 'fotos'} e {videosInclusos}{' '}
+          {videosInclusos === 1 ? 'vídeo' : 'vídeos'} inclusos. As fotos estão
+          numeradas; use o número para se referir a cada uma.
         </p>
       </div>
 

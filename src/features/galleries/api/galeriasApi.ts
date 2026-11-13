@@ -117,6 +117,7 @@ interface GaleriaDetalheDto {
   pedidosExtras?: ExtrasDto[]
   resumoExtras?: ResumoExtrasDto | null
   historico: EventoDto[]
+  pacoteNome?: string | null
 }
 
 export interface GaleriaDetalhe {
@@ -127,6 +128,7 @@ export interface GaleriaDetalhe {
   pedidosExtras?: PedidoExtras[]
   resumoExtras?: ResumoExtras
   historico: EventoGaleria[]
+  pacoteNome?: string
 }
 
 export interface GaleriasFiltros {
@@ -330,6 +332,7 @@ export async function buscarGaleria(id: string): Promise<GaleriaDetalhe> {
     pedidosExtras,
     resumoExtras,
     historico,
+    pacoteNome: dto.pacoteNome ?? undefined,
   }
 }
 
@@ -471,6 +474,7 @@ export async function consultarGaleriaPublica(token: string): Promise<{
   videosSelecionados: number
   videosLiberados: number
   estudioNome: string
+  pacoteNome?: string
 }> {
   interface PublicaDto {
     link: LinkDto
@@ -487,6 +491,7 @@ export async function consultarGaleriaPublica(token: string): Promise<{
     videosSelecionados: number
     videosLiberados: number
     estudioNome?: string | null
+    pacoteNome?: string | null
   }
   const dto = await http.get<PublicaDto>(`/public/galerias/${token}`)
   const selecao = toSelecao(dto.selecao)
@@ -521,6 +526,7 @@ export async function consultarGaleriaPublica(token: string): Promise<{
     videosSelecionados: dto.videosSelecionados,
     videosLiberados: dto.videosLiberados,
     estudioNome: dto.estudioNome?.trim() || 'Photoizer CRM',
+    pacoteNome: dto.pacoteNome ?? undefined,
   }
 }
 

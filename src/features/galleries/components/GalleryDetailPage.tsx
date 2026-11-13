@@ -313,6 +313,7 @@ export function GalleryDetailPage() {
                 {galeria.clienteNome ?? 'Reserva sem cliente'}
               </h2>
               <p className="mt-0.5 text-xs text-muted">
+                {detalhe.pacoteNome ?? 'Pacote removido'} ·{' '}
                 {galeria.fotosInclusas ?? 0} fotos e {galeria.videosInclusos ?? 0}{' '}
                 vídeos inclusos · extra{' '}
                 {galeria.faixasFotoExtra && galeria.faixasFotoExtra.length > 0

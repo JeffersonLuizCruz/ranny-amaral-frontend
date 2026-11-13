@@ -144,12 +144,14 @@ describe('GalleryDetailPage', () => {
           enviadaEm: '2026-01-01T00:00:00.000Z',
         },
         historico: [],
+        pacoteNome: 'Pacote Promocional',
       },
       midias: [edicao, editada, pronta, liberada, naoSelecionada],
     })
 
     renderPage()
 
+    expect(screen.getByText(/Pacote Promocional/)).toBeInTheDocument()
     expect(screen.getByText('Fila de edição')).toBeInTheDocument()
     expect(screen.getByText('1 aguardando edição · 3 de 4 fotos prontas')).toBeInTheDocument()
     expect(screen.getByText('Prontas para baixar')).toBeInTheDocument()
