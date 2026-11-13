@@ -46,6 +46,7 @@ export function FinalPaymentPanel({
   const saldo = contrato?.saldoRestante ?? appointment?.saldoRestante ?? 0
   const pagamentoFinal = contrato?.pagamentoFinal ?? appointment?.pagamentoFinal
   const status = contrato?.statusSaldoFinal ?? appointment?.statusSaldoFinal ?? pagamentoFinal?.status ?? 'pendente'
+  const entradaLiquidada = contrato?.entradaQuitada ?? appointment?.entradaQuitada ?? false
   const confirmado = status === 'confirmado'
   const isento = status === 'isento'
   const liquidado = confirmado || isento
@@ -100,23 +101,36 @@ export function FinalPaymentPanel({
           )}
         </div>
 
+        {!entradaLiquidada ? (
+          <p className="rounded-lg bg-amber-50 px-2.5 py-2 text-[10px] font-medium text-amber-800 ring-1 ring-amber-200">
+            Confirme a entrada antes de registrar o saldo final. Se o cliente pagou
+            tudo na entrada, registre a entrada integral: o saldo ficará isento.
+          </p>
+        ) : null}
+
         <div className="flex flex-wrap gap-1.5">
           {contrato ? (
             <Button
               size="sm"
               variant={liquidado ? 'secondary' : 'primary'}
               onClick={() => setOpen(true)}
+              disabled={!entradaLiquidada}
             >
               <Wallet className="size-3.5" />
               {confirmado ? 'Corrigir' : 'Registrar saldo'}
             </Button>
           ) : (
-            <Button size="sm" variant="secondary" onClick={() => setOpen(true)}>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => setOpen(true)}
+              disabled={!entradaLiquidada}
+            >
               <Wallet className="size-3.5" />
               Registrar saldo
             </Button>
           )}
-          {!liquidado && contrato ? (
+          {!liquidado && contrato && entradaLiquidada ? (
             <Button size="sm" variant="ghost" onClick={handleExempt}>
               Isentar
             </Button>

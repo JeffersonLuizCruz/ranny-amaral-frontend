@@ -40,6 +40,7 @@ export function FinalPaymentDialog({
   const addToast = useToastStore((state) => state.addToast)
 
   const saldo = contrato?.saldoRestante ?? appointment?.saldoRestante ?? 0
+  const entradaLiquidada = contrato?.entradaQuitada ?? appointment?.entradaQuitada ?? false
   const [valor, setValor] = useState(() => String(saldo))
   const [formaPagamento, setFormaPagamento] = useState<FormaPagamentoSaldo>('pix')
   const [recebidoEm, setRecebidoEm] = useState(() => new Date().toISOString().slice(0, 10))
@@ -48,6 +49,10 @@ export function FinalPaymentDialog({
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    if (!entradaLiquidada) {
+      setErro('Confirme a entrada antes de registrar o saldo final.')
+      return
+    }
     const valorRecebido = parseCurrencyInput(valor)
 
     if (!Number.isFinite(valorRecebido) || valorRecebido <= 0) {
@@ -90,6 +95,8 @@ export function FinalPaymentDialog({
         })
       }
 
+      // O backend pode promover o atendimento para REALIZADO na data do ensaio.
+      await useAppointmentStore.getState().recarregar().catch(() => undefined)
       addToast(`Saldo final de ${formatBRL(valorRecebido)} registrado.`)
       onClose()
     } catch (error) {

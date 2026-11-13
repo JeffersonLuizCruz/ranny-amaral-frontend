@@ -90,7 +90,9 @@ Os módulos de galerias e financeiro agora usam a API real; o navegador não cal
 ### Pagamentos
 
 - **Entrada:** paga na reserva, com comprovante público.
-- **Saldo final:** recebido pelo staff via Pix ou dinheiro durante/logo após o ensaio, registrado manualmente no ensaio ou contrato.
+- **Saldo final:** recebido pelo staff via Pix ou dinheiro durante/logo após o ensaio, registrado manualmente
+  no ensaio ou contrato. O registro exige a entrada quitada; com os pagamentos quitados, o atendimento vira
+  `realizado` na data do ensaio (ou imediatamente, se a data já passou).
 - **Fotos extras:** cobradas após a seleção do cliente, confirmadas pelo staff na galeria.
 
 ### Galeria
