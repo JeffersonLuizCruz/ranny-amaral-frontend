@@ -176,8 +176,14 @@ export interface GaleriaEnsaio {
   totalVideos?: number
   fotosDisponiveis?: number
   videosDisponiveis?: number
+  /**
+   * @deprecated RAW não é mais exposto na UI. Campos mantidos apenas para
+   * compatibilidade de leitura de galerias antigas.
+   */
   rawLiberado?: boolean
+  /** @deprecated ver rawLiberado. */
   rawLiberadoEm?: string
+  /** @deprecated ver rawLiberado. */
   rawLiberadoPor?: string
   zipBaixadoEm?: string
   zipConcluidoEm?: string

@@ -443,14 +443,6 @@ export async function alterarFinalidade(
   return toMidia(dto)
 }
 
-export async function liberarRaw(galeriaId: string, por?: string): Promise<void> {
-  await http.post(`/galerias/${galeriaId}/entrega/liberar-raw`, { por })
-}
-
-export async function revogarRaw(galeriaId: string): Promise<void> {
-  await http.post(`/galerias/${galeriaId}/entrega/revogar-raw`)
-}
-
 export interface DownloadSelecao {
   url: string
   expiraEm: string

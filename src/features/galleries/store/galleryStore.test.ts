@@ -16,7 +16,6 @@ vi.mock('@/features/galleries/api/galeriasApi', () => ({
   criarGaleria: vi.fn(),
   isentarExtras: vi.fn(),
   liberarEdicao: vi.fn(),
-  liberarRaw: vi.fn(),
   listarGalerias: vi.fn(),
   listarMidias,
   publicarEntrega: vi.fn(),
@@ -24,7 +23,6 @@ vi.mock('@/features/galleries/api/galeriasApi', () => ({
   reabrirSelecao: vi.fn(),
   removerMidia: vi.fn(),
   revogarEntrega: vi.fn(),
-  revogarRaw: vi.fn(),
 }))
 
 vi.mock('@/features/galleries/api/galeriaUploadApi', () => ({

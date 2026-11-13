@@ -14,7 +14,6 @@ import {
   liberarEdicao,
   liberarLote as liberarLoteApi,
   liberarProntas as liberarProntasApi,
-  liberarRaw,
   listarGalerias,
   listarMidias,
   publicarEntrega,
@@ -24,7 +23,6 @@ import {
   renovarLink as renovarLinkApi,
   revogarEntrega,
   revogarLiberacao as revogarLiberacaoApi,
-  revogarRaw,
   type GaleriaDetalhe,
   type GaleriasFiltros,
   type LiberarLoteResultado,
@@ -78,8 +76,6 @@ interface GalleryState {
   releaseEditing: (id: string, motivo: string) => Promise<void>
   publishDelivery: (id: string) => Promise<string>
   revokeDelivery: (id: string) => Promise<void>
-  releaseRaw: (id: string, por?: string) => Promise<void>
-  revokeRaw: (id: string) => Promise<void>
   liberarLote: (id: string, midiaIds: string[]) => Promise<LiberarLoteResultado>
   liberarProntas: (id: string) => Promise<LiberarLoteResultado>
   revogarLiberacao: (id: string, midiaIds: string[]) => Promise<LiberarLoteResultado>
@@ -298,16 +294,6 @@ export const useGalleryStore = create<GalleryState>()((set, get) => ({
 
   revokeDelivery: async (id) => {
     await revogarEntrega(id)
-    await get().carregarGaleria(id)
-  },
-
-  releaseRaw: async (id, por) => {
-    await liberarRaw(id, por)
-    await get().carregarGaleria(id)
-  },
-
-  revokeRaw: async (id) => {
-    await revogarRaw(id)
     await get().carregarGaleria(id)
   },
 

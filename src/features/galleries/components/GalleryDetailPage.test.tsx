@@ -90,8 +90,6 @@ describe('GalleryDetailPage', () => {
       releaseEditing: vi.fn(),
       publishDelivery: vi.fn(),
       revokeDelivery: vi.fn(),
-      releaseRaw: vi.fn(),
-      revokeRaw: vi.fn(),
       liberarProntas: vi.fn(),
       liberarLote: vi.fn(),
       revogarLiberacao: vi.fn(),

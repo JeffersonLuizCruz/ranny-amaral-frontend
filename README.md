@@ -53,7 +53,7 @@ A suíte de testes usa **Vitest + Testing Library** e cobre validação de arqui
 - `src/features/appointments/api/agendaApi.ts` — CRUD, status, pagamentos, listagem paginada e calendário por período.
 - `src/features/contracts/api/contratosApi.ts` — contratos, busca paginada, links de aceite e pagamentos.
 - `src/features/contracts/api/modelosApi.ts` e `estudioApi.ts` — modelos e configuração do estúdio.
-- `src/features/galleries/api/galeriasApi.ts` — galerias, mídias, seleção, extras, RAW e entrega.
+- `src/features/galleries/api/galeriasApi.ts` — galerias, mídias, seleção, extras e entrega (RAW apenas como legado de leitura).
 - `src/features/galleries/api/galeriaUploadApi.ts` — upload de fotos/vídeos e versões editadas com progresso.
 - `src/features/finance/api/financeiroApi.ts` e `financeStore.ts` — resumo financeiro mensal consolidado.
 - `src/features/dashboard/api/dashboardApi.ts` — visão operacional agregada.
@@ -124,7 +124,9 @@ aguardando_upload → em_selecao → selecao_enviada → em_edicao → entregue
   (padrão `001_nome.jpg`) ou pelo nome original, com até 3 uploads simultâneos e reenvio dos que falharem.
 - No upload da versão editada há o checkbox **“Liberar automaticamente quando o cliente selecionar”**.
   Ligado, a mídia pronta é liberada após a seleção e a quitação dos extras; desligado, o staff libera manualmente.
-- O staff pode **liberar os RAW** de forma explícita, auditada e revogável.
+- A liberação de **RAW** foi **removida da interface do staff**. O backend mantém os endpoints e os campos
+  antigos apenas para compatibilidade; novas galerias devem ser entregues com versões editadas ou fotos
+  já publicadas como prontas.
 - A entrega é **progressiva**: cada mídia liberada aparece em “Disponíveis” e as demais em “Em liberação”.
   Na seleção, o cliente vê os grupos “Para edição” e “Prontas para baixar”; na entrega, o backend resolve a
   melhor versão sem expor os rótulos técnicos “editada” ou “RAW”.

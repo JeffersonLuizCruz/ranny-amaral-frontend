@@ -62,8 +62,6 @@ export function GalleryDetailPage() {
   const releaseEditing = useGalleryStore((state) => state.releaseEditing)
   const publishDelivery = useGalleryStore((state) => state.publishDelivery)
   const revokeDelivery = useGalleryStore((state) => state.revokeDelivery)
-  const releaseRaw = useGalleryStore((state) => state.releaseRaw)
-  const revokeRaw = useGalleryStore((state) => state.revokeRaw)
   const liberarProntas = useGalleryStore((state) => state.liberarProntas)
   const liberarLote = useGalleryStore((state) => state.liberarLote)
   const revogarLiberacao = useGalleryStore((state) => state.revogarLiberacao)
@@ -158,6 +156,8 @@ export function GalleryDetailPage() {
     if (midia.finalidade === 'pronta') {
       return midia.processamentoStatus === 'disponivel'
     }
+    // Compatibilidade: galerias antigas podem ter RAW liberado. A UI de RAW foi
+    // removida; o campo permanece apenas para leitura do estado legado.
     return midia.tipo === 'video'
       ? midia.processamentoStatus === 'disponivel'
       : Boolean(midia.editadaDisponivel || galeria.rawLiberado)
@@ -996,57 +996,10 @@ export function GalleryDetailPage() {
           {entregaBloqueada ? (
             <p className="mt-2 rounded-xl bg-amber-50 px-3 py-2 text-[11px] text-amber-800 ring-1 ring-amber-200">
               {midiasNaoProntas.length > 0
-                ? `${midiasNaoProntas.length} mídia(s) selecionada(s) ainda não têm versão final. Envie as versões editadas ou libere os RAW antes de finalizar.`
+                ? `${midiasNaoProntas.length} mídia(s) selecionada(s) ainda não têm versão final. Envie as versões editadas de todas as fotos selecionadas antes de finalizar.`
                 : 'Há mídias prontas com auto-liberação desativada. Use “Liberar prontas” antes de finalizar.'}
             </p>
           ) : null}
-
-          <div className="mt-3 rounded-xl border border-line bg-canvas/60 p-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <p className="text-[11px] font-semibold text-ink">
-                  Arquivos originais (RAW)
-                </p>
-                <p className="mt-0.5 text-[11px] text-muted">
-                  {galeria.rawLiberado
-                    ? `Liberados por ${galeria.rawLiberadoPor ?? 'equipe'} em ${formatDateTime(galeria.rawLiberadoEm)}.`
-                    : 'Não liberados. O cliente recebe as versões finais: editadas ou já publicadas prontas.'}
-                </p>
-              </div>
-              {podeEditarVersao ? (
-                galeria.rawLiberado ? (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() =>
-                      void executar(() => revokeRaw(galeria.id), 'RAW revogado.')
-                    }
-                  >
-                    Revogar RAW
-                  </Button>
-                ) : (
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => {
-                      const por = window.prompt(
-                        'Quem está liberando os RAW?',
-                        'Equipe do estúdio',
-                      )
-                      if (por !== null) {
-                        void executar(
-                          () => releaseRaw(galeria.id, por),
-                          'RAW liberado para download.',
-                        )
-                      }
-                    }}
-                  >
-                    Liberar RAW
-                  </Button>
-                )
-              ) : null}
-            </div>
-          </div>
         </section>
 
         <section className="rounded-2xl border border-line bg-surface p-4 shadow-card">
