@@ -136,13 +136,21 @@ export function AppointmentDetails({
             href={whatsappLink(contatoWhatsapp, message)}
             target="_blank"
             rel="noreferrer"
-            className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-brand-700 transition hover:underline"
+            aria-label={`Conversar no WhatsApp com ${contatoNome ?? 'o cliente'}`}
+            className="mt-2 inline-flex max-w-full items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700 ring-1 ring-brand-100 transition hover:bg-brand-100"
           >
-            <MessageCircle className="size-3.5" />
-            {contatoWhatsapp}
-            <ArrowUpRight className="size-3" />
+            <MessageCircle className="size-4 shrink-0" />
+            WhatsApp
+            <span className="min-w-0 truncate font-medium text-brand-700/80">
+              {contatoWhatsapp}
+            </span>
+            <ArrowUpRight className="size-3.5 shrink-0" />
           </a>
-        ) : null}
+        ) : (
+          <p className="mt-2 text-[11px] text-muted">
+            Cliente sem WhatsApp cadastrado.
+          </p>
+        )}
       </div>
 
       <div className="space-y-3.5 text-sm">
@@ -352,7 +360,7 @@ export function AppointmentDetails({
           />
           <IntegrationRow
             icon={MessageCircle}
-            label="Lembrete via WhatsApp"
+            label="Lembrete automático via WhatsApp"
             enabled={whatsappReminders.enabled}
           />
         </div>
