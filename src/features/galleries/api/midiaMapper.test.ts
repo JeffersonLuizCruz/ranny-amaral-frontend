@@ -34,7 +34,40 @@ describe('toMidia', () => {
     expect(midia.thumbUrl).toBe('https://storage/thumb.jpg')
     expect(midia.processamentoStatus).toBe('disponivel')
     expect(midia.status).toBe('original')
+    expect(midia.finalidade).toBe('edicao')
     expect(midia.editadaDisponivel).toBe(false)
+  })
+
+  it('mapeia foto pronta e previa marcada', () => {
+    const midia = toMidia({
+      id: 'mid-3',
+      tipo: 'foto',
+      nomeOriginal: 'foto-pronta.jpg',
+      mimeType: 'image/jpeg',
+      tamanho: 1024,
+      largura: 1200,
+      altura: 800,
+      duracaoSegundos: null,
+      ordem: 3,
+      status: 'disponivel',
+      finalidade: 'pronta',
+      erroProcessamento: null,
+      thumbUrl: 'https://storage/thumb-400-marca.jpg',
+      webUrl: 'https://storage/web-1600-marca.jpg',
+      originalUrl: null,
+      editadaUrl: null,
+      editadaDisponivel: false,
+      editadaProcessando: false,
+      previaMarcada: true,
+      liberadaEm: null,
+      disponivelParaDownload: false,
+      liberacaoAutomatica: true,
+      createdAt: '2026-11-06T10:00:00Z',
+    })
+
+    expect(midia.finalidade).toBe('pronta')
+    expect(midia.previaMarcada).toBe(true)
+    expect(midia.thumbUrl).toContain('marca')
   })
 
   it('marca a mídia como editada quando a versão final existe', () => {

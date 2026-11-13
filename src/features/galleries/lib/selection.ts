@@ -65,8 +65,11 @@ function arredondar(valor: number): number {
 }
 
 /**
- * Calculo progressivo das fotos extras: o preco base vale ate a primeira
- * faixa; cada faixa vale do seu minimo ate o minimo da proxima (ou o fim).
+ * Calculo de fotos extras por faixa de quantidade.
+ *
+ * <p>A faixa de maior quantidade minima alcancada define o valor unitario de
+ * todas as fotos extras da selecao. Ex.: base 15, faixa 3 -> 10; 2 extras =
+ * 2 x 15, 3 extras = 3 x 10.
  */
 export function calcularValorExtras(
   valorBase: number,
@@ -77,6 +80,29 @@ export function calcularValorExtras(
     return { valorTotal: 0, detalhamento: [] }
   }
 
+  const unitario = valorUnitarioExtra(valorBase, faixas, quantidade)
+  const valorTotal = arredondar(quantidade * unitario)
+  return {
+    valorTotal,
+    detalhamento: [{ quantidade, valorUnitario: unitario, subtotal: valorTotal }],
+  }
+}
+
+/** Menor valor unitario efetivo da tabela de extras (para textos "a partir de"). */
+export function menorValorFotoExtra(
+  valorBase: number,
+  faixas: FaixaFotoExtra[] | undefined,
+): number {
+  const valores = [valorBase, ...(faixas ?? []).map((faixa) => faixa.valorUnitario)]
+    .filter((valor) => Number.isFinite(valor))
+  return Math.min(...valores)
+}
+
+function valorUnitarioExtra(
+  valorBase: number,
+  faixas: FaixaFotoExtra[] | undefined,
+  quantidade: number,
+): number {
   const ordenadas = [...(faixas ?? [])]
     .filter(
       (faixa) =>
@@ -84,41 +110,13 @@ export function calcularValorExtras(
     )
     .sort((a, b) => a.quantidadeMinima - b.quantidadeMinima)
 
-  const detalhamento: FaixaAplicada[] = []
-  let total = 0
-  let cursor = 1
-
-  const registrar = (quantidadeFaixa: number, valorUnitario: number) => {
-    const subtotal = arredondar(quantidadeFaixa * valorUnitario)
-    detalhamento.push({ quantidade: quantidadeFaixa, valorUnitario, subtotal })
-    total += subtotal
-  }
-
-  for (let i = 0; i < ordenadas.length && cursor <= quantidade; i += 1) {
-    const faixa = ordenadas[i]
-    if (faixa.quantidadeMinima > cursor) {
-      const fimBase = Math.min(quantidade, faixa.quantidadeMinima - 1)
-      if (fimBase >= cursor) {
-        registrar(fimBase - cursor + 1, valorBase)
-        cursor = fimBase + 1
-      }
-    }
-    if (cursor > quantidade) break
-
-    const proximoMinimo =
-      i + 1 < ordenadas.length ? ordenadas[i + 1].quantidadeMinima : Number.POSITIVE_INFINITY
-    const fimFaixa = Math.min(quantidade, proximoMinimo - 1)
-    if (fimFaixa >= cursor) {
-      registrar(fimFaixa - cursor + 1, faixa.valorUnitario)
-      cursor = fimFaixa + 1
+  let unitario = valorBase
+  for (const faixa of ordenadas) {
+    if (quantidade >= faixa.quantidadeMinima) {
+      unitario = faixa.valorUnitario
     }
   }
-
-  if (cursor <= quantidade) {
-    registrar(quantidade - cursor + 1, valorBase)
-  }
-
-  return { valorTotal: arredondar(total), detalhamento }
+  return unitario
 }
 
 export function calcularResultadoSelecao(

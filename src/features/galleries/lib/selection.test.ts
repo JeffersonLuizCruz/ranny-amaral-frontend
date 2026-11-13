@@ -4,6 +4,7 @@ import type { MidiaGaleria } from '@/domain/galleries'
 import {
   calcularResultadoSelecao,
   calcularValorExtras,
+  menorValorFotoExtra,
   numerosDasFotosSelecionadas,
 } from '@/features/galleries/lib/selection'
 
@@ -47,9 +48,9 @@ describe('calcularValorExtras', () => {
     [0, 0],
     [1, 15],
     [10, 150],
-    [11, 160],
-    [15, 200],
-  ])('calcula progressivamente %i extra(s)', (quantidade, esperado) => {
+    [11, 110],
+    [15, 150],
+  ])('aplica a faixa alcançada em %i extra(s)', (quantidade, esperado) => {
     const { valorTotal } = calcularValorExtras(
       15,
       [{ quantidadeMinima: 11, valorUnitario: 10 }],
@@ -58,7 +59,7 @@ describe('calcularValorExtras', () => {
     expect(valorTotal).toBe(esperado)
   })
 
-  it('detalha múltiplas faixas sem sobrepor intervalos', () => {
+  it('aplica a maior faixa alcançada a todas as fotos', () => {
     const { valorTotal, detalhamento } = calcularValorExtras(
       50,
       [
@@ -68,12 +69,20 @@ describe('calcularValorExtras', () => {
       5,
     )
 
-    expect(valorTotal).toBe(150)
+    expect(valorTotal).toBe(100)
     expect(detalhamento).toEqual([
-      { quantidade: 1, valorUnitario: 50, subtotal: 50 },
-      { quantidade: 2, valorUnitario: 30, subtotal: 60 },
-      { quantidade: 2, valorUnitario: 20, subtotal: 40 },
+      { quantidade: 5, valorUnitario: 20, subtotal: 100 },
     ])
+  })
+
+  it('mostra o menor valor efetivo da tabela', () => {
+    expect(menorValorFotoExtra(15, [])).toBe(15)
+    expect(
+      menorValorFotoExtra(15, [
+        { quantidadeMinima: 3, valorUnitario: 10 },
+        { quantidadeMinima: 6, valorUnitario: 8 },
+      ]),
+    ).toBe(8)
   })
 })
 
@@ -87,10 +96,9 @@ describe('calcularResultadoSelecao', () => {
     })
 
     expect(resultado.fotosExtras).toBe(12)
-    expect(resultado.valorExtras).toBe(170)
+    expect(resultado.valorExtras).toBe(120)
     expect(resultado.detalhamentoExtras).toEqual([
-      { quantidade: 10, valorUnitario: 15, subtotal: 150 },
-      { quantidade: 2, valorUnitario: 10, subtotal: 20 },
+      { quantidade: 12, valorUnitario: 10, subtotal: 120 },
     ])
   })
 })

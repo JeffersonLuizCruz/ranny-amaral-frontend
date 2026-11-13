@@ -35,7 +35,10 @@ import { GalleryMediaUploader } from '@/features/galleries/components/GalleryMed
 import { GalleryEditedVersionDialog } from '@/features/galleries/components/GalleryEditedVersionDialog'
 import { GalleryEditedBatchUploadDialog } from '@/features/galleries/components/GalleryEditedBatchUploadDialog'
 import { formatarNumeroFoto } from '@/features/galleries/lib/format'
-import { numerosDasFotosSelecionadas } from '@/features/galleries/lib/selection'
+import {
+  menorValorFotoExtra,
+  numerosDasFotosSelecionadas,
+} from '@/features/galleries/lib/selection'
 
 function formatDateTime(value?: string): string {
   if (!value) return '—'
@@ -313,7 +316,12 @@ export function GalleryDetailPage() {
                 {galeria.fotosInclusas ?? 0} fotos e {galeria.videosInclusos ?? 0}{' '}
                 vídeos inclusos · extra{' '}
                 {galeria.faixasFotoExtra && galeria.faixasFotoExtra.length > 0
-                  ? `a partir de ${formatBRL(galeria.valorFotoExtra ?? 0)}`
+                  ? `a partir de ${formatBRL(
+                      menorValorFotoExtra(
+                        galeria.valorFotoExtra ?? 0,
+                        galeria.faixasFotoExtra,
+                      ),
+                    )}`
                   : formatBRL(galeria.valorFotoExtra ?? 0)}
               </p>
             </div>

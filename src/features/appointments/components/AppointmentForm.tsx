@@ -26,6 +26,7 @@ import { Button } from '@/shared/components/ui/Button'
 import { Field, inputClass, textareaClass } from '@/shared/components/ui/Field'
 import { cn } from '@/shared/lib/cn'
 import { formatBRL, parseCurrencyInput } from '@/shared/lib/currency'
+import { menorValorFotoExtra } from '@/features/galleries/lib/selection'
 import {
   combineDateAndTime,
   formatDuration,
@@ -291,7 +292,12 @@ export function AppointmentForm({
               Extra{' '}
               {pacoteSelecionado.faixasFotoExtra &&
               pacoteSelecionado.faixasFotoExtra.length > 0
-                ? `a partir de ${formatBRL(pacoteSelecionado.valorFotoExtra)}/foto`
+                ? `a partir de ${formatBRL(
+                    menorValorFotoExtra(
+                      pacoteSelecionado.valorFotoExtra,
+                      pacoteSelecionado.faixasFotoExtra,
+                    ),
+                  )}/foto`
                 : `${formatBRL(pacoteSelecionado.valorFotoExtra)}/foto`}
             </span>
           </div>

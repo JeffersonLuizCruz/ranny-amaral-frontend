@@ -16,6 +16,7 @@ import { cn } from '@/shared/lib/cn'
 import { hexToRgba } from '@/shared/lib/colors'
 import { formatBRL } from '@/shared/lib/currency'
 import { formatDuration } from '@/shared/lib/date'
+import { menorValorFotoExtra } from '@/features/galleries/lib/selection'
 import {
   descontoPacote,
   promocaoVigente,
@@ -106,7 +107,15 @@ export function PackageCard({
             </span>
           ) : null}
           <span className="rounded-full bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-800 ring-1 ring-amber-100">
-            Extra {formatBRL(pacote.valorFotoExtra)}
+            Extra{' '}
+            {pacote.faixasFotoExtra && pacote.faixasFotoExtra.length > 0
+              ? `a partir de ${formatBRL(
+                  menorValorFotoExtra(
+                    pacote.valorFotoExtra,
+                    pacote.faixasFotoExtra,
+                  ),
+                )}`
+              : formatBRL(pacote.valorFotoExtra)}
           </span>
         </div>
 

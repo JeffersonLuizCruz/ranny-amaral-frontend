@@ -71,7 +71,7 @@ Os módulos de galerias e financeiro agora usam a API real; o navegador não cal
 - **Login e usuários:** autenticação JWT, troca obrigatória de senha, criação/reset por admin e perfis `Admin`/`Gestor`.
 - **Dashboard:** visão do dia com próximos ensaios, pendências e resumo financeiro.
 - **Agenda:** ensaios, status, remarcações e detalhes do atendimento.
-- **Pacotes:** duração, valor de tabela, fotos/vídeos inclusos, valor da foto extra, faixas progressivas opcionais e promoção opcional.
+- **Pacotes:** duração, valor de tabela, fotos/vídeos inclusos, valor da foto extra, faixas opcionais por quantidade e promoção opcional.
 - **Contratos:** modelo, aceite por link público, entrada e saldo final.
 - **Galerias:** upload de originais, seleção pública, fotos extras, edição e entrega por link.
 - **Financeiro:** entradas, saldos finais, extras e previsão do mês.
@@ -81,7 +81,8 @@ Os módulos de galerias e financeiro agora usam a API real; o navegador não cal
 ### Pacotes e promoção
 
 - Cada pacote define `quantidadeFotosInclusas`, `quantidadeVideosInclusos`, `valorFotoExtra` e, opcionalmente, `faixasFotoExtra`.
-- As faixas são progressivas: o valor base vale até a primeira faixa; a partir do mínimo de cada faixa, aplica-se o valor unitário dela.
+- As faixas são aplicadas por volume: a maior faixa atingida define o valor unitário de **todas** as fotos extras da seleção.
+  Sem faixa configurada no pacote, vale apenas o valor base. Ex.: base R$15 e faixa 3 → R$10; 2 extras = R$30 e 3 extras = R$30.
 - A promoção é um atributo do catálogo (`promocao.valorPromocional`), com validade opcional.
 - No momento da venda, o snapshot comercial do ensaio registra se a promoção foi aplicada.
 - Alterar o pacote depois não altera ensaios já criados.

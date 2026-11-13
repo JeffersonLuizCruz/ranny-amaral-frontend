@@ -156,7 +156,7 @@ export function PublicSelectionPage() {
         ? quantidadeCoberta > 0
           ? `Enviar ${fotoIds.size} fotos e ${videoIds.size} vídeos?\n\n` +
             `Já cobertos: ${quantidadeCoberta} extra(s) · ${formatBRL(valorCoberto)}.\n` +
-            (novosExtras > 0
+            (novoValor > 0
               ? `Novas agora: ${novosExtras} extra(s) · ${formatBRL(novoValor)}.\n`
               : 'Nenhuma nova cobrança.\n') +
             `Total da seleção: ${extras} extra(s) · ${formatBRL(valorExtras)}.`
@@ -536,12 +536,12 @@ export function PublicSelectionPage() {
                 </p>
                 <p
                   className={
-                    novosExtras > 0
+                    novoValor > 0
                       ? 'font-semibold text-amber-700'
                       : 'text-emerald-700'
                   }
                 >
-                  {novosExtras > 0
+                  {novoValor > 0
                     ? `Novas agora (a pagar): ${novosExtras} · ${formatBRL(novoValor)}`
                     : 'Nenhuma nova cobrança'}
                 </p>
