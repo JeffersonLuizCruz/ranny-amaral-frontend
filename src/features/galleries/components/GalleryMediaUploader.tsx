@@ -82,7 +82,7 @@ export function GalleryMediaUploader({
         type="file"
         accept={MEDIA_ACCEPT}
         multiple
-        className="sr-only"
+        className="hidden"
         onChange={(event) => void handleFiles(event.target.files)}
       />
 
@@ -100,12 +100,6 @@ export function GalleryMediaUploader({
       </Button>
 
       {progress ? <UploadProgress progress={progress} /> : null}
-
-      <p className="mt-1.5 text-[10px] text-muted">
-        {finalidade === 'pronta'
-          ? 'Fotos já editadas entram direto na fila de download; não passam pela edição. Até 50 MB cada.'
-          : 'Fotos até 50 MB (JPEG/PNG/WebP) e vídeos até 500 MB (MP4/MOV). Upload direto ao storage com progresso.'}
-      </p>
     </div>
   )
 }

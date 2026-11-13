@@ -373,13 +373,6 @@ export function GalleryDetailPage() {
             </div>
           </div>
 
-          {podeEditarMidias ? (
-            <p className="mt-2 text-[10px] text-muted">
-              Use o botão de troca em cada foto para corrigir “para edição” × “já
-              editada” antes de publicar a seleção.
-            </p>
-          ) : null}
-
           <div className="mt-3 flex flex-wrap gap-1.5">
             {filtrosMidias.map((filtro) => (
               <button
