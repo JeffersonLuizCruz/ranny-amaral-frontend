@@ -11,6 +11,7 @@ import { ChangePasswordPage } from '@/features/auth/components/ChangePasswordPag
 import { LoginPage } from '@/features/auth/components/LoginPage'
 import { RequireAdmin, RequireAuth } from '@/features/auth/components/RequireAuth'
 import { ClientsPage } from '@/features/clients/components/ClientsPage'
+import { ClientDetailPage } from '@/features/clients/components/ClientDetailPage'
 import { ContractDetailPage } from '@/features/contracts/components/ContractDetailPage'
 import { ContractsLayout } from '@/features/contracts/components/ContractsLayout'
 import { ContractsPage } from '@/features/contracts/components/ContractsPage'
@@ -67,6 +68,7 @@ const router = createBrowserRouter([
       { path: 'agenda', element: <AgendaPage /> },
       { path: 'pacotes', element: <PackagesPage /> },
       { path: 'clientes', element: <ClientsPage /> },
+      { path: 'clientes/:clienteId', element: <ClientDetailPage /> },
       { path: 'galerias', element: <GalleriesPage /> },
       { path: 'galerias/:galeriaId', element: <GalleryDetailPage /> },
       { path: 'armazenamento', element: <StoragePage /> },

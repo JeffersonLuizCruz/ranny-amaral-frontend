@@ -2,15 +2,13 @@ import { useEffect, useMemo, useState } from 'react'
 import { Plus, Search, Users } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
-import type { Cliente, ClienteDraft } from '@/domain/types'
+import type { Cliente, ClienteDraft, PacoteFotografico } from '@/domain/types'
 import { Button } from '@/shared/components/ui/Button'
 import { EmptyState } from '@/shared/components/ui/EmptyState'
 import { inputClass } from '@/shared/components/ui/Field'
 import { Paginador } from '@/shared/components/ui/Paginador'
 import { useDebouncedValue } from '@/shared/lib/useDebouncedValue'
 import { cn } from '@/shared/lib/cn'
-import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
 import { useToastStore } from '@/shared/store/toastStore'
 import { mensagemDeErro } from '@/shared/api/errors'
 import { useAgendaStore } from '@/features/agenda/store/agendaStore'
@@ -18,6 +16,10 @@ import { useAppointmentStore } from '@/features/appointments/store/appointmentSt
 import { ClientForm } from '@/features/clients/components/ClientForm'
 import { ClientList } from '@/features/clients/components/ClientList'
 import { useClientStore } from '@/features/clients/store/clientStore'
+import { montarResumoCliente } from '@/features/clients/lib/profile'
+import { useContractStore } from '@/features/contracts/store/contractStore'
+import { useGalleryStore } from '@/features/galleries/store/galleryStore'
+import { usePackageStore } from '@/features/packages/store/packageStore'
 
 export function ClientsPage() {
   const paginaClientes = useClientStore((state) => state.paginaClientes)
@@ -28,6 +30,9 @@ export function ClientsPage() {
   const erro = useClientStore((state) => state.erro)
   const carregarPaginaClientes = useClientStore((state) => state.carregarPaginaClientes)
   const appointments = useAppointmentStore((state) => state.appointments)
+  const contratos = useContractStore((state) => state.contratos)
+  const galerias = useGalleryStore((state) => state.galerias)
+  const pacotes = usePackageStore((state) => state.pacotes)
   const openCreateDrawer = useAgendaStore((state) => state.openCreateDrawer)
   const addToast = useToastStore((state) => state.addToast)
   const navigate = useNavigate()
@@ -48,36 +53,25 @@ export function ClientsPage() {
   }, [carregarPaginaClientes, pagina, queryDebounced, tamanho])
 
   const clientes = paginaClientes?.itens ?? []
-
-  const appointmentCounts = useMemo(() => {
-    const map = new Map<string, number>()
-    for (const appointment of appointments) {
-      if (!appointment.clienteId) continue
+  const pacotesById = useMemo(
+    () => new Map<string, PacoteFotografico>(pacotes.map((pacote) => [pacote.id, pacote])),
+    [pacotes],
+  )
+  const resumos = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof montarResumoCliente>>()
+    for (const cliente of clientes) {
       map.set(
-        appointment.clienteId,
-        (map.get(appointment.clienteId) ?? 0) + 1,
+        cliente.id,
+        montarResumoCliente({
+          cliente,
+          appointments,
+          contratos,
+          galerias,
+        }),
       )
     }
     return map
-  }, [appointments])
-
-  const lastAppointments = useMemo(() => {
-    const map = new Map<string, string>()
-
-    for (const appointment of appointments) {
-      if (!appointment.clienteId) continue
-      const current = map.get(appointment.clienteId)
-      if (!current || new Date(appointment.dataHoraInicio) > new Date(current)) {
-        map.set(appointment.clienteId, appointment.dataHoraInicio)
-      }
-    }
-
-    const labels = new Map<string, string>()
-    for (const [clienteId, iso] of map) {
-      labels.set(clienteId, format(new Date(iso), "d 'de' MMM", { locale: ptBR }))
-    }
-    return labels
-  }, [appointments])
+  }, [appointments, clientes, contratos, galerias])
 
   const recarregarPagina = () =>
     carregarPaginaClientes({
@@ -105,7 +99,7 @@ export function ClientsPage() {
   }
 
   const handleDelete = async (cliente: Cliente) => {
-    const linked = appointmentCounts.get(cliente.id) ?? 0
+    const linked = resumos.get(cliente.id)?.totalEnsaiosVinculados ?? 0
     if (linked > 0) {
       addToast('Este cliente possui ensaios vinculados. Exclua ou remaneje os ensaios primeiro.')
       return
@@ -206,8 +200,8 @@ export function ClientsPage() {
           <>
             <ClientList
               clientes={clientes}
-              appointmentCounts={appointmentCounts}
-              lastAppointments={lastAppointments}
+              resumos={resumos}
+              pacotesById={pacotesById}
               onEdit={setEditing}
               onDelete={handleDelete}
               onCreateAppointment={handleCreateAppointment}
