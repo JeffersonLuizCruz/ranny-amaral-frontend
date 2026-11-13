@@ -415,6 +415,7 @@ export function PublicSelectionPage() {
                 onZoom={abrirMidia}
                 watermark
                 watermarkText={data.estudioNome}
+                numerarFotos
               />
             </div>
           </section>
@@ -441,6 +442,7 @@ export function PublicSelectionPage() {
                 onZoom={abrirMidia}
                 watermark
                 watermarkText={data.estudioNome}
+                numerarFotos
               />
             </div>
           </section>

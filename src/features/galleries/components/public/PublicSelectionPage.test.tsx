@@ -224,6 +224,8 @@ describe('PublicSelectionPage', () => {
     expect(await screen.findByText('Progresso da liberação')).toBeInTheDocument()
     expect(screen.getByText(/SEL-2026-0001/)).toBeInTheDocument()
     expect(screen.getByText('Disponíveis para baixar (1)')).toBeInTheDocument()
+    expect(screen.getByText('001')).toBeInTheDocument()
+    expect(screen.getByLabelText('Foto 1')).toBeInTheDocument()
     expect(screen.getByAltText('foto.jpg')).toBeInTheDocument()
   })
 
