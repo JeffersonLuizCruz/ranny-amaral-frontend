@@ -18,6 +18,8 @@ const galeria = {
   id: 'g1',
   agendamentoId: 'a1',
   clienteNome: 'Mariana Silva',
+  pacoteNome: 'Pacote Gestante',
+  pacoteCorHex: '#7C3AED',
   status: 'em_edicao',
   fotosInclusas: 20,
   videosInclusos: 0,
@@ -67,6 +69,12 @@ describe('GalleriesPage', () => {
     )
 
     expect(screen.getByText('Mariana Silva')).toBeInTheDocument()
+    expect(screen.getByText('Pacote Gestante')).toBeInTheDocument()
+    expect(
+      screen
+        .getByText('Pacote Gestante')
+        .parentElement?.querySelector('[aria-hidden="true"]'),
+    ).toHaveStyle({ backgroundColor: 'rgb(124, 58, 237)' })
     expect(screen.getByText('8/20')).toBeInTheDocument()
     expect(screen.getByText(/5 liberadas/)).toBeInTheDocument()
     expect(carregarGalerias).toHaveBeenCalled()

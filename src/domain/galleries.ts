@@ -167,6 +167,8 @@ export interface GaleriaEnsaio {
   agendamentoId: string
   contratoId?: string
   clienteNome?: string
+  pacoteNome?: string
+  pacoteCorHex?: string
   status: GaleriaStatus
   fotosInclusas?: number
   videosInclusos?: number

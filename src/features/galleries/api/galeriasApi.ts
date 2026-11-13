@@ -23,6 +23,8 @@ interface GaleriaDto {
   contratoId: string | null
   clienteId: string | null
   clienteNome: string | null
+  pacoteNome: string | null
+  pacoteCorHex: string | null
   status: string
   fotosInclusas: number
   videosInclusos: number
@@ -244,6 +246,8 @@ function toGaleria(
     agendamentoId: dto.agendamentoId,
     contratoId: dto.contratoId ?? undefined,
     clienteNome: dto.clienteNome ?? undefined,
+    pacoteNome: dto.pacoteNome ?? undefined,
+    pacoteCorHex: dto.pacoteCorHex ?? undefined,
     status: dto.status as GaleriaStatus,
     fotosInclusas: dto.fotosInclusas,
     videosInclusos: dto.videosInclusos,

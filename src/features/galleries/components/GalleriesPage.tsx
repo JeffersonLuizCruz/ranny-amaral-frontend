@@ -163,6 +163,18 @@ export function GalleriesPage() {
                       <p className="truncate text-sm font-semibold text-ink">
                         {galeria.clienteNome ?? 'Reserva sem cliente'}
                       </p>
+                      <p className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[11px] text-muted">
+                        <span
+                          aria-hidden="true"
+                          className="size-1.5 shrink-0 rounded-full"
+                          style={{
+                            backgroundColor: galeria.pacoteCorHex ?? '#64748b',
+                          }}
+                        />
+                        <span className="truncate">
+                          {galeria.pacoteNome ?? 'Pacote removido'}
+                        </span>
+                      </p>
                       <p className="mt-0.5 text-[11px] text-muted">
                         {galeria.fotosInclusas ?? 0} fotos e {galeria.videosInclusos ?? 0}{' '}
                         vídeos inclusos
