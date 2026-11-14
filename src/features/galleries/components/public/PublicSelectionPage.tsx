@@ -53,6 +53,10 @@ interface PublicData {
 
 type ViewerState = { tipo: 'foto' | 'video'; index: number }
 
+function ordenarPorNumero(midias: MidiaGaleria[]): MidiaGaleria[] {
+  return [...midias].sort((a, b) => a.numero - b.numero)
+}
+
 export function PublicSelectionPage() {
   const { token = '' } = useParams()
   const [data, setData] = useState<PublicData | null>(null)
@@ -88,15 +92,21 @@ export function PublicSelectionPage() {
 
   const fotos = useMemo(
     () =>
-      (data?.midias ?? []).filter(
-        (midia) => midia.tipo === 'foto' && midia.processamentoStatus === 'disponivel',
+      ordenarPorNumero(
+        (data?.midias ?? []).filter(
+          (midia) =>
+            midia.tipo === 'foto' && midia.processamentoStatus === 'disponivel',
+        ),
       ),
     [data],
   )
   const videos = useMemo(
     () =>
-      (data?.midias ?? []).filter(
-        (midia) => midia.tipo === 'video' && midia.processamentoStatus === 'disponivel',
+      ordenarPorNumero(
+        (data?.midias ?? []).filter(
+          (midia) =>
+            midia.tipo === 'video' && midia.processamentoStatus === 'disponivel',
+        ),
       ),
     [data],
   )
@@ -275,8 +285,12 @@ export function PublicSelectionPage() {
   }
 
   if (data.selecao && selecaoEnviada) {
-    const disponiveis = data.midias.filter((midia) => midia.disponivelParaDownload)
-    const emLiberacao = data.midias.filter((midia) => !midia.disponivelParaDownload)
+    const disponiveis = ordenarPorNumero(
+      data.midias.filter((midia) => midia.disponivelParaDownload),
+    )
+    const emLiberacao = ordenarPorNumero(
+      data.midias.filter((midia) => !midia.disponivelParaDownload),
+    )
     const total = data.fotosSelecionadas + data.videosSelecionados
     const liberadas = data.fotosLiberadas + data.videosLiberados
     const percentual = total > 0 ? Math.round((liberadas / total) * 100) : 0

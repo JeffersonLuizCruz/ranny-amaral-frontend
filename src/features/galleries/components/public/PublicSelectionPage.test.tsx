@@ -73,6 +73,40 @@ describe('PublicSelectionPage', () => {
     vi.clearAllMocks()
   })
 
+  it('numera as fotos da esquerda para a direita', async () => {
+    const fotos = [
+      { ...midia, id: 'm3', numero: 3, nomeArquivo: 'foto-3.jpg' },
+      { ...midia, id: 'm1', numero: 1, nomeArquivo: 'foto-1.jpg' },
+      { ...midia, id: 'm2', numero: 2, nomeArquivo: 'foto-2.jpg' },
+    ]
+
+    consultarGaleriaPublica.mockResolvedValue({
+      ...estadoPublico,
+      link: {
+        id: 'l1',
+        tipo: 'selecao',
+        token: 'tok-1',
+        status: 'ativo',
+        expiraEm: '2026-12-01T00:00:00.000Z',
+        visualizadaEm: null,
+        protocolo: null,
+      },
+      galeria: { ...galeria, fotosInclusas: 3 },
+      midias: fotos,
+      selecao: undefined,
+      extras: undefined,
+      entregaDisponivel: false,
+    })
+
+    renderPage()
+
+    expect(await screen.findByText('Para edição (3)')).toBeInTheDocument()
+    const numeros = screen
+      .getAllByLabelText(/^Foto /)
+      .map((elemento) => elemento.getAttribute('aria-label'))
+    expect(numeros).toEqual(['Foto 1', 'Foto 2', 'Foto 3'])
+  })
+
   it('permite reselecionar quando a seleção foi reaberta', async () => {
     consultarGaleriaPublica.mockResolvedValue({
       ...estadoPublico,
