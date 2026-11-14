@@ -254,6 +254,21 @@ export function PublicAcceptanceForm({
           </span>
         </label>
 
+        <label className="flex cursor-pointer items-start gap-2 rounded-xl border border-line bg-canvas/60 p-3">
+          <input
+            type="checkbox"
+            checked={values.autorizaUsoImagem ?? false}
+            onChange={(event) =>
+              update({ autorizaUsoImagem: event.target.checked })
+            }
+            className="mt-0.5 size-4 rounded border-line accent-brand-600"
+          />
+          <span className="text-[11px] leading-relaxed text-ink">
+            Autorizo o uso das minhas imagens para portfólio, site e redes sociais
+            do estúdio (opcional).
+          </span>
+        </label>
+
         {errors.aceite ? (
           <p role="alert" className="text-xs font-medium text-red-600">
             {errors.aceite}

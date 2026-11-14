@@ -21,6 +21,7 @@ export function createEmptyAcceptanceValues(
     cidade: '',
     whatsapp,
     aceite: false,
+    autorizaUsoImagem: false,
   }
 }
 
@@ -98,6 +99,7 @@ export function validateAcceptanceForm(values: AcceptanceFormValues): {
       documento,
       cidade,
       whatsapp: whatsapp ? formatWhatsApp(whatsapp) : undefined,
+      autorizaUsoImagem: values.autorizaUsoImagem ?? false,
     },
   }
 }

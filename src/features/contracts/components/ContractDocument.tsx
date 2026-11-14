@@ -153,6 +153,14 @@ export function ContractDocument({
               <p>Cidade: {aceite.cidade}</p>
               <p>Data: {formatDate(aceite.aceitoEm)}</p>
               <p>Protocolo: {aceite.protocolo}</p>
+              <p>
+                Uso de imagem:{' '}
+                {aceite.autorizaUsoImagem === true
+                  ? 'autorizado'
+                  : aceite.autorizaUsoImagem === false
+                    ? 'não autorizado'
+                    : 'não informado'}
+              </p>
               {aceite.hashConteudo ? (
                 <p className="truncate">Hash: {aceite.hashConteudo}</p>
               ) : null}

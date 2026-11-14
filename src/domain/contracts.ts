@@ -108,6 +108,7 @@ export interface DadosAceiteInput {
   documento: string
   cidade: string
   whatsapp?: string
+  autorizaUsoImagem?: boolean
 }
 
 export interface DadosAceite extends DadosAceiteInput {
