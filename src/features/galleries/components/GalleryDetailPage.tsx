@@ -1022,18 +1022,20 @@ export function GalleryDetailPage() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-line bg-surface p-4 shadow-card">
-          <h3 className="text-sm font-semibold text-ink">Histórico</h3>
-          <ul className="mt-2 space-y-1.5 text-[11px] text-muted">
-            {detalhe.historico.map((evento) => (
-              <li key={evento.id}>
-                <span className="text-ink">{evento.tipo}</span>
-                {evento.detalhe ? ` — ${evento.detalhe}` : ''} ·{' '}
-                {formatDateTime(evento.em)}
-              </li>
-            ))}
-          </ul>
-        </section>
+        {isAdmin ? (
+          <section className="rounded-2xl border border-line bg-surface p-4 shadow-card">
+            <h3 className="text-sm font-semibold text-ink">Histórico</h3>
+            <ul className="mt-2 space-y-1.5 text-[11px] text-muted">
+              {detalhe.historico.map((evento) => (
+                <li key={evento.id}>
+                  <span className="text-ink">{evento.tipo}</span>
+                  {evento.detalhe ? ` — ${evento.detalhe}` : ''} ·{' '}
+                  {formatDateTime(evento.em)}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
       </div>
 
       {editando ? (

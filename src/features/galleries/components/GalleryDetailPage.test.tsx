@@ -4,10 +4,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { GaleriaEnsaio, MidiaGaleria } from '@/domain/galleries'
 
-const { mockState, addToast, alterarFinalidade } = vi.hoisted(() => ({
+const { mockState, addToast, alterarFinalidade, authState } = vi.hoisted(() => ({
   addToast: vi.fn(),
   alterarFinalidade: vi.fn().mockResolvedValue(undefined),
   mockState: {} as Record<string, unknown>,
+  authState: {
+    usuario: null as { role: 'admin' | 'gestor' } | null,
+  },
 }))
 
 vi.mock('@/features/galleries/store/galleryStore', () => ({
@@ -21,8 +24,9 @@ vi.mock('@/shared/store/toastStore', () => ({
 }))
 
 vi.mock('@/features/auth/store/authStore', () => ({
-  useAuthStore: (selector: (state: { usuario: null }) => unknown) =>
-    selector({ usuario: null }),
+  useAuthStore: (
+    selector: (state: { usuario: { role: 'admin' | 'gestor' } | null }) => unknown,
+  ) => selector(authState),
 }))
 
 vi.mock('@/features/galleries/api/galeriasApi', () => ({
@@ -76,6 +80,7 @@ function renderPage() {
 describe('GalleryDetailPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    authState.usuario = null
     Object.keys(mockState).forEach((key) => delete mockState[key])
     Object.assign(mockState, {
       galeriaAtual: null,
@@ -191,5 +196,59 @@ describe('GalleryDetailPage', () => {
     fireEvent.click(screen.getByLabelText('Alterar finalidade de foto-edicao.jpg'))
 
     expect(alterarFinalidade).toHaveBeenCalledWith('g1', 'foto-edicao', 'pronta')
+  })
+
+  it('esconde o histórico para o perfil gestor', () => {
+    authState.usuario = { role: 'gestor' }
+    Object.assign(mockState, {
+      galeriaAtual: {
+        galeria: galeria(),
+        links: [],
+        historico: [
+          {
+            id: 'e1',
+            tipo: 'criada',
+            detalhe: 'Galeria criada para o ensaio.',
+            em: '2026-11-13T17:50:00.000Z',
+          },
+        ],
+        pacoteNome: 'Pacote Promocional',
+      },
+      midias: [],
+    })
+
+    renderPage()
+
+    expect(screen.queryByText('Histórico')).not.toBeInTheDocument()
+    expect(
+      screen.queryByText(/Galeria criada para o ensaio/),
+    ).not.toBeInTheDocument()
+  })
+
+  it('mostra o histórico para o perfil admin', () => {
+    authState.usuario = { role: 'admin' }
+    Object.assign(mockState, {
+      galeriaAtual: {
+        galeria: galeria(),
+        links: [],
+        historico: [
+          {
+            id: 'e1',
+            tipo: 'criada',
+            detalhe: 'Galeria criada para o ensaio.',
+            em: '2026-11-13T17:50:00.000Z',
+          },
+        ],
+        pacoteNome: 'Pacote Promocional',
+      },
+      midias: [],
+    })
+
+    renderPage()
+
+    expect(screen.getByText('Histórico')).toBeInTheDocument()
+    expect(
+      screen.getByText(/Galeria criada para o ensaio/),
+    ).toBeInTheDocument()
   })
 })
