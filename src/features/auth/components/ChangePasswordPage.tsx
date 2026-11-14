@@ -5,7 +5,8 @@ import { useNavigate } from 'react-router-dom'
 
 import { useAuthStore } from '@/features/auth/store/authStore'
 import { Button } from '@/shared/components/ui/Button'
-import { Field, inputClass } from '@/shared/components/ui/Field'
+import { Field } from '@/shared/components/ui/Field'
+import { PasswordInput } from '@/shared/components/ui/PasswordInput'
 import { mensagemDeErro } from '@/shared/api/errors'
 
 export function ChangePasswordPage() {
@@ -58,37 +59,31 @@ export function ChangePasswordPage() {
 
         <form onSubmit={submit} className="space-y-4" noValidate>
           <Field label="Senha atual" htmlFor="senha-atual">
-            <input
+            <PasswordInput
               id="senha-atual"
-              type="password"
               autoComplete="current-password"
               value={atual}
               onChange={(event) => setAtual(event.target.value)}
-              className={inputClass}
               required
             />
           </Field>
 
           <Field label="Nova senha" htmlFor="senha-nova" hint="Mínimo de 8 caracteres.">
-            <input
+            <PasswordInput
               id="senha-nova"
-              type="password"
               autoComplete="new-password"
               value={nova}
               onChange={(event) => setNova(event.target.value)}
-              className={inputClass}
               required
             />
           </Field>
 
           <Field label="Confirmar nova senha" htmlFor="senha-confirmacao">
-            <input
+            <PasswordInput
               id="senha-confirmacao"
-              type="password"
               autoComplete="new-password"
               value={confirmacao}
               onChange={(event) => setConfirmacao(event.target.value)}
-              className={inputClass}
               required
             />
           </Field>

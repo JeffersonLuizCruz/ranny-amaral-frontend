@@ -6,6 +6,7 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/features/auth/store/authStore'
 import { Button } from '@/shared/components/ui/Button'
 import { Field, inputClass } from '@/shared/components/ui/Field'
+import { PasswordInput } from '@/shared/components/ui/PasswordInput'
 import { mensagemDeErro } from '@/shared/api/errors'
 
 export function LoginPage() {
@@ -65,13 +66,11 @@ export function LoginPage() {
           </Field>
 
           <Field label="Senha" htmlFor="login-senha">
-            <input
+            <PasswordInput
               id="login-senha"
-              type="password"
               autoComplete="current-password"
               value={senha}
               onChange={(event) => setSenha(event.target.value)}
-              className={inputClass}
               placeholder="••••••••"
               required
             />
