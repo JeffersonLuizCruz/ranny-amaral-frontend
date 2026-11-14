@@ -19,7 +19,6 @@ import { NavLink } from 'react-router-dom'
 import { useAuthStore } from '@/features/auth/store/authStore'
 import { useAgendaStore } from '@/features/agenda/store/agendaStore'
 import { AgendaFilters } from '@/features/agenda/components/AgendaFilters'
-import { MiniCalendar } from '@/features/agenda/components/MiniCalendar'
 import { useAppointmentStore } from '@/features/appointments/store/appointmentStore'
 import { useClientStore } from '@/features/clients/store/clientStore'
 import { useContractStore } from '@/features/contracts/store/contractStore'
@@ -52,7 +51,6 @@ const NAV_ITEMS = [
 export function Sidebar({ onNavigate, onClose }: SidebarProps) {
   const isAdmin = useAuthStore((state) => state.usuario?.role === 'admin')
   const openCreateDrawer = useAgendaStore((state) => state.openCreateDrawer)
-  const selectedDate = useAgendaStore((state) => state.selectedDate)
   const recarregarClientes = useClientStore((state) => state.recarregar)
   const recarregarPacotes = usePackageStore((state) => state.recarregar)
   const recarregarAgendamentos = useAppointmentStore((state) => state.recarregar)
@@ -150,10 +148,6 @@ export function Sidebar({ onNavigate, onClose }: SidebarProps) {
             )
           })}
         </nav>
-
-        <div className="mt-4 border-t border-line pt-3">
-          <MiniCalendar key={selectedDate} onSelect={onNavigate} />
-        </div>
 
         <div className="mt-4 border-t border-line pt-3">
           <AgendaFilters />
