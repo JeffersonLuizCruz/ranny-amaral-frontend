@@ -103,7 +103,11 @@ function PublicMediaCard({
   const selecionavel = Boolean(onToggle) && !locked
 
   return (
-    <article className="group relative">
+    <article
+      className="group relative select-none"
+      onContextMenu={(event) => event.preventDefault()}
+      onDragStart={(event) => event.preventDefault()}
+    >
       <button
         type="button"
         onClick={mainAction}
@@ -131,7 +135,8 @@ function PublicMediaCard({
                   muted
                   playsInline
                   preload="metadata"
-                  className="size-full object-cover"
+                  draggable={false}
+                  className="size-full select-none object-cover [-webkit-touch-callout:none]"
                 />
               ) : (
                 <img
@@ -139,7 +144,8 @@ function PublicMediaCard({
                   alt={midia.nomeArquivo}
                   loading="lazy"
                   decoding="async"
-                  className="size-full object-cover transition duration-700 group-hover:scale-[1.035]"
+                  draggable={false}
+                  className="size-full select-none object-cover transition duration-700 [-webkit-touch-callout:none] group-hover:scale-[1.035]"
                 />
               )
             ) : (
@@ -148,7 +154,8 @@ function PublicMediaCard({
                 alt={midia.nomeArquivo}
                 loading="lazy"
                 decoding="async"
-                className="size-full object-cover transition duration-700 group-hover:scale-[1.035]"
+                draggable={false}
+                className="size-full select-none object-cover transition duration-700 [-webkit-touch-callout:none] group-hover:scale-[1.035]"
               />
             )
           ) : (

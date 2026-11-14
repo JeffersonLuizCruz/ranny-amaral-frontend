@@ -121,6 +121,13 @@
   backdrop-filter: blur(8px);
 }
 
+@media print {
+  .gallery-protected img,
+  .gallery-protected video {
+    display: none !important;
+  }
+}
+
 /* Native dialog entrance */
 dialog[open] {
   animation: dialog-in 180ms ease-out;

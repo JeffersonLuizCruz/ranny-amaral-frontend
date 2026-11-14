@@ -1,0 +1,4 @@
+User-agent: *
+Disallow: /galeria/
+Disallow: /selecao/
+Disallow: /entrega/

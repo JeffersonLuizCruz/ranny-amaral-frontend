@@ -312,6 +312,7 @@ export function PublicPhotoViewer({
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerEnd}
           onPointerCancel={handlePointerEnd}
+          onContextMenu={(event) => event.preventDefault()}
         >
           {isVideo && videoUrl ? (
             <video
@@ -329,7 +330,7 @@ export function PublicPhotoViewer({
               alt={midia.nomeArquivo}
               draggable={false}
               className={cn(
-                'max-h-full max-w-full select-none object-contain shadow-2xl',
+                'max-h-full max-w-full select-none object-contain shadow-2xl [-webkit-touch-callout:none]',
                 dragging ? 'transition-none' : 'transition-transform duration-150',
               )}
               style={{

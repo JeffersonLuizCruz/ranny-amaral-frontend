@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 
 import { hexToRgba, isHexColor, normalizeHex } from '@/shared/lib/colors'
@@ -22,10 +23,26 @@ export function PublicGalleryShell({
   const safeAccent =
     accent && isHexColor(accent) ? normalizeHex(accent) : DEFAULT_ACCENT
 
+  useEffect(() => {
+    const robots = document.createElement('meta')
+    robots.name = 'robots'
+    robots.content = 'noindex, nofollow, noarchive'
+    const referrer = document.createElement('meta')
+    referrer.name = 'referrer'
+    referrer.content = 'no-referrer'
+    document.head.append(robots, referrer)
+
+    return () => {
+      robots.remove()
+      referrer.remove()
+    }
+  }, [])
+
   return (
     <div
-      className="public-gallery relative min-h-dvh overflow-x-hidden bg-[#FBF7F2] text-[#2B241D]"
+      className="gallery-protected public-gallery relative min-h-dvh overflow-x-hidden bg-[#FBF7F2] text-[#2B241D]"
       style={{ '--gallery-accent': safeAccent } as CSSProperties}
+      onDragStart={(event) => event.preventDefault()}
     >
       <div
         aria-hidden="true"
@@ -67,6 +84,13 @@ export function PublicGalleryShell({
       <main className="relative z-10 mx-auto w-full max-w-6xl px-4 pb-44 pt-6 sm:px-6 sm:pb-32">
         {children}
       </main>
+
+      <footer className="relative z-10 border-t border-[#E7DCCD]/80 px-4 py-6 text-center text-[10px] leading-relaxed text-[#9A8B7A]">
+        <p>
+          © {studioName ?? 'Estúdio'} · Imagens protegidas por direitos autorais.
+        </p>
+        <p>É proibida a reprodução, cópia ou distribuição sem autorização.</p>
+      </footer>
     </div>
   )
 }

@@ -125,6 +125,9 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
+  // A galeria publica nunca deve ficar em cache local (dados e URLs assinadas).
+  if (url.pathname.startsWith('/api/')) return
+
   event.respondWith(
     caches.match(request).then((cached) => {
       const network = fetch(request)
