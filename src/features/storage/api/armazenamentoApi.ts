@@ -1,6 +1,6 @@
 import { http } from '@/shared/api/httpClient'
 
-export type AlertaArmazenamento = 'OK' | 'ATENCAO' | 'CRITICO' | 'INDISPONIVEL'
+export type AlertaArmazenamento = 'OK' | 'ATENCAO' | 'LIMPEZA' | 'CRITICO' | 'INDISPONIVEL'
 
 export interface TotaisArmazenamento {
   originaisBytes: number
@@ -15,6 +15,7 @@ export interface TotaisArmazenamento {
 export interface ResumoArmazenamento {
   coletadoEm: string
   origemColeta: 'FILESYSTEM' | 'INDISPONIVEL'
+  volumePath: string
   totalBytes: number | null
   livreBytes: number | null
   usadoBytes: number | null
@@ -25,6 +26,8 @@ export interface ResumoArmazenamento {
   reservaBytes: number
   disponivelParaFotosBytes: number | null
   percentualUsado: number | null
+  percentualLimpeza: number
+  percentualAlvo: number
   alerta: AlertaArmazenamento
   diasRestantesEstimados: number | null
   galeriasElegiveis: number
@@ -55,6 +58,14 @@ export interface ReconciliacaoArmazenamento {
   bytesSomenteStorage: number
   amostraSomenteStorage: string[]
   amostraSomenteCatalogo: string[]
+}
+
+export interface ResultadoLimpezaArmazenamento {
+  galeriasAgendadas: number
+  bytesEstimados: number
+  percentualAntes: number
+  percentualDepoisEstimado: number
+  atingiuAlvo: boolean
 }
 
 export interface GrupoFinalidadeArmazenamento {
@@ -98,6 +109,14 @@ export async function coletarArmazenamento(): Promise<ResumoArmazenamento> {
 
 export async function reconciliarArmazenamento(): Promise<ReconciliacaoArmazenamento> {
   return http.post<ReconciliacaoArmazenamento>('/armazenamento/reconciliar')
+}
+
+export async function limparArmazenamento(
+  alvoPercentual: number,
+): Promise<ResultadoLimpezaArmazenamento> {
+  return http.post<ResultadoLimpezaArmazenamento>('/armazenamento/limpeza', {
+    alvoPercentual,
+  })
 }
 
 export function detalharArmazenamentoGaleria(

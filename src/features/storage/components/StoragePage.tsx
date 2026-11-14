@@ -13,6 +13,7 @@ import {
 import { useAuthStore } from '@/features/auth/store/authStore'
 import {
   coletarArmazenamento,
+  limparArmazenamento,
   listarGaleriasArmazenamento,
   obterResumoArmazenamento,
   reconciliarArmazenamento,
@@ -23,6 +24,7 @@ import {
 import { ExpurgoDialog } from '@/features/storage/components/ExpurgoDialog'
 import { Button } from '@/shared/components/ui/Button'
 import { EmptyState } from '@/shared/components/ui/EmptyState'
+import { Modal } from '@/shared/components/ui/Modal'
 import { mensagemDeErro } from '@/shared/api/errors'
 import { formatBytes } from '@/shared/lib/bytes'
 import { cn } from '@/shared/lib/cn'
@@ -36,6 +38,7 @@ function formatarData(valor?: string | null): string {
 const ALERTA_ESTILO: Record<string, string> = {
   OK: 'bg-emerald-50 text-emerald-800 ring-emerald-200',
   ATENCAO: 'bg-amber-50 text-amber-800 ring-amber-200',
+  LIMPEZA: 'bg-orange-50 text-orange-800 ring-orange-200',
   CRITICO: 'bg-red-50 text-red-800 ring-red-200',
   INDISPONIVEL: 'bg-slate-100 text-slate-700 ring-slate-200',
 }
@@ -43,6 +46,8 @@ const ALERTA_ESTILO: Record<string, string> = {
 const ALERTA_TEXTO: Record<string, string> = {
   OK: 'Espaço saudável.',
   ATENCAO: 'O disco está acima do percentual de alerta.',
+  LIMPEZA:
+    'O disco passou do limite de limpeza. Expurgue galerias elegíveis para voltar ao alvo.',
   CRITICO: 'O espaço livre chegou à reserva operacional. Expurgue galerias ou amplie o disco.',
   INDISPONIVEL: 'A medição do disco está indisponível. Configure o volume montado no backend.',
 }
@@ -57,6 +62,7 @@ export function StoragePage() {
   const [processando, setProcessando] = useState(false)
   const [reconciliacao, setReconciliacao] = useState<ReconciliacaoArmazenamento | null>(null)
   const [expurgo, setExpurgo] = useState<GaleriaArmazenamento | null>(null)
+  const [limpezaOpen, setLimpezaOpen] = useState(false)
 
   const carregar = useCallback(async () => {
     setErro(null)
@@ -94,6 +100,10 @@ export function StoragePage() {
     () => galerias.filter((galeria) => galeria.expurgoStatus === 'executado'),
     [galerias],
   )
+  const recuperavelBytes = useMemo(
+    () => fila.reduce((total, galeria) => total + galeria.totalBytes, 0),
+    [fila],
+  )
 
   const coletar = async () => {
     setProcessando(true)
@@ -113,6 +123,29 @@ export function StoragePage() {
     try {
       setReconciliacao(await reconciliarArmazenamento())
       addToast('Reconciliação concluída.')
+    } catch (error) {
+      addToast(mensagemDeErro(error))
+    } finally {
+      setProcessando(false)
+    }
+  }
+
+  const limpar = async () => {
+    if (!resumo) return
+    setProcessando(true)
+    try {
+      const resultado = await limparArmazenamento(resumo.percentualAlvo)
+      setLimpezaOpen(false)
+      addToast(
+        resultado.galeriasAgendadas > 0
+          ? `${resultado.galeriasAgendadas} galeria(s) agendada(s). ${formatBytes(
+              resultado.bytesEstimados,
+            )} serão liberados.`
+          : resultado.atingiuAlvo
+            ? 'O disco já está dentro do alvo; nenhuma limpeza necessária.'
+            : 'Nenhuma galeria elegível para limpeza agora.',
+      )
+      await carregar()
     } catch (error) {
       addToast(mensagemDeErro(error))
     } finally {
@@ -155,7 +188,9 @@ export function StoragePage() {
             </h1>
             <p className="mt-0.5 text-[11px] text-muted">
               Disco da VPS compartilhado entre fotos, banco e infraestrutura.
-              {resumo ? ` Última coleta em ${formatarData(resumo.coletadoEm)}.` : ''}
+              {resumo
+                ? ` Última coleta em ${formatarData(resumo.coletadoEm)} · ${resumo.origemColeta} (${resumo.volumePath}).`
+                : ''}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -207,6 +242,25 @@ export function StoragePage() {
                 ritmo atual.
               </p>
             ) : null}
+            {alerta === 'LIMPEZA' || alerta === 'CRITICO' ? (
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <p>
+                  {fila.length} galeria(s) elegíveis ·{' '}
+                  {formatBytes(recuperavelBytes)} recuperáveis.
+                </p>
+                {isAdmin ? (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    disabled={processando || fila.length === 0}
+                    onClick={() => setLimpezaOpen(true)}
+                  >
+                    <Trash2 className="size-3.5" />
+                    Expurgar até {resumo?.percentualAlvo ?? 80}%
+                  </Button>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         </div>
 
@@ -220,6 +274,7 @@ export function StoragePage() {
               <p className="mt-0.5 text-[11px] text-muted">
                 {formatBytes(total)} no total · {formatBytes(usado)} usados ·{' '}
                 {formatBytes(resumo?.livreBytes)} livres
+                {resumo ? ` · medido em ${resumo.volumePath}` : ''}
               </p>
             </div>
             <p className="text-lg font-semibold text-ink">
@@ -390,6 +445,51 @@ export function StoragePage() {
           }}
         />
       ) : null}
+
+      <Modal
+        open={limpezaOpen}
+        onClose={() => setLimpezaOpen(false)}
+        title="Limpeza de armazenamento"
+        description="Expurgo em lote das galerias elegíveis, da entrega mais antiga para a mais recente."
+      >
+        <div className="space-y-3 text-xs leading-relaxed text-muted">
+          <p>
+            Disco em{' '}
+            <strong className="text-ink">
+              {resumo?.percentualUsado ?? '—'}%
+            </strong>{' '}
+            · alvo de <strong className="text-ink">{resumo?.percentualAlvo ?? 80}%</strong>.
+          </p>
+          <p>
+            <strong className="text-ink">{fila.length}</strong> galeria(s) elegíveis ·{' '}
+            <strong className="text-ink">{formatBytes(recuperavelBytes)}</strong>{' '}
+            recuperáveis.
+          </p>
+          {fila.length === 0 ? (
+            <p className="rounded-xl bg-amber-50 px-3 py-2 text-amber-800 ring-1 ring-amber-200">
+              Nenhuma galeria elegível agora. O expurgo exige entrega concluída e ZIP
+              baixado pelo cliente.
+            </p>
+          ) : null}
+          <p className="rounded-xl bg-red-50 px-3 py-2 text-red-800 ring-1 ring-red-200">
+            Ação irreversível e sem backup. Metadados, financeiro e comprovantes são
+            preservados; as fotos e vídeos das galerias selecionadas serão removidos.
+          </p>
+          <div className="flex justify-end gap-2 pt-1">
+            <Button variant="ghost" size="sm" onClick={() => setLimpezaOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              size="sm"
+              disabled={processando || fila.length === 0}
+              onClick={() => void limpar()}
+            >
+              <Trash2 className="size-3.5" />
+              Confirmar limpeza
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

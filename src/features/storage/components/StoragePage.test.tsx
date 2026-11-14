@@ -12,6 +12,7 @@ vi.mock('@/features/storage/api/armazenamentoApi', () => ({
   obterResumoArmazenamento,
   coletarArmazenamento: vi.fn(),
   reconciliarArmazenamento: vi.fn(),
+  limparArmazenamento: vi.fn(),
   detalharArmazenamentoGaleria: vi.fn(),
   solicitarExpurgo: vi.fn(),
   cancelarExpurgo: vi.fn(),
@@ -25,6 +26,7 @@ const GB = 1024 * 1024 * 1024
 const resumo = {
   coletadoEm: '2026-11-12T10:00:00.000Z',
   origemColeta: 'FILESYSTEM' as const,
+  volumePath: '/var/lib/garage/data',
   totalBytes: 100 * GB,
   livreBytes: 38 * GB,
   usadoBytes: 62 * GB,
@@ -35,6 +37,8 @@ const resumo = {
   reservaBytes: 10 * GB,
   disponivelParaFotosBytes: 28 * GB,
   percentualUsado: 62,
+  percentualLimpeza: 90,
+  percentualAlvo: 80,
   alerta: 'OK' as const,
   diasRestantesEstimados: 120,
   galeriasElegiveis: 1,
@@ -161,5 +165,28 @@ describe('StoragePage', () => {
     expect(screen.queryAllByRole('button', { name: 'Expurgar' })).toHaveLength(0)
     expect(screen.queryByRole('button', { name: /Coletar agora/ })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Reconciliar/ })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /Expurgar até/ }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('mostra a limpeza recomendada quando o disco passa de 90%', async () => {
+    obterResumoArmazenamento.mockResolvedValue({
+      ...resumo,
+      usadoBytes: 92 * GB,
+      livreBytes: 8 * GB,
+      percentualUsado: 92,
+      alerta: 'LIMPEZA' as const,
+    })
+
+    renderPage()
+
+    expect(await screen.findByText('LIMPEZA')).toBeInTheDocument()
+    expect(
+      screen.getByText(/1 galeria\(s\) elegíveis/),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Expurgar até 80%/ }),
+    ).toBeInTheDocument()
   })
 })
