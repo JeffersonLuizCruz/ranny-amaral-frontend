@@ -181,3 +181,36 @@ export interface AgendaFilters {
   /** Empty means every financial state is visible. */
   hiddenPaymentStates: AgendaPaymentFilter[]
 }
+
+/**
+ * Indisponibilidade pontual cadastrada pela equipe.
+ *
+ * `inicio`/`fim` são instantes ISO para renderização e checagem de sobreposição;
+ * `data`, `horaInicio` e `horaFim` vêm no fuso do estúdio para edição.
+ */
+export interface BloqueioAgenda {
+  id: string
+  inicio: string
+  fim: string
+  diaInteiro: boolean
+  /** `yyyy-MM-dd` no fuso America/Sao_Paulo. */
+  data: string
+  /** `HH:mm` no fuso America/Sao_Paulo. */
+  horaInicio: string
+  /** `HH:mm` no fuso America/Sao_Paulo. */
+  horaFim: string
+  motivo: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface BloqueioAgendaDraft {
+  /** `yyyy-MM-dd`. */
+  data: string
+  diaInteiro: boolean
+  /** `HH:mm`, obrigatório quando `diaInteiro` é falso. */
+  horaInicio?: string
+  /** `HH:mm`, obrigatório quando `diaInteiro` é falso. */
+  horaFim?: string
+  motivo: string
+}

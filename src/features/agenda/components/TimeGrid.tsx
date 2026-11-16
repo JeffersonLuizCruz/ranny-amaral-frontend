@@ -12,9 +12,13 @@ import {
 } from '@/shared/lib/date'
 import { useMediaQuery } from '@/shared/hooks/useMediaQuery'
 import { useNow } from '@/shared/hooks/useNow'
+import { useToastStore } from '@/shared/store/toastStore'
 import { useCrmLookups } from '@/features/appointments/lib/lookups'
+import { useAgendaStore } from '@/features/agenda/store/agendaStore'
+import { useBloqueioStore } from '@/features/agenda/store/bloqueioStore'
 import { AppointmentBlock } from '@/features/agenda/components/AppointmentBlock'
 import { layoutDayAppointments } from '@/features/agenda/lib/layout'
+import { bloqueioNoHorario, bloqueiosNoDia } from '@/features/agenda/lib/bloqueios'
 
 const HOURS = Array.from({ length: 24 }, (_, hour) => hour)
 
@@ -43,6 +47,9 @@ export function TimeGrid({
   const scrollRef = useRef<HTMLDivElement>(null)
   const now = useNow()
   const { clientesById, pacotesById } = useCrmLookups()
+  const bloqueios = useBloqueioStore((state) => state.bloqueios)
+  const openBloqueioDialog = useAgendaStore((state) => state.openBloqueioDialog)
+  const addToast = useToastStore((state) => state.addToast)
 
   const columns = `3.75rem repeat(${days.length}, minmax(0, 1fr))`
 
@@ -51,8 +58,9 @@ export function TimeGrid({
       days.map((day) => ({
         day,
         layouts: layoutDayAppointments(appointments, day),
+        blocos: bloqueiosNoDia(bloqueios, day),
       })),
-    [appointments, days],
+    [appointments, days, bloqueios],
   )
 
   const nowMinutes = now.getHours() * 60 + now.getMinutes()
@@ -74,7 +82,15 @@ export function TimeGrid({
     const snapped = Math.min(23 * 60 + 30, Math.floor(rawMinutes / 30) * 30)
     const hours = String(Math.floor(snapped / 60)).padStart(2, '0')
     const minutes = String(snapped % 60).padStart(2, '0')
-    onSelectSlot(day, `${hours}:${minutes}`)
+    const time = `${hours}:${minutes}`
+
+    const bloqueio = bloqueioNoHorario(bloqueios, day, time)
+    if (bloqueio) {
+      addToast(`Horário bloqueado: ${bloqueio.bloqueio.motivo}`)
+      return
+    }
+
+    onSelectSlot(day, time)
   }
 
   return (
@@ -114,7 +130,7 @@ export function TimeGrid({
             )}
           </div>
 
-          {buckets.map(({ day, layouts }) => {
+          {buckets.map(({ day, layouts, blocos }) => {
             const today = isToday(day)
 
             return (
@@ -135,6 +151,31 @@ export function TimeGrid({
                     style={{ top: hour * hourHeight }}
                   />
                 ))}
+
+                {blocos.map(({ bloqueio, startMin, endMin }) => {
+                  const top = (startMin / 60) * hourHeight
+                  const height = Math.max(((endMin - startMin) / 60) * hourHeight - 2, 18)
+
+                  return (
+                    <button
+                      key={`bloqueio-${bloqueio.id}`}
+                      type="button"
+                      title={`Bloqueado: ${bloqueio.motivo} · ${
+                        bloqueio.diaInteiro
+                          ? 'dia inteiro'
+                          : `${bloqueio.horaInicio} – ${bloqueio.horaFim}`
+                      }`}
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        openBloqueioDialog(bloqueio)
+                      }}
+                      className="absolute inset-x-1 z-[5] overflow-hidden rounded-md border border-dashed border-slate-300 bg-slate-200/70 px-1.5 py-1 text-left text-[10px] font-medium text-slate-600 transition hover:bg-slate-200"
+                      style={{ top: `${top + 1}px`, height: `${height}px` }}
+                    >
+                      <span className="line-clamp-2">{bloqueio.motivo}</span>
+                    </button>
+                  )
+                })}
 
                 {today ? (
                   <div

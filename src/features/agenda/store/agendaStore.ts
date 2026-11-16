@@ -5,6 +5,7 @@ import type {
   AgendaPaymentFilter,
   AgendamentoStatus,
   AppointmentDrawerState,
+  BloqueioAgenda,
   CalendarView,
 } from '@/domain/types'
 import { fromDateKey, shiftDate, toDateKey } from '@/shared/lib/date'
@@ -30,6 +31,8 @@ interface AgendaState {
   sidebarOpen: boolean
   filters: AgendaFilters
   drawer: AppointmentDrawerState
+  bloqueioDialogAberto: boolean
+  bloqueioEditando: BloqueioAgenda | null
 
   setView: (view: CalendarView) => void
   setSelectedDate: (date: Date | string) => void
@@ -46,6 +49,8 @@ interface AgendaState {
     mode?: Extract<AppointmentDrawerState['mode'], 'view' | 'edit'>,
   ) => void
   closeDrawer: () => void
+  openBloqueioDialog: (bloqueio?: BloqueioAgenda | null) => void
+  closeBloqueioDialog: () => void
 }
 
 function initialView(): CalendarView {
@@ -59,6 +64,8 @@ export const useAgendaStore = create<AgendaState>((set, get) => ({
   sidebarOpen: false,
   filters: EMPTY_FILTERS,
   drawer: CLOSED_DRAWER,
+  bloqueioDialogAberto: false,
+  bloqueioEditando: null,
 
   setView: (view) => set({ view }),
 
@@ -140,4 +147,10 @@ export const useAgendaStore = create<AgendaState>((set, get) => ({
     }),
 
   closeDrawer: () => set({ drawer: CLOSED_DRAWER }),
+
+  openBloqueioDialog: (bloqueio = null) =>
+    set({ bloqueioDialogAberto: true, bloqueioEditando: bloqueio }),
+
+  closeBloqueioDialog: () =>
+    set({ bloqueioDialogAberto: false, bloqueioEditando: null }),
 }))

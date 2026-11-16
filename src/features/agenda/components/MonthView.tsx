@@ -1,11 +1,12 @@
 import { useMemo } from 'react'
 import { format, isSameMonth } from 'date-fns'
-import { Plus } from 'lucide-react'
+import { Lock, Plus } from 'lucide-react'
 
 import { STATUS_META } from '@/domain/constants'
 import type { AgendamentoEnsaio } from '@/domain/types'
 import { cn } from '@/shared/lib/cn'
 import { hexToRgba } from '@/shared/lib/colors'
+import { useToastStore } from '@/shared/store/toastStore'
 import {
   appointmentsForDay,
   formatDayLong,
@@ -20,6 +21,8 @@ import {
 import { useMediaQuery } from '@/shared/hooks/useMediaQuery'
 import { useCrmLookups } from '@/features/appointments/lib/lookups'
 import { useAgendaStore } from '@/features/agenda/store/agendaStore'
+import { useBloqueioStore } from '@/features/agenda/store/bloqueioStore'
+import { DAY_MINUTES, bloqueiosNoDia } from '@/features/agenda/lib/bloqueios'
 
 const MAX_VISIBLE_APPOINTMENTS = 3
 
@@ -29,8 +32,11 @@ export function MonthView({ appointments }: { appointments: AgendamentoEnsaio[] 
   const setView = useAgendaStore((state) => state.setView)
   const openCreateDrawer = useAgendaStore((state) => state.openCreateDrawer)
   const openAppointmentDrawer = useAgendaStore((state) => state.openAppointmentDrawer)
+  const openBloqueioDialog = useAgendaStore((state) => state.openBloqueioDialog)
   const isDesktop = useMediaQuery('(min-width: 1024px)')
   const { clientesById, pacotesById } = useCrmLookups()
+  const bloqueios = useBloqueioStore((state) => state.bloqueios)
+  const addToast = useToastStore((state) => state.addToast)
 
   const selected = useMemo(() => fromDateKey(selectedDate), [selectedDate])
   const days = useMemo(() => getMonthMatrix(selected), [selected])
@@ -63,6 +69,17 @@ export function MonthView({ appointments }: { appointments: AgendamentoEnsaio[] 
             const isSelected = isSameDay(day, selected)
             const visible = dayAppointments.slice(0, MAX_VISIBLE_APPOINTMENTS)
             const hiddenCount = dayAppointments.length - visible.length
+            const blocos = bloqueiosNoDia(bloqueios, day)
+            const diaBloqueado = blocos.some(
+              (item) => item.startMin === 0 && item.endMin === DAY_MINUTES,
+            )
+            const abrirCriacao = () => {
+              if (diaBloqueado) {
+                addToast(`Dia bloqueado: ${blocos[0].bloqueio.motivo}`)
+                return
+              }
+              openCreateDrawer(day)
+            }
 
             return (
               <div
@@ -76,7 +93,7 @@ export function MonthView({ appointments }: { appointments: AgendamentoEnsaio[] 
                 <button
                   type="button"
                   onClick={() => openDay(day)}
-                  onDoubleClick={() => openCreateDrawer(day)}
+                  onDoubleClick={abrirCriacao}
                   aria-label={`Abrir ${formatDayLong(day)}`}
                   className="absolute inset-0 z-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500"
                 />
@@ -98,7 +115,7 @@ export function MonthView({ appointments }: { appointments: AgendamentoEnsaio[] 
                     type="button"
                     onClick={(event) => {
                       event.stopPropagation()
-                      openCreateDrawer(day)
+                      abrirCriacao()
                     }}
                     aria-label={`Criar ensaio em ${formatDayLong(day)}`}
                     className="pointer-events-auto hidden size-6 place-items-center rounded-full text-muted opacity-0 transition hover:bg-white hover:text-brand-700 focus-visible:opacity-100 group-hover:opacity-100 sm:grid"
@@ -106,6 +123,33 @@ export function MonthView({ appointments }: { appointments: AgendamentoEnsaio[] 
                     <Plus className="size-3.5" />
                   </button>
                 </div>
+
+                {blocos.length > 0 ? (
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      openBloqueioDialog(blocos[0].bloqueio)
+                    }}
+                    title={blocos
+                      .map(
+                        (item) =>
+                          `${item.bloqueio.motivo} · ${
+                            item.bloqueio.diaInteiro
+                              ? 'dia inteiro'
+                              : `${item.bloqueio.horaInicio} – ${item.bloqueio.horaFim}`
+                          }`,
+                      )
+                      .join('\n')}
+                    className="pointer-events-auto relative z-10 mx-1 mb-0.5 inline-flex items-center gap-1 self-start rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-medium text-slate-600 ring-1 ring-inset ring-slate-200 transition hover:bg-slate-200"
+                  >
+                    <Lock className="size-2.5" />
+                    <span className="max-w-20 truncate">
+                      {diaBloqueado ? 'Bloqueado' : blocos[0].bloqueio.motivo}
+                    </span>
+                    {blocos.length > 1 ? <span>+{blocos.length - 1}</span> : null}
+                  </button>
+                ) : null}
 
                 <div className="pointer-events-none relative z-10 flex min-h-0 flex-1 flex-col gap-0.5 overflow-hidden px-1 pb-1">
                   {visible.map((appointment) => {

@@ -51,6 +51,7 @@ A suíte de testes usa **Vitest + Testing Library** e cobre validação de arqui
 - `src/features/clients/api/clientesApi.ts` — CRUD e listagem paginada de clientes.
 - `src/features/packages/api/pacotesApi.ts` — CRUD, alternância de situação e listagem paginada dos pacotes.
 - `src/features/appointments/api/agendaApi.ts` — CRUD, status, pagamentos, listagem paginada e calendário por período.
+- `src/features/agenda/api/bloqueiosApi.ts` e `store/bloqueioStore.ts` — bloqueios pontuais da agenda (dia inteiro ou intervalo).
 - `src/features/contracts/api/contratosApi.ts` — contratos, busca paginada, links de aceite e pagamentos.
 - `src/features/contracts/api/modelosApi.ts` e `estudioApi.ts` — modelos e configuração do estúdio.
 - `src/features/galleries/api/galeriasApi.ts` — galerias, mídias, seleção, extras e entrega (RAW apenas como legado de leitura).
@@ -70,7 +71,7 @@ Os módulos de galerias e financeiro agora usam a API real; o navegador não cal
 
 - **Login e usuários:** autenticação JWT, troca obrigatória de senha, criação/reset por admin e perfis `Admin`/`Gestor`.
 - **Dashboard:** visão do dia com próximos ensaios, pendências e resumo financeiro.
-- **Agenda:** ensaios, status, remarcações e detalhes do atendimento.
+- **Agenda:** ensaios, status, remarcações, detalhes do atendimento e bloqueios pontuais (dia inteiro ou intervalo).
 - **Pacotes:** duração, valor de tabela, fotos/vídeos inclusos, valor da foto extra, faixas opcionais por quantidade e promoção opcional.
 - **Contratos:** modelo, aceite por link público, entrada e saldo final.
 - **Galerias:** upload de originais, seleção pública, fotos extras, edição e entrega por link.
