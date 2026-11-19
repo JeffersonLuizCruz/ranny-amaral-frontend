@@ -104,13 +104,13 @@ Fluxo:
 aguardando_upload → em_selecao → selecao_enviada → em_edicao → entregue
 ```
 
-- A publicação da seleção exige ensaio realizado, entrada e saldo quitados e mídia mínima enviada.
+- A publicação da seleção exige ensaio realizado, entrada e saldo quitados e a quantidade mínima de fotos enviada.
 - **Link único:** o cliente usa o mesmo token na seleção e na entrega; a publicação vale 30 dias e o envio da
   seleção estende o link para 90 dias. As rotas antigas `/selecao` e `/entrega` redirecionam para `/galeria`.
 - Cada foto recebe um número estável exibido no grid público e no detalhe do staff; o mesmo número nomeia
   o arquivo no ZIP de edição.
 - Fotos: o cliente precisa selecionar pelo menos a quantidade inclusa, sem máximo.
-- Vídeos: exatamente a quantidade inclusa, sem vídeo extra.
+- Vídeos: opcionais, até a quantidade inclusa; não há vídeo extra.
 - Fotos acima do incluso geram pedido de extras.
 - O staff pode reabrir a seleção mesmo com extras já pagos ou isentos; o novo pedido cobra apenas o delta.
 - Fotos e vídeos já entregues ficam bloqueados no link público: o cliente só pode acrescentar novas mídias.

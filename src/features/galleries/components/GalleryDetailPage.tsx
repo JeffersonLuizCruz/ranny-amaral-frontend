@@ -315,7 +315,8 @@ export function GalleryDetailPage() {
               <p className="mt-0.5 text-xs text-muted">
                 {detalhe.pacoteNome ?? 'Pacote removido'} ·{' '}
                 {galeria.fotosInclusas ?? 0} fotos e {galeria.videosInclusos ?? 0}{' '}
-                vídeos inclusos · extra{' '}
+                vídeos inclusos
+                {(galeria.videosInclusos ?? 0) > 0 ? ' (opcional)' : ''} · extra{' '}
                 {galeria.faixasFotoExtra && galeria.faixasFotoExtra.length > 0
                   ? `a partir de ${formatBRL(
                       menorValorFotoExtra(

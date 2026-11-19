@@ -134,7 +134,7 @@ export function PublicSelectionPage() {
   const extrasAbaixoDoCoberto = extras < quantidadeCoberta
   const podeEnviar =
     fotoIds.size >= fotosInclusas &&
-    videoIds.size === videosInclusos &&
+    videoIds.size <= videosInclusos &&
     !extrasAbaixoDoCoberto
   // Uma seleção reaberta continua disponível para edição; só bloqueia quando
   // o cliente já enviou a seleção atual.
@@ -164,8 +164,8 @@ export function PublicSelectionPage() {
       setErro(`Selecione todas as ${fotosInclusas} fotos inclusas.`)
       return false
     }
-    if (videoIds.size !== videosInclusos) {
-      setErro(`Selecione exatamente ${videosInclusos} vídeo(s).`)
+    if (videoIds.size > videosInclusos) {
+      setErro(`Selecione no máximo ${videosInclusos} vídeo(s).`)
       return false
     }
     if (extrasAbaixoDoCoberto) {
@@ -617,6 +617,12 @@ export function PublicSelectionPage() {
               <h2 className="mt-1 font-display text-2xl text-[#2B241D]">
                 Vídeos ({videoIds.size} selecionados)
               </h2>
+              {videosInclusos > 0 ? (
+                <p className="mt-1 text-xs leading-relaxed text-[#7A6A59]">
+                  Opcional — selecione até {videosInclusos}{' '}
+                  {videosInclusos === 1 ? 'vídeo' : 'vídeos'}.
+                </p>
+              ) : null}
             </div>
             <div className="mt-5">
               <PublicMediaGrid
@@ -680,6 +686,7 @@ export function PublicSelectionPage() {
         fotosInclusas={fotosInclusas}
         videosSelecionados={videoIds.size}
         videosInclusos={videosInclusos}
+        videosDisponiveis={videos.length}
         extras={extras}
         valorExtras={valorExtras}
         podeEnviar={podeEnviar}

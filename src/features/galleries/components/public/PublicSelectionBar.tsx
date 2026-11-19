@@ -8,6 +8,7 @@ interface PublicSelectionBarProps {
   fotosInclusas: number
   videosSelecionados: number
   videosInclusos: number
+  videosDisponiveis: number
   extras: number
   valorExtras: number
   podeEnviar: boolean
@@ -20,6 +21,7 @@ export function PublicSelectionBar({
   fotosInclusas,
   videosSelecionados,
   videosInclusos,
+  videosDisponiveis,
   extras,
   valorExtras,
   podeEnviar,
@@ -38,8 +40,18 @@ export function PublicSelectionBar({
             aria-live="polite"
           >
             {fotosSelecionadas} de {fotosInclusas}{' '}
-            {fotosInclusas === 1 ? 'foto' : 'fotos'} · {videosSelecionados}/
-            {videosInclusos} {videosInclusos === 1 ? 'vídeo' : 'vídeos'}
+            {fotosInclusas === 1 ? 'foto' : 'fotos'}
+            {videosInclusos === 0 ? (
+              <> · {videosSelecionados}/0 vídeos</>
+            ) : videosDisponiveis === 0 ? (
+              <> · sem vídeos nesta galeria</>
+            ) : (
+              <>
+                {' '}
+                · {videosSelecionados}/{videosInclusos}{' '}
+                {videosInclusos === 1 ? 'vídeo' : 'vídeos'} · opcional
+              </>
+            )}
           </p>
           <p className="text-[11px] text-[#7A6A59]">
             {extras > 0

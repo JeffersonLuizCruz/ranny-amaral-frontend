@@ -158,11 +158,11 @@ export function validarSelecao(
     )
   }
 
-  if (videoIds.length !== condicoes.videosInclusos) {
+  if (videoIds.length > condicoes.videosInclusos) {
     erros.push(
       condicoes.videosInclusos === 1
-        ? 'Selecione o vídeo incluso no pacote.'
-        : `Selecione exatamente ${condicoes.videosInclusos} vídeos inclusos no pacote.`,
+        ? 'Selecione no máximo 1 vídeo incluso no pacote.'
+        : `Selecione no máximo ${condicoes.videosInclusos} vídeos inclusos no pacote.`,
     )
   }
 
@@ -215,16 +215,10 @@ export function podePublicarSelecao(input: {
   }
 
   const fotos = contarMidias(galeria.midias, 'foto')
-  const videos = contarMidias(galeria.midias, 'video')
 
   if (fotos < condicoes.fotosInclusas) {
     motivos.push(
       `Envie pelo menos ${condicoes.fotosInclusas} fotos (${fotos} enviadas).`,
-    )
-  }
-  if (videos < condicoes.videosInclusos) {
-    motivos.push(
-      `Envie pelo menos ${condicoes.videosInclusos} vídeos (${videos} enviados).`,
     )
   }
 

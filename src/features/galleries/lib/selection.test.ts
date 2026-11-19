@@ -6,6 +6,7 @@ import {
   calcularValorExtras,
   menorValorFotoExtra,
   numerosDasFotosSelecionadas,
+  validarSelecao,
 } from '@/features/galleries/lib/selection'
 
 function foto(id: string, numero: number): MidiaGaleria {
@@ -83,6 +84,38 @@ describe('calcularValorExtras', () => {
         { quantidadeMinima: 6, valorUnitario: 8 },
       ]),
     ).toBe(8)
+  })
+})
+
+describe('validarSelecao', () => {
+  const condicoes = {
+    fotosInclusas: 1,
+    videosInclusos: 1,
+    valorFotoExtra: 0,
+  }
+
+  it('aceita seleção sem vídeo quando o pacote inclui vídeo', () => {
+    const resultado = validarSelecao(['foto-1'], [], condicoes)
+
+    expect(resultado.ok).toBe(true)
+    expect(resultado.erros).toEqual([])
+  })
+
+  it('aceita exatamente a quantidade de vídeos inclusa', () => {
+    const resultado = validarSelecao(['foto-1'], ['video-1'], condicoes)
+
+    expect(resultado.ok).toBe(true)
+  })
+
+  it('rejeita mais vídeos do que o incluso', () => {
+    const resultado = validarSelecao(
+      ['foto-1'],
+      ['video-1', 'video-2'],
+      condicoes,
+    )
+
+    expect(resultado.ok).toBe(false)
+    expect(resultado.erros[0]).toContain('no máximo 1 vídeo')
   })
 })
 

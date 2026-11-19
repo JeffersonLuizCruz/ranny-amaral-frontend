@@ -31,6 +31,16 @@ const midia = {
   liberacaoAutomatica: true,
 }
 
+const videoMidia = {
+  ...midia,
+  id: 'v1',
+  tipo: 'video',
+  nomeArquivo: 'video.mp4',
+  mimeType: 'video/mp4',
+  thumbUrl: 'https://storage/video-thumb.jpg',
+  originalUrl: 'https://storage/video.mp4',
+}
+
 const estadoPublico = {
   fase: 'selecao',
   fotosSelecionadas: 0,
@@ -140,6 +150,116 @@ describe('PublicSelectionPage', () => {
     expect(screen.queryByText('Seleção enviada')).not.toBeInTheDocument()
     expect(screen.getByText(/Promocional Teste/)).toBeInTheDocument()
     expect(screen.getByText('001')).toBeInTheDocument()
+  })
+
+  it('permite enviar seleção sem vídeo quando o pacote inclui vídeo', async () => {
+    consultarGaleriaPublica.mockResolvedValue({
+      ...estadoPublico,
+      link: {
+        id: 'l1',
+        tipo: 'selecao',
+        token: 'tok-1',
+        status: 'ativo',
+        expiraEm: '2026-12-01T00:00:00.000Z',
+        visualizadaEm: null,
+        protocolo: null,
+      },
+      galeria: { ...galeria, videosInclusos: 1, videosDisponiveis: 1 },
+      midias: [midia, videoMidia],
+      selecao: undefined,
+      extras: undefined,
+      entregaDisponivel: false,
+    })
+
+    renderPage()
+
+    expect(
+      await screen.findByText('0 de 1 foto · 0/1 vídeo · opcional'),
+    ).toBeInTheDocument()
+
+    fireEvent.click(screen.getByLabelText('Selecionar foto 001'))
+
+    expect(
+      screen.getByText('1 de 1 foto · 0/1 vídeo · opcional'),
+    ).toBeInTheDocument()
+
+    const enviar = screen.getByRole('button', { name: 'Enviar seleção' })
+    expect(enviar).not.toBeDisabled()
+  })
+
+  it('não exibe contador de vídeo quando a galeria não tem vídeos', async () => {
+    consultarGaleriaPublica.mockResolvedValue({
+      ...estadoPublico,
+      link: {
+        id: 'l1',
+        tipo: 'selecao',
+        token: 'tok-1',
+        status: 'ativo',
+        expiraEm: '2026-12-01T00:00:00.000Z',
+        visualizadaEm: null,
+        protocolo: null,
+      },
+      galeria: { ...galeria, videosInclusos: 1, videosDisponiveis: 0 },
+      midias: [midia],
+      selecao: undefined,
+      extras: undefined,
+      entregaDisponivel: false,
+    })
+
+    renderPage()
+
+    expect(
+      await screen.findByText('0 de 1 foto · sem vídeos nesta galeria'),
+    ).toBeInTheDocument()
+
+    fireEvent.click(screen.getByLabelText('Selecionar foto 001'))
+
+    expect(
+      screen.getByText('1 de 1 foto · sem vídeos nesta galeria'),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Enviar seleção' })).not.toBeDisabled()
+  })
+
+  it('bloqueia envio com mais vídeos do que o incluso', async () => {
+    consultarGaleriaPublica.mockResolvedValue({
+      ...estadoPublico,
+      link: {
+        id: 'l1',
+        tipo: 'selecao',
+        token: 'tok-1',
+        status: 'ativo',
+        expiraEm: '2026-12-01T00:00:00.000Z',
+        visualizadaEm: null,
+        protocolo: null,
+      },
+      galeria: { ...galeria, videosInclusos: 1, videosDisponiveis: 2 },
+      midias: [
+        midia,
+        videoMidia,
+        {
+          ...videoMidia,
+          id: 'v2',
+          nomeArquivo: 'video-2.mp4',
+          numero: 2,
+        },
+      ],
+      selecao: undefined,
+      extras: undefined,
+      entregaDisponivel: false,
+    })
+
+    renderPage()
+
+    await screen.findByText('0 de 1 foto · 0/1 vídeo · opcional')
+    fireEvent.click(screen.getByLabelText('Selecionar foto 001'))
+    for (const botao of screen.getAllByLabelText('Selecionar vídeo')) {
+      fireEvent.click(botao)
+    }
+
+    expect(
+      screen.getByText('1 de 1 foto · 2/1 vídeo · opcional'),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Enviar seleção' })).toBeDisabled()
   })
 
   it('amplia a foto, seleciona pelo visualizador e atualiza a barra fixa', async () => {

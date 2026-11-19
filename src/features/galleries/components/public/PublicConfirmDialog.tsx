@@ -57,9 +57,17 @@ export function PublicConfirmDialog({
         <div className="rounded-2xl border border-[#E7DCCD] bg-[#FBF7F2] p-4 text-xs leading-relaxed text-[#7A6A59]">
           <p>
             Pacote: <strong className="text-[#2B241D]">{fotosInclusas}</strong>{' '}
-            {fotosInclusas === 1 ? 'foto' : 'fotos'} e{' '}
-            <strong className="text-[#2B241D]">{videosInclusos}</strong>{' '}
-            {videosInclusos === 1 ? 'vídeo' : 'vídeos'} inclusos.
+            {fotosInclusas === 1 ? 'foto' : 'fotos'}
+            {videosInclusos > 0 ? (
+              <>
+                {' '}e até{' '}
+                <strong className="text-[#2B241D]">{videosInclusos}</strong>{' '}
+                {videosInclusos === 1 ? 'vídeo incluso' : 'vídeos inclusos'}.
+                O vídeo é opcional.
+              </>
+            ) : (
+              fotosInclusas === 1 ? ' inclusa.' : ' inclusas.'
+            )}
           </p>
           {quantidadeCoberta > 0 ? (
             <p className="mt-1">
