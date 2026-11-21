@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -81,6 +81,10 @@ describe('GalleryDetailPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     authState.usuario = null
+    Object.defineProperty(navigator, 'clipboard', {
+      value: undefined,
+      configurable: true,
+    })
     Object.keys(mockState).forEach((key) => delete mockState[key])
     Object.assign(mockState, {
       galeriaAtual: null,
@@ -223,6 +227,202 @@ describe('GalleryDetailPage', () => {
     expect(
       screen.queryByText(/Galeria criada para o ensaio/),
     ).not.toBeInTheDocument()
+  })
+
+  it('copia o link do cliente pela barra fixa do topo', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText },
+      configurable: true,
+    })
+    Object.assign(mockState, {
+      galeriaAtual: {
+        galeria: galeria({
+          status: 'em_selecao',
+          tokenGaleria: 'tok-123',
+          prazoSelecaoEm: '2026-02-01T00:00:00.000Z',
+        }),
+        links: [],
+        historico: [],
+      },
+      midias: [],
+    })
+
+    renderPage()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Copiar link' }))
+
+    await waitFor(() =>
+      expect(writeText).toHaveBeenCalledWith(
+        `${window.location.origin}/galeria/tok-123`,
+      ),
+    )
+    expect(addToast).toHaveBeenCalledWith('Link do cliente copiado.')
+  })
+
+  it('copia o link com fallback quando a Clipboard API não existe', async () => {
+    const execCommand = vi.fn().mockReturnValue(true)
+    Object.defineProperty(document, 'execCommand', {
+      value: execCommand,
+      configurable: true,
+    })
+    Object.assign(mockState, {
+      galeriaAtual: {
+        galeria: galeria({ status: 'em_selecao', tokenGaleria: 'tok-123' }),
+        links: [],
+        historico: [],
+      },
+      midias: [],
+    })
+
+    renderPage()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Copiar link' }))
+
+    await waitFor(() => expect(execCommand).toHaveBeenCalledWith('copy'))
+    expect(addToast).toHaveBeenCalledWith('Link do cliente copiado.')
+  })
+
+  it('publica a seleção pela barra quando ainda não há link', () => {
+    Object.assign(mockState, {
+      galeriaAtual: {
+        galeria: galeria({ status: 'em_selecao' }),
+        links: [],
+        historico: [],
+      },
+      midias: [],
+    })
+
+    renderPage()
+
+    const barra = screen.getByLabelText('Link do cliente')
+    fireEvent.click(within(barra).getByRole('button', { name: 'Publicar seleção' }))
+
+    expect(mockState.publishSelection).toHaveBeenCalledWith('g1')
+  })
+
+  it('posiciona a barra do link antes das mídias', () => {
+    Object.assign(mockState, {
+      galeriaAtual: {
+        galeria: galeria({ status: 'em_selecao', tokenGaleria: 'tok-123' }),
+        links: [],
+        historico: [],
+      },
+      midias: [],
+    })
+
+    renderPage()
+
+    const barra = screen.getByLabelText('Link do cliente')
+    const midias = screen.getByText('Mídias')
+
+    expect(
+      barra.compareDocumentPosition(midias) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+  })
+
+  it('limita as fotos no mobile e libera mais sob demanda', () => {
+    const fotos = Array.from({ length: 30 }, (_, index) =>
+      midia({
+        id: `foto-${index}`,
+        nomeArquivo: `foto-${index}.jpg`,
+        numero: index + 1,
+        thumbUrl: 'https://example.test/thumb.jpg',
+      }),
+    )
+    Object.assign(mockState, {
+      galeriaAtual: {
+        galeria: galeria({ status: 'em_selecao' }),
+        links: [],
+        historico: [],
+      },
+      midias: fotos,
+    })
+
+    renderPage()
+
+    const secao = screen.getByText('Mídias').closest('section') as HTMLElement
+    expect(within(secao).getAllByRole('img')).toHaveLength(24)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ver mais fotos (6 restantes)' }))
+    expect(within(secao).getAllByRole('img')).toHaveLength(30)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mostrar menos' }))
+    expect(within(secao).getAllByRole('img')).toHaveLength(24)
+  })
+
+  it('limita a fila de edição no mobile', () => {
+    const fotos = Array.from({ length: 12 }, (_, index) =>
+      midia({ id: `foto-${index}`, nomeArquivo: `foto-${index}.jpg`, numero: index + 1 }),
+    )
+    Object.assign(mockState, {
+      galeriaAtual: {
+        galeria: galeria({ status: 'em_selecao' }),
+        links: [],
+        selecao: {
+          status: 'enviada',
+          fotoIds: fotos.map((foto) => foto.id),
+          videoIds: [],
+          fotosExtras: 0,
+          valorExtras: 0,
+        },
+        historico: [],
+      },
+      midias: fotos,
+    })
+
+    renderPage()
+
+    const fila = screen.getByText('Fila de edição').closest('section') as HTMLElement
+    expect(within(fila).getByText(/foto-9\.jpg/)).toBeInTheDocument()
+    expect(within(fila).queryByText(/foto-11\.jpg/)).not.toBeInTheDocument()
+
+    fireEvent.click(within(fila).getByRole('button', { name: 'Ver mais (2 restantes)' }))
+    expect(within(fila).getByText(/foto-11\.jpg/)).toBeInTheDocument()
+
+    fireEvent.click(within(fila).getByRole('button', { name: 'Mostrar menos' }))
+    expect(within(fila).queryByText(/foto-11\.jpg/)).not.toBeInTheDocument()
+  })
+
+  it('limita as prontas para baixar no mobile', () => {
+    const fotos = Array.from({ length: 12 }, (_, index) =>
+      midia({
+        id: `foto-${index}`,
+        nomeArquivo: `foto-${index}.jpg`,
+        numero: index + 1,
+        finalidade: 'pronta',
+      }),
+    )
+    Object.assign(mockState, {
+      galeriaAtual: {
+        galeria: galeria({ status: 'em_selecao' }),
+        links: [],
+        selecao: {
+          status: 'enviada',
+          fotoIds: fotos.map((foto) => foto.id),
+          videoIds: [],
+          fotosExtras: 0,
+          valorExtras: 0,
+        },
+        historico: [],
+      },
+      midias: fotos,
+    })
+
+    renderPage()
+
+    const prontas = screen
+      .getByText('Prontas para baixar')
+      .closest('section') as HTMLElement
+    expect(within(prontas).queryByText(/foto-11\.jpg/)).not.toBeInTheDocument()
+
+    fireEvent.click(
+      within(prontas).getByRole('button', { name: 'Ver mais (2 restantes)' }),
+    )
+    expect(within(prontas).getByText(/foto-11\.jpg/)).toBeInTheDocument()
+
+    fireEvent.click(within(prontas).getByRole('button', { name: 'Mostrar menos' }))
+    expect(within(prontas).queryByText(/foto-11\.jpg/)).not.toBeInTheDocument()
   })
 
   it('mostra o histórico para o perfil admin', () => {
