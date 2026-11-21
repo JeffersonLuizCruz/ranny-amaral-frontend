@@ -114,6 +114,20 @@ describe('AppointmentDetails', () => {
     expect(screen.getByText('Lembrete automático via WhatsApp')).toBeInTheDocument()
   })
 
+  it('destaca a taxa de deslocamento repassada', () => {
+    renderDetalhes(
+      agendamento({
+        valorAcordado: 1050,
+        taxaDeslocamento: 50,
+        taxaDeslocamentoRepassada: true,
+      }),
+    )
+
+    expect(
+      screen.getByText(/Inclui R\$\s*50,00 de deslocamento repassado/),
+    ).toBeInTheDocument()
+  })
+
   it('avisa quando o cliente não tem WhatsApp cadastrado', () => {
     clientesById.set('c1', cliente({ whatsapp: '' }))
 

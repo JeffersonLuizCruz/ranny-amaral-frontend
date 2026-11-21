@@ -98,8 +98,12 @@ export interface AgendamentoEnsaio {
   local: string
   status: AgendamentoStatus
   observacoes?: string
-  /** Valor total do pacote/ensaio. */
+  /** Valor total do pacote/ensaio (inclui a taxa de deslocamento repassada). */
   valorAcordado: number
+  /** Taxa de deslocamento do ensaio; zero quando não há cobrança. */
+  taxaDeslocamento?: number
+  /** `true` quando a taxa foi repassada ao cliente. */
+  taxaDeslocamentoRepassada?: boolean
   valorEntrada: number
   percentualEntrada: number
   saldoRestante: number

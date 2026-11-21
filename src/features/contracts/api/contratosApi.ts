@@ -76,6 +76,13 @@ interface SnapshotAgendamentoDto {
   valorAcordado: number
 }
 
+interface SnapshotDeslocamentoDto {
+  valor: number
+  repassado: boolean
+  valorCobrado: number
+  valorAbsorvido: number
+}
+
 interface SnapshotEstudioDto {
   nome: string
   razaoSocial: string | null
@@ -99,6 +106,7 @@ interface SnapshotDto {
   pacote: SnapshotPacoteDto | null
   agendamento: SnapshotAgendamentoDto | null
   estudio: SnapshotEstudioDto
+  deslocamento: SnapshotDeslocamentoDto | null
   modeloVersao: number
 }
 
@@ -244,6 +252,14 @@ function toSnapshot(dto: SnapshotDto): ContratoSnapshot {
       instrucoesPagamento: dto.estudio.instrucoesPagamento ?? undefined,
       prazoPagamentoDias: dto.estudio.prazoPagamentoDias ?? undefined,
     },
+    deslocamento: dto.deslocamento
+      ? {
+          valor: dto.deslocamento.valor,
+          repassado: dto.deslocamento.repassado,
+          valorCobrado: dto.deslocamento.valorCobrado,
+          valorAbsorvido: dto.deslocamento.valorAbsorvido,
+        }
+      : undefined,
     modeloVersao: dto.modeloVersao,
   }
 }

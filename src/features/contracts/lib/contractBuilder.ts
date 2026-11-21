@@ -20,6 +20,28 @@ interface BuildContractInput {
   template: ModeloContrato
 }
 
+function valorPacoteSnapshot(
+  appointment: AgendamentoEnsaio,
+  pacote: PacoteFotografico,
+): number {
+  return (
+    appointment.condicoesPacote?.promocaoAplicada?.valorPromocional ??
+    pacote.valor
+  )
+}
+
+function deslocamentoSnapshot(appointment: AgendamentoEnsaio) {
+  const valor = appointment.taxaDeslocamento ?? 0
+  if (valor <= 0) return undefined
+  const repassado = Boolean(appointment.taxaDeslocamentoRepassada)
+  return {
+    valor,
+    repassado,
+    valorCobrado: repassado ? valor : 0,
+    valorAbsorvido: repassado ? 0 : valor,
+  }
+}
+
 function buildSnapshot(input: BuildContractInput): ContratoSnapshot {
   const { appointment, pacote, cliente, studio, template } = input
   const contato = appointment.contato
@@ -48,7 +70,7 @@ function buildSnapshot(input: BuildContractInput): ContratoSnapshot {
       valorFotoExtra:
         appointment.condicoesPacote?.valorFotoExtra ?? pacote.valorFotoExtra,
       promocaoAplicada: appointment.condicoesPacote?.promocaoAplicada,
-      valorEfetivo: appointment.valorAcordado,
+      valorEfetivo: valorPacoteSnapshot(appointment, pacote),
     },
     agendamento: {
       dataHoraInicio: appointment.dataHoraInicio,
@@ -75,6 +97,7 @@ function buildSnapshot(input: BuildContractInput): ContratoSnapshot {
       instrucoesPagamento: studio.instrucoesPagamento,
       prazoPagamentoDias: studio.prazoPagamentoDias,
     },
+    deslocamento: deslocamentoSnapshot(appointment),
     modeloVersao: template.versao,
   }
 }
@@ -119,7 +142,7 @@ export function buildContractDraftFromAppointment(
       valorFotoExtra:
         appointment.condicoesPacote?.valorFotoExtra ?? pacote.valorFotoExtra,
       promocaoAplicada: appointment.condicoesPacote?.promocaoAplicada,
-      valorEfetivo: appointment.valorAcordado,
+      valorEfetivo: valorPacoteSnapshot(appointment, pacote),
     },
     agendamento: {
       dataHoraInicio: appointment.dataHoraInicio,
@@ -127,6 +150,7 @@ export function buildContractDraftFromAppointment(
       local: appointment.local,
       valorAcordado: appointment.valorAcordado,
     },
+    deslocamento: deslocamentoSnapshot(appointment),
     contrato: {
       numero,
       dataEmissao,

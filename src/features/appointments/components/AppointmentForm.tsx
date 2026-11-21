@@ -90,6 +90,15 @@ export function AppointmentForm({
   const temPromocaoDisponivel = pacoteSelecionado
     ? promocaoVigente(pacoteSelecionado)
     : false
+  const taxaDeslocamento = values.taxaDeslocamento.trim()
+    ? parseCurrencyInput(values.taxaDeslocamento)
+    : 0
+  const deslocamentoCobrado = values.taxaDeslocamentoRepassada
+    ? taxaDeslocamento
+    : 0
+  const valorPacoteBase = pacoteSelecionado
+    ? valorEfetivoPacote(pacoteSelecionado, values.promocaoAplicada)
+    : 0
 
   const previewEnd = useMemo(() => {
     if (!values.data || !values.horaInicio) return null
@@ -112,7 +121,8 @@ export function AppointmentForm({
       ? parseCurrencyInput(values.percentualEntrada)
       : percentualPadrao
     const aplicarPromocao = promocaoVigente(pacote)
-    const total = valorEfetivoPacote(pacote, aplicarPromocao)
+    const total =
+      valorEfetivoPacote(pacote, aplicarPromocao) + deslocamentoCobrado
     const entrada = calcularValorEntrada(total, percentual)
 
     setValues((current) => ({
@@ -131,7 +141,8 @@ export function AppointmentForm({
   const handlePromocaoToggle = (aplicar: boolean) => {
     if (!pacoteSelecionado) return
 
-    const total = valorEfetivoPacote(pacoteSelecionado, aplicar)
+    const total =
+      valorEfetivoPacote(pacoteSelecionado, aplicar) + deslocamentoCobrado
     const percentual = values.percentualEntrada.trim()
       ? parseCurrencyInput(values.percentualEntrada)
       : percentualPadrao
@@ -201,6 +212,53 @@ export function AppointmentForm({
       valorEntrada: entrada,
     }))
     setErrors({})
+  }
+
+  const recalcularComDeslocamento = (
+    patch: Partial<AppointmentFormValues>,
+    taxaTexto: string,
+    repassar: boolean,
+  ) => {
+    const taxa = taxaTexto.trim() ? parseCurrencyInput(taxaTexto) : 0
+    setValues((current) => {
+      const percentual = current.percentualEntrada.trim()
+        ? parseCurrencyInput(current.percentualEntrada)
+        : percentualPadrao
+      const total = pacoteSelecionado
+        ? valorEfetivoPacote(pacoteSelecionado, current.promocaoAplicada) +
+          (repassar ? taxa : 0)
+        : parseCurrencyInput(current.valorAcordado)
+      const entrada = entradaValorTouched
+        ? parseCurrencyInput(current.valorEntrada)
+        : calcularValorEntrada(total, percentual)
+
+      return {
+        ...current,
+        ...patch,
+        valorAcordado: String(total),
+        percentualEntrada: entradaValorTouched
+          ? String(calcularPercentualEntrada(total, entrada))
+          : String(percentual),
+        valorEntrada: String(entrada),
+      }
+    })
+    setErrors({})
+  }
+
+  const handleTaxaDeslocamentoChange = (value: string) => {
+    recalcularComDeslocamento(
+      { taxaDeslocamento: value },
+      value,
+      values.taxaDeslocamentoRepassada,
+    )
+  }
+
+  const handleRepassarTaxaChange = (repassar: boolean) => {
+    recalcularComDeslocamento(
+      { taxaDeslocamentoRepassada: repassar },
+      values.taxaDeslocamento,
+      repassar,
+    )
   }
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -413,7 +471,91 @@ export function AppointmentForm({
         </div>
 
         <div className="mt-3 space-y-3">
-          <Field label="Valor do pacote" htmlFor="appointment-value" error={errors.valorAcordado}>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field
+              label="Taxa de deslocamento (R$)"
+              htmlFor="appointment-travel-fee"
+              error={errors.taxaDeslocamento}
+            >
+              <div className="relative">
+                <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-medium text-muted">
+                  R$
+                </span>
+                <input
+                  id="appointment-travel-fee"
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  inputMode="decimal"
+                  value={values.taxaDeslocamento}
+                  onChange={(event) =>
+                    handleTaxaDeslocamentoChange(event.target.value)
+                  }
+                  placeholder="0,00"
+                  className={cn(inputClass, 'pl-10')}
+                  aria-invalid={Boolean(errors.taxaDeslocamento)}
+                />
+              </div>
+            </Field>
+
+            <Field label="Quem paga o deslocamento?">
+              <div
+                role="group"
+                aria-label="Quem paga o deslocamento?"
+                className="flex gap-2"
+              >
+                <button
+                  type="button"
+                  aria-pressed={!values.taxaDeslocamentoRepassada}
+                  onClick={() => handleRepassarTaxaChange(false)}
+                  className={cn(
+                    'h-10 flex-1 rounded-full px-3 text-xs font-medium ring-1 transition',
+                    !values.taxaDeslocamentoRepassada
+                      ? 'bg-brand-600 text-white ring-brand-600'
+                      : 'bg-surface text-muted ring-line hover:text-ink',
+                  )}
+                >
+                  Absorver pelo estúdio
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={values.taxaDeslocamentoRepassada}
+                  onClick={() => handleRepassarTaxaChange(true)}
+                  className={cn(
+                    'h-10 flex-1 rounded-full px-3 text-xs font-medium ring-1 transition',
+                    values.taxaDeslocamentoRepassada
+                      ? 'bg-brand-600 text-white ring-brand-600'
+                      : 'bg-surface text-muted ring-line hover:text-ink',
+                  )}
+                >
+                  Repassar ao cliente
+                </button>
+              </div>
+            </Field>
+          </div>
+
+          {pacoteSelecionado && taxaDeslocamento > 0 ? (
+            <p className="rounded-lg bg-surface px-3 py-2 text-[11px] text-muted ring-1 ring-line">
+              {values.taxaDeslocamentoRepassada ? (
+                <>
+                  Pacote {formatBRL(valorPacoteBase)} + deslocamento{' '}
+                  {formatBRL(taxaDeslocamento)} ={' '}
+                  <strong className="text-ink">{formatBRL(valorTotal)}</strong>
+                </>
+              ) : (
+                <>
+                  Pacote {formatBRL(valorPacoteBase)} · deslocamento{' '}
+                  {formatBRL(taxaDeslocamento)} absorvido pelo estúdio
+                </>
+              )}
+            </p>
+          ) : null}
+
+          <Field
+            label="Valor total cobrado do cliente"
+            htmlFor="appointment-value"
+            error={errors.valorAcordado}
+          >
             <div className="relative">
               <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-medium text-muted">
                 R$

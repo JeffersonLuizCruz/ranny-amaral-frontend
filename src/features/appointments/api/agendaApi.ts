@@ -68,6 +68,8 @@ interface AgendamentoDto {
   status: AgendamentoStatus
   observacoes: string | null
   valorAcordado: number
+  taxaDeslocamento: number | null
+  taxaDeslocamentoRepassada: boolean | null
   valorEntrada: number
   percentualEntrada: number
   saldoRestante: number
@@ -96,6 +98,8 @@ interface AgendamentoRequest {
   status: AgendamentoStatus
   observacoes: string | null
   valorAcordado: number
+  taxaDeslocamento: number
+  repassarTaxaDeslocamento: boolean
   valorEntrada: number
   percentualEntrada: number
   aplicarPromocao: boolean
@@ -162,6 +166,8 @@ function toAgendamento(dto: AgendamentoDto): AgendamentoEnsaio {
     status: dto.status,
     observacoes: dto.observacoes ?? undefined,
     valorAcordado: dto.valorAcordado,
+    taxaDeslocamento: dto.taxaDeslocamento ?? 0,
+    taxaDeslocamentoRepassada: Boolean(dto.taxaDeslocamentoRepassada),
     valorEntrada: dto.valorEntrada,
     percentualEntrada: dto.percentualEntrada,
     saldoRestante: dto.saldoRestante,
@@ -197,6 +203,8 @@ function toRequest(draft: AgendamentoDraft): AgendamentoRequest {
     status: draft.status,
     observacoes: draft.observacoes ?? null,
     valorAcordado: draft.valorAcordado,
+    taxaDeslocamento: draft.taxaDeslocamento ?? 0,
+    repassarTaxaDeslocamento: Boolean(draft.taxaDeslocamentoRepassada),
     valorEntrada: draft.valorEntrada,
     percentualEntrada: draft.percentualEntrada,
     aplicarPromocao: Boolean(draft.condicoesPacote?.promocaoAplicada),

@@ -32,6 +32,8 @@ export interface AppointmentFormValues {
   local: string
   status: AgendamentoStatus
   valorAcordado: string
+  taxaDeslocamento: string
+  taxaDeslocamentoRepassada: boolean
   percentualEntrada: string
   valorEntrada: string
   entradaPaga: boolean
@@ -47,6 +49,7 @@ export type AppointmentFormErrors = Partial<
     | 'duracaoMinutos'
     | 'local'
     | 'valorAcordado'
+    | 'taxaDeslocamento'
     | 'percentualEntrada'
     | 'valorEntrada'
     | 'contatoNome'
@@ -78,6 +81,8 @@ export function createEmptyAppointmentValues(
     local: 'Estúdio',
     status: 'reservado',
     valorAcordado: '',
+    taxaDeslocamento: '',
+    taxaDeslocamentoRepassada: false,
     percentualEntrada: String(defaultPercentual),
     valorEntrada: '',
     entradaPaga: false,
@@ -104,6 +109,8 @@ export function appointmentToFormValues(
     local: appointment.local,
     status: appointment.status,
     valorAcordado: String(appointment.valorAcordado),
+    taxaDeslocamento: String(appointment.taxaDeslocamento ?? 0),
+    taxaDeslocamentoRepassada: Boolean(appointment.taxaDeslocamentoRepassada),
     percentualEntrada: String(appointment.percentualEntrada),
     valorEntrada: String(appointment.valorEntrada),
     entradaPaga: appointment.pagamentoEntrada.status === 'confirmado',
@@ -152,6 +159,15 @@ export function validateAppointmentForm(values: AppointmentFormValues): {
     errors.valorAcordado = 'Informe um valor válido.'
   }
 
+  const taxaDeslocamento = values.taxaDeslocamento.trim()
+    ? parseCurrencyInput(values.taxaDeslocamento)
+    : 0
+  if (!Number.isFinite(taxaDeslocamento) || taxaDeslocamento < 0) {
+    errors.taxaDeslocamento = 'Informe uma taxa válida.'
+  } else if (values.taxaDeslocamentoRepassada && taxaDeslocamento > valor) {
+    errors.taxaDeslocamento = 'A taxa não pode ser maior que o valor total.'
+  }
+
   const percentualInput = values.percentualEntrada.trim()
   const valorEntradaInput = values.valorEntrada.trim()
   let percentual = percentualInput ? Number(percentualInput) : 0
@@ -195,6 +211,8 @@ export function validateAppointmentForm(values: AppointmentFormValues): {
       local,
       status: values.status,
       valorAcordado: valor,
+      taxaDeslocamento,
+      taxaDeslocamentoRepassada: values.taxaDeslocamentoRepassada,
       valorEntrada,
       percentualEntrada: percentual,
       saldoRestante,

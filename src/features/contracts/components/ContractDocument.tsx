@@ -124,12 +124,24 @@ export function ContractDocument({
           <p className="font-semibold text-ink">Resumo financeiro</p>
           <div className="mt-2 grid gap-1 text-slate-700 sm:grid-cols-2">
             <p>Valor total: {formatBRL(contrato.valorTotal)}</p>
+            {snapshot.deslocamento?.repassado &&
+            snapshot.deslocamento.valor > 0 ? (
+              <p>
+                Taxa de deslocamento: {formatBRL(snapshot.deslocamento.valor)}{' '}
+                (repassada ao contratante)
+              </p>
+            ) : null}
             <p>Entrada: {formatBRL(contrato.valorEntrada)} ({contrato.percentualEntrada}%)</p>
             <p>Saldo restante: {formatBRL(contrato.saldoRestante)}</p>
             <p>Forma de pagamento: {contrato.formaPagamento}</p>
             <p>Status da entrada: {ENTRADA_STATUS_META[contrato.statusEntrada].label}</p>
             <p>Status do saldo final: {SALDO_FINAL_STATUS_META[contrato.statusSaldoFinal].label}</p>
-            {pacote ? <p>Pacote: {pacote.nome}</p> : null}
+            {pacote ? (
+              <p>
+                Pacote: {pacote.nome} ·{' '}
+                {formatBRL(pacote.valorEfetivo ?? pacote.valor)}
+              </p>
+            ) : null}
             {pacote ? <p>Duração: {formatDuration(pacote.duracaoMinutos)}</p> : null}
             {agendamento ? (
               <p>Ensaio: {formatAppointmentDate(agendamento.dataHoraInicio, agendamento.dataHoraFim)}</p>

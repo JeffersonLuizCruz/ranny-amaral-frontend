@@ -76,7 +76,16 @@ export interface ContratoSnapshot {
     'dataHoraInicio' | 'dataHoraFim' | 'local' | 'valorAcordado'
   >
   estudio: EstudioSnapshot
+  /** Taxa de deslocamento congelada na emissão do contrato. */
+  deslocamento?: ContratoSnapshotDeslocamento
   modeloVersao: number
+}
+
+export interface ContratoSnapshotDeslocamento {
+  valor: number
+  repassado: boolean
+  valorCobrado: number
+  valorAbsorvido: number
 }
 
 /**

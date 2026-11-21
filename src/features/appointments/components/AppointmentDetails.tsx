@@ -68,6 +68,7 @@ export function AppointmentDetails({
   const valorEntrada = contrato?.valorEntrada ?? appointment.valorEntrada
   const percentualEntrada = contrato?.percentualEntrada ?? appointment.percentualEntrada
   const saldoRestante = contrato?.saldoRestante ?? appointment.saldoRestante
+  const taxaDeslocamento = appointment.taxaDeslocamento ?? 0
   const addToast = useToastStore((state) => state.addToast)
   const galerias = useGalleryStore((state) => state.galerias)
   const createGallery = useGalleryStore((state) => state.createGallery)
@@ -171,7 +172,18 @@ export function AppointmentDetails({
 
         <DetailRow icon={MapPin}>{appointment.local}</DetailRow>
 
-        <DetailRow icon={Wallet}>{formatBRL(appointment.valorAcordado)}</DetailRow>
+        <DetailRow icon={Wallet}>
+          <span className="flex flex-col">
+            <span>{formatBRL(appointment.valorAcordado)}</span>
+            {taxaDeslocamento > 0 ? (
+              <span className="text-[11px] font-normal text-muted">
+                {appointment.taxaDeslocamentoRepassada
+                  ? `Inclui ${formatBRL(taxaDeslocamento)} de deslocamento repassado`
+                  : `${formatBRL(taxaDeslocamento)} de deslocamento absorvido pelo estúdio`}
+              </span>
+            ) : null}
+          </span>
+        </DetailRow>
 
         <div className="rounded-xl border border-line bg-canvas/60 p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">

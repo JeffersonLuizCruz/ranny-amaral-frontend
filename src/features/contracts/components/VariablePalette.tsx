@@ -7,7 +7,14 @@ interface VariablePaletteProps {
 }
 
 export function VariablePalette({ onInsert }: VariablePaletteProps) {
-  const groups = ['Estúdio', 'Cliente', 'Pacote', 'Agendamento', 'Contrato'] as const
+  const groups = [
+    'Estúdio',
+    'Cliente',
+    'Pacote',
+    'Agendamento',
+    'Contrato',
+    'Deslocamento',
+  ] as const
 
   return (
     <div className="space-y-3">

@@ -39,12 +39,18 @@ export interface ContractTemplateContext {
     formaPagamento: string
     validade?: string
   }
+  deslocamento?: {
+    valor: number
+    repassado: boolean
+    valorCobrado: number
+    valorAbsorvido: number
+  }
 }
 
 export interface ContractVariable {
   token: string
   label: string
-  group: 'Estúdio' | 'Cliente' | 'Pacote' | 'Agendamento' | 'Contrato'
+  group: 'Estúdio' | 'Cliente' | 'Pacote' | 'Agendamento' | 'Contrato' | 'Deslocamento'
   sample: string
 }
 
@@ -91,6 +97,9 @@ export const CONTRACT_VARIABLES: ContractVariable[] = [
   { token: 'contrato.saldoRestante', label: 'Saldo restante', group: 'Contrato', sample: 'R$ 623,00' },
   { token: 'contrato.formaPagamento', label: 'Forma de pagamento', group: 'Contrato', sample: 'Pix' },
   { token: 'contrato.validade', label: 'Validade do contrato', group: 'Contrato', sample: '10/11/2026' },
+
+  { token: 'deslocamento.valor', label: 'Taxa de deslocamento', group: 'Deslocamento', sample: 'R$ 50,00' },
+  { token: 'deslocamento.descricao', label: 'Texto do deslocamento', group: 'Deslocamento', sample: 'A taxa de deslocamento de R$ 50,00 foi repassada ao contratante e está considerada no valor total de R$ 250,00.' },
 ]
 
 const TOKEN_PATTERN = /\{\{\s*([\w.]+)\s*\}\}/g
@@ -139,7 +148,12 @@ function formatarRegraFotoExtra(
 }
 
 function buildTokens(context: ContractTemplateContext): Record<string, string> {
-  const { estudio, cliente, pacote, agendamento, contrato } = context
+  const { estudio, cliente, pacote, agendamento, contrato, deslocamento } = context
+  const deslocamentoRepassado =
+    deslocamento != null && deslocamento.repassado && deslocamento.valor > 0
+  const descricaoDeslocamento = deslocamentoRepassado
+    ? `A taxa de deslocamento de ${formatBRL(deslocamento.valor)} foi repassada ao contratante e está considerada no valor total de ${formatBRL(contrato.valorTotal)}.`
+    : ''
 
   return {
     'estudio.nome': estudio.nome || '—',
@@ -196,6 +210,9 @@ function buildTokens(context: ContractTemplateContext): Record<string, string> {
     'contrato.saldoRestante': formatBRL(contrato.saldoRestante),
     'contrato.formaPagamento': contrato.formaPagamento || '—',
     'contrato.validade': formatDate(contrato.validade),
+
+    'deslocamento.valor': formatBRL(deslocamento?.valor ?? 0),
+    'deslocamento.descricao': descricaoDeslocamento,
   }
 }
 
@@ -274,12 +291,18 @@ export function createSampleContractContext(): ContractTemplateContext {
     contrato: {
       numero: 'CT-2026-0001',
       dataEmissao: new Date().toISOString(),
-      valorTotal: 890,
-      valorEntrada: 267,
+      valorTotal: 940,
+      valorEntrada: 282,
       percentualEntrada: 30,
-      saldoRestante: 623,
+      saldoRestante: 658,
       formaPagamento: 'Pix',
       validade: new Date(Date.now() + 7 * 86_400_000).toISOString(),
+    },
+    deslocamento: {
+      valor: 50,
+      repassado: true,
+      valorCobrado: 50,
+      valorAbsorvido: 0,
     },
   }
 }

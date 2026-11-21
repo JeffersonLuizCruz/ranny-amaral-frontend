@@ -71,7 +71,7 @@ Os módulos de galerias e financeiro agora usam a API real; o navegador não cal
 
 - **Login e usuários:** autenticação JWT, troca obrigatória de senha, criação/reset por admin e perfis `Admin`/`Gestor`.
 - **Dashboard:** visão do dia com próximos ensaios, pendências e resumo financeiro.
-- **Agenda:** ensaios, status, remarcações, detalhes do atendimento e bloqueios pontuais (dia inteiro ou intervalo).
+- **Agenda:** ensaios, status, remarcações, taxa de deslocamento (absorvida ou repassada), detalhes do atendimento e bloqueios pontuais (dia inteiro ou intervalo).
 - **Pacotes:** duração, valor de tabela, fotos/vídeos inclusos, valor da foto extra, faixas opcionais por quantidade e promoção opcional.
 - **Contratos:** modelo, aceite por link público, entrada e saldo final.
 - **Galerias:** upload de originais, seleção pública, fotos extras, edição e entrega por link.
@@ -95,6 +95,9 @@ Os módulos de galerias e financeiro agora usam a API real; o navegador não cal
   no ensaio ou contrato. O registro exige a entrada quitada; com os pagamentos quitados, o atendimento vira
   `realizado` na data do ensaio (ou imediatamente, se a data já passou).
 - **Fotos extras:** cobradas após a seleção do cliente, confirmadas pelo staff na galeria.
+- **Deslocamento:** o ensaio aceita uma taxa informada pelo staff, que escolhe absorver pelo estúdio ou
+  repassar ao cliente. Repassada, ela soma ao total e a entrada percentual incide sobre esse total;
+  absorvida, o cliente paga apenas o pacote. Somente o repasse aparece no contrato.
 
 ### Galeria
 
