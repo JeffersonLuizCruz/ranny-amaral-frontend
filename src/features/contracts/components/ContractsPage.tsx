@@ -16,6 +16,7 @@ import { Paginador } from '@/shared/components/ui/Paginador'
 import { useDebouncedValue } from '@/shared/lib/useDebouncedValue'
 import { cn } from '@/shared/lib/cn'
 import { useAgendaStore } from '@/features/agenda/store/agendaStore'
+import { useAuthStore } from '@/features/auth/store/authStore'
 import { useContractStore } from '@/features/contracts/store/contractStore'
 import { ContractCard } from '@/features/contracts/components/ContractCard'
 
@@ -36,6 +37,7 @@ export function ContractsPage() {
   const erro = useContractStore((state) => state.erro)
   const carregarPaginaContratos = useContractStore((state) => state.carregarPaginaContratos)
   const openCreateDrawer = useAgendaStore((state) => state.openCreateDrawer)
+  const isAdmin = useAuthStore((state) => state.usuario?.role === 'admin')
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
   const [aceite, setAceite] = useState<AceiteFilter>('todos')
@@ -45,56 +47,61 @@ export function ContractsPage() {
   const [tamanho, setTamanho] = useState(12)
   const queryDebounced = useDebouncedValue(query)
 
+  const filtrosStatus = useMemo(
+    () =>
+      isAdmin
+        ? {
+            q: queryDebounced.trim() || undefined,
+            statusAceite: aceite === 'todos' ? undefined : aceite,
+            statusEntrada: entrada === 'todos' ? undefined : entrada,
+            statusSaldoFinal: saldoFinal === 'todos' ? undefined : saldoFinal,
+          }
+        : {},
+    [aceite, entrada, isAdmin, queryDebounced, saldoFinal],
+  )
+
   useEffect(() => {
-    void carregarPaginaContratos({
-      q: queryDebounced.trim() || undefined,
-      statusAceite: aceite === 'todos' ? undefined : aceite,
-      statusEntrada: entrada === 'todos' ? undefined : entrada,
-      statusSaldoFinal: saldoFinal === 'todos' ? undefined : saldoFinal,
-      pagina,
-      tamanho,
-    }).catch(() => undefined)
-  }, [aceite, carregarPaginaContratos, entrada, pagina, queryDebounced, saldoFinal, tamanho])
+    void carregarPaginaContratos({ ...filtrosStatus, pagina, tamanho }).catch(
+      () => undefined,
+    )
+  }, [carregarPaginaContratos, filtrosStatus, pagina, tamanho])
 
   const items = paginaContratos?.itens ?? []
 
   const recarregarPagina = () =>
-    carregarPaginaContratos({
-      q: queryDebounced.trim() || undefined,
-      statusAceite: aceite === 'todos' ? undefined : aceite,
-      statusEntrada: entrada === 'todos' ? undefined : entrada,
-      statusSaldoFinal: saldoFinal === 'todos' ? undefined : saldoFinal,
-      pagina,
-      tamanho,
-    })
+    carregarPaginaContratos({ ...filtrosStatus, pagina, tamanho })
 
   const filtrosAtivos = useMemo(
     () =>
-      aceite !== 'todos' ||
-      entrada !== 'todos' ||
-      saldoFinal !== 'todos' ||
-      query.trim().length > 0,
-    [aceite, entrada, query, saldoFinal],
+      isAdmin &&
+      (aceite !== 'todos' ||
+        entrada !== 'todos' ||
+        saldoFinal !== 'todos' ||
+        query.trim().length > 0),
+    [aceite, entrada, isAdmin, query, saldoFinal],
   )
 
   return (
     <div className="p-4 sm:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative w-full max-w-md">
-          <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" />
-          <input
-            value={query}
-            onChange={(event) => {
-              setQuery(event.target.value)
-              setPagina(0)
-            }}
-            placeholder="Buscar por número, cliente ou pacote"
-            className={cn(inputClass, 'pl-10')}
-            aria-label="Buscar contrato"
-          />
-        </div>
+        {isAdmin ? (
+          <div className="relative w-full max-w-md">
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" />
+            <input
+              value={query}
+              onChange={(event) => {
+                setQuery(event.target.value)
+                setPagina(0)
+              }}
+              placeholder="Buscar por número, cliente ou pacote"
+              className={cn(inputClass, 'pl-10')}
+              aria-label="Buscar contrato"
+            />
+          </div>
+        ) : null}
 
         <Button
+          className={isAdmin ? undefined : 'sm:ml-auto'}
           onClick={() => {
             openCreateDrawer()
             navigate('/agenda')
@@ -105,102 +112,104 @@ export function ContractsPage() {
         </Button>
       </div>
 
-      <div className="mt-3 space-y-2">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="mr-1 text-[10px] font-semibold uppercase tracking-wide text-muted">
-            Aceite
-          </span>
-          <FilterChip
-            active={aceite === 'todos'}
-            label={`Todos (${contratos.length})`}
-            onClick={() => {
-              setAceite('todos')
-              setPagina(0)
-            }}
-          />
-          {ACEITE_STATUS_ORDER.map((item) => {
-            const count = contratos.filter(
-              (contrato) => contrato.statusAceite === item,
-            ).length
-            return (
+      {isAdmin ? (
+        <div className="mt-3 space-y-2">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="mr-1 text-[10px] font-semibold uppercase tracking-wide text-muted">
+              Aceite
+            </span>
+            <FilterChip
+              active={aceite === 'todos'}
+              label={`Todos (${contratos.length})`}
+              onClick={() => {
+                setAceite('todos')
+                setPagina(0)
+              }}
+            />
+            {ACEITE_STATUS_ORDER.map((item) => {
+              const count = contratos.filter(
+                (contrato) => contrato.statusAceite === item,
+              ).length
+              return (
+                <FilterChip
+                  key={item}
+                  active={aceite === item}
+                  label={`${ACEITE_STATUS_META[item].label} (${count})`}
+                  dot={ACEITE_STATUS_META[item].dot}
+                  onClick={() => {
+                    setAceite(item)
+                    setPagina(0)
+                  }}
+                />
+              )
+            })}
+          </div>
+
+          <div className="space-y-1.5">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="mr-1 text-[10px] font-semibold uppercase tracking-wide text-muted">
+                Entrada
+              </span>
               <FilterChip
-                key={item}
-                active={aceite === item}
-                label={`${ACEITE_STATUS_META[item].label} (${count})`}
-                dot={ACEITE_STATUS_META[item].dot}
+                active={entrada === 'todos'}
+                label="Todos"
                 onClick={() => {
-                  setAceite(item)
+                  setEntrada('todos')
                   setPagina(0)
                 }}
               />
-            )
-          })}
-        </div>
+              {PAGAMENTO_ORDER.map((item) => {
+                const count = contratos.filter(
+                  (contrato) => contrato.statusEntrada === item,
+                ).length
+                return (
+                  <FilterChip
+                    key={`entrada-${item}`}
+                    active={entrada === item}
+                    label={`${ENTRADA_STATUS_META[item].label} (${count})`}
+                    dot={ENTRADA_STATUS_META[item].dot}
+                    onClick={() => {
+                      setEntrada(item)
+                      setPagina(0)
+                    }}
+                  />
+                )
+              })}
+            </div>
 
-        <div className="space-y-1.5">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="mr-1 text-[10px] font-semibold uppercase tracking-wide text-muted">
-              Entrada
-            </span>
-            <FilterChip
-              active={entrada === 'todos'}
-              label="Todos"
-              onClick={() => {
-                setEntrada('todos')
-                setPagina(0)
-              }}
-            />
-            {PAGAMENTO_ORDER.map((item) => {
-              const count = contratos.filter(
-                (contrato) => contrato.statusEntrada === item,
-              ).length
-              return (
-                <FilterChip
-                  key={`entrada-${item}`}
-                  active={entrada === item}
-                  label={`${ENTRADA_STATUS_META[item].label} (${count})`}
-                  dot={ENTRADA_STATUS_META[item].dot}
-                  onClick={() => {
-                    setEntrada(item)
-                    setPagina(0)
-                  }}
-                />
-              )
-            })}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="mr-1 text-[10px] font-semibold uppercase tracking-wide text-muted">
-              Saldo final
-            </span>
-            <FilterChip
-              active={saldoFinal === 'todos'}
-              label="Todos"
-              onClick={() => {
-                setSaldoFinal('todos')
-                setPagina(0)
-              }}
-            />
-            {PAGAMENTO_ORDER.map((item) => {
-              const count = contratos.filter(
-                (contrato) => contrato.statusSaldoFinal === item,
-              ).length
-              return (
-                <FilterChip
-                  key={`saldo-${item}`}
-                  active={saldoFinal === item}
-                  label={`${SALDO_FINAL_STATUS_META[item].label} (${count})`}
-                  dot={SALDO_FINAL_STATUS_META[item].dot}
-                  onClick={() => {
-                    setSaldoFinal(item)
-                    setPagina(0)
-                  }}
-                />
-              )
-            })}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="mr-1 text-[10px] font-semibold uppercase tracking-wide text-muted">
+                Saldo final
+              </span>
+              <FilterChip
+                active={saldoFinal === 'todos'}
+                label="Todos"
+                onClick={() => {
+                  setSaldoFinal('todos')
+                  setPagina(0)
+                }}
+              />
+              {PAGAMENTO_ORDER.map((item) => {
+                const count = contratos.filter(
+                  (contrato) => contrato.statusSaldoFinal === item,
+                ).length
+                return (
+                  <FilterChip
+                    key={`saldo-${item}`}
+                    active={saldoFinal === item}
+                    label={`${SALDO_FINAL_STATUS_META[item].label} (${count})`}
+                    dot={SALDO_FINAL_STATUS_META[item].dot}
+                    onClick={() => {
+                      setSaldoFinal(item)
+                      setPagina(0)
+                    }}
+                  />
+                )
+              })}
+            </div>
           </div>
         </div>
-      </div>
+      ) : null}
 
       <div className="mt-4">
         {erro ? (
