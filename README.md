@@ -155,7 +155,7 @@ aguardando_upload → em_selecao → selecao_enviada → em_edicao → entregue
 - `/login` — autenticação.
 - `/trocar-senha` — troca obrigatória no primeiro acesso.
 - `/usuarios` — gestão de usuários (somente `ADMIN`).
-- `/assinar/:token` — aceite do contrato (público).
+- `/assinar/:token` — aceite do contrato (público), com a identidade visual da proposta e a logo fixa em `public/branding/logo-ranny-amaral.png`.
 - `/galeria/:token` — galeria pública unificada: seleção, liberação progressiva e download.
 - `/selecao/:token` e `/entrega/:token` — redirecionam para `/galeria/:token` (compatibilidade).
 

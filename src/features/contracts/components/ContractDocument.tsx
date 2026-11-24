@@ -15,6 +15,8 @@ interface ContractDocumentProps {
   contrato: Contrato
   aceite?: DadosAceite
   className?: string
+  /** Remove a moldura de papel quando o documento é embutido em outro cartão. */
+  embedded?: boolean
 }
 
 function formatDate(value?: string): string {
@@ -29,6 +31,7 @@ export function ContractDocument({
   contrato,
   aceite,
   className,
+  embedded = false,
 }: ContractDocumentProps) {
   const { snapshot } = contrato
   const { estudio, cliente, pacote, agendamento } = snapshot
@@ -36,33 +39,44 @@ export function ContractDocument({
   return (
     <article
       className={cn(
-        'contract-print-root mx-auto w-full max-w-[210mm] rounded-2xl border border-line bg-white p-6 text-[12px] leading-relaxed text-ink shadow-card sm:p-10',
+        'contract-print-root mx-auto w-full text-[12px] leading-relaxed text-ink',
+        embedded
+          ? 'max-w-none'
+          : 'max-w-[210mm] rounded-2xl border border-line bg-white p-6 shadow-card sm:p-10',
         className,
       )}
     >
       <header className="border-b border-slate-200 pb-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <p className="text-base font-semibold tracking-tight text-ink">
-              {estudio.nome}
-            </p>
-            {estudio.razaoSocial ? (
-              <p className="text-[11px] text-muted">{estudio.razaoSocial}</p>
-            ) : null}
-            <div className="mt-1 space-y-0.5 text-[11px] text-muted">
-              {estudio.cnpj ? <p>CNPJ: {estudio.cnpj}</p> : null}
-              {estudio.endereco ? (
-                <p>
-                  {estudio.endereco}
-                  {estudio.cidade ? ` — ${estudio.cidade}` : ''}
-                  {estudio.estado ? `/${estudio.estado}` : ''}
-                </p>
+          <div className="flex items-start gap-3">
+            <img
+              src="/branding/logo-ranny-amaral.png"
+              alt={`Logo de ${estudio.nome}`}
+              className="h-10 w-auto max-w-[140px] shrink-0 object-contain"
+              draggable={false}
+            />
+            <div>
+              <p className="text-base font-semibold tracking-tight text-ink">
+                {estudio.nome}
+              </p>
+              {estudio.razaoSocial ? (
+                <p className="text-[11px] text-muted">{estudio.razaoSocial}</p>
               ) : null}
-              {estudio.email || estudio.telefone ? (
-                <p>
-                  {[estudio.email, estudio.telefone].filter(Boolean).join(' · ')}
-                </p>
-              ) : null}
+              <div className="mt-1 space-y-0.5 text-[11px] text-muted">
+                {estudio.cnpj ? <p>CNPJ: {estudio.cnpj}</p> : null}
+                {estudio.endereco ? (
+                  <p>
+                    {estudio.endereco}
+                    {estudio.cidade ? ` — ${estudio.cidade}` : ''}
+                    {estudio.estado ? `/${estudio.estado}` : ''}
+                  </p>
+                ) : null}
+                {estudio.email || estudio.telefone ? (
+                  <p>
+                    {[estudio.email, estudio.telefone].filter(Boolean).join(' · ')}
+                  </p>
+                ) : null}
+              </div>
             </div>
           </div>
 

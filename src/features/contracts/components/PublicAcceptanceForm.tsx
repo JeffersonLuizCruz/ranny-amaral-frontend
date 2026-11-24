@@ -1,10 +1,17 @@
-import { useState } from 'react'
-import type { FormEvent } from 'react'
-import { CheckCircle2, Paperclip, Upload, Wallet } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import type { ComponentType, FormEvent, ReactNode } from 'react'
+import {
+  Camera,
+  CameraOff,
+  CheckCircle2,
+  Paperclip,
+  Receipt,
+  Upload,
+  User,
+  Wallet,
+} from 'lucide-react'
 
 import type { Contrato, DadosAceiteInput } from '@/domain/contracts'
-import { Button } from '@/shared/components/ui/Button'
-import { Field, inputClass, selectClass } from '@/shared/components/ui/Field'
 import { cn } from '@/shared/lib/cn'
 import { formatBRL } from '@/shared/lib/currency'
 import {
@@ -14,12 +21,70 @@ import {
   type AcceptanceFormValues,
 } from '@/features/contracts/lib/documentValidation'
 import { PROOF_ACCEPT, validateProofFile } from '@/features/contracts/lib/proofFile'
+import {
+  publicCard,
+  publicCtaClass,
+  publicDisplay,
+  publicInputClass,
+  publicLabelClass,
+  publicSelectClass,
+} from '@/features/contracts/components/public/publicContractTheme'
 
 interface PublicAcceptanceFormProps {
   contrato: Contrato
   submitting: boolean
   error?: string
   onSubmit: (input: DadosAceiteInput, comprovante?: File) => void
+}
+
+interface PublicFieldProps {
+  label: string
+  htmlFor: string
+  error?: string
+  children: ReactNode
+}
+
+function PublicField({ label, htmlFor, error, children }: PublicFieldProps) {
+  return (
+    <div className="space-y-1.5">
+      <label htmlFor={htmlFor} className={publicLabelClass}>
+        {label}
+      </label>
+      {children}
+      {error ? (
+        <p role="alert" className="text-xs font-medium text-rose-600">
+          {error}
+        </p>
+      ) : null}
+    </div>
+  )
+}
+
+interface FormSectionProps {
+  step: number
+  title: string
+  description?: string
+  icon: ComponentType<{ className?: string }>
+  children: ReactNode
+}
+
+function FormSection({ step, title, description, icon: Icon, children }: FormSectionProps) {
+  return (
+    <section className={cn(publicCard, 'p-5 sm:p-7')}>
+      <div className="mb-4 flex items-start gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-teal-400 text-white shadow-sm">
+          <Icon className="h-4 w-4" />
+        </span>
+        <div>
+          <h2 className={`${publicDisplay} text-lg font-semibold text-cyan-950`}>
+            {step}. {title}
+          </h2>
+          {description ? <p className="text-xs text-slate-500">{description}</p> : null}
+        </div>
+      </div>
+      <div className="space-y-4">{children}</div>
+    </section>
+  )
 }
 
 export function PublicAcceptanceForm({
@@ -38,11 +103,22 @@ export function PublicAcceptanceForm({
   )
   const [errors, setErrors] = useState<AcceptanceFormErrors>({})
   const [proof, setProof] = useState<File | null>(null)
+  const errorRef = useRef<HTMLDivElement>(null)
 
   const requiresProof =
     contrato.valorEntrada > 0 &&
     contrato.statusEntrada === 'pendente' &&
     (!contrato.pagamento.comprovante || Boolean(contrato.pagamento.rejeicao))
+  const comprovanteEmAnalise =
+    contrato.statusEntrada === 'pendente' &&
+    Boolean(contrato.pagamento.comprovante) &&
+    !contrato.pagamento.rejeicao
+
+  useEffect(() => {
+    if (!error) return
+    errorRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    errorRef.current?.focus()
+  }, [error])
 
   const update = (patch: Partial<AcceptanceFormValues>) => {
     setValues((current) => ({ ...current, ...patch }))
@@ -91,206 +167,254 @@ export function PublicAcceptanceForm({
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="rounded-2xl border border-line bg-surface p-4 shadow-card"
-      noValidate
-    >
-      <h2 className="text-sm font-semibold text-ink">Aceite do contrato</h2>
-      <p className="mt-1 text-[11px] leading-relaxed text-muted">
-        Confira seus dados, pague a entrada e anexe o comprovante para concluir.
-      </p>
-
-      <div className="mt-4 space-y-3">
-        <Field label="Nome completo" htmlFor="acceptance-name" error={errors.nomeCompleto}>
+    <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+      <FormSection
+        step={1}
+        title="Seus dados"
+        description="Preencha como consta nos seus documentos."
+        icon={User}
+      >
+        <PublicField
+          label="Nome completo *"
+          htmlFor="acceptance-name"
+          error={errors.nomeCompleto}
+        >
           <input
             id="acceptance-name"
             data-autofocus
             value={values.nomeCompleto}
             onChange={(event) => update({ nomeCompleto: event.target.value })}
-            className={inputClass}
+            className={publicInputClass}
+            placeholder="Como consta no RG"
             autoComplete="name"
             aria-invalid={Boolean(errors.nomeCompleto)}
           />
-        </Field>
+        </PublicField>
 
-        <div className="grid grid-cols-[7.5rem_minmax(0,1fr)] gap-2">
-          <Field label="Documento" htmlFor="acceptance-document-type">
+        <div className="grid grid-cols-[7.5rem_minmax(0,1fr)] gap-3">
+          <PublicField label="Documento" htmlFor="acceptance-document-type">
             <select
               id="acceptance-document-type"
               value={values.tipoDocumento}
               onChange={(event) =>
                 update({ tipoDocumento: event.target.value as 'rg' | 'cpf' })
               }
-              className={selectClass}
+              className={publicSelectClass}
             >
               <option value="cpf">CPF</option>
               <option value="rg">RG</option>
             </select>
-          </Field>
+          </PublicField>
 
-          <Field label="Número" htmlFor="acceptance-document" error={errors.documento}>
+          <PublicField label="Número *" htmlFor="acceptance-document" error={errors.documento}>
             <input
               id="acceptance-document"
               value={values.documento}
               onChange={(event) => update({ documento: event.target.value })}
               placeholder={values.tipoDocumento === 'cpf' ? '000.000.000-00' : '00.000.000-0'}
               inputMode={values.tipoDocumento === 'cpf' ? 'numeric' : 'text'}
-              className={inputClass}
+              className={publicInputClass}
               aria-invalid={Boolean(errors.documento)}
             />
-          </Field>
+          </PublicField>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Cidade" htmlFor="acceptance-city" error={errors.cidade}>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <PublicField label="Cidade *" htmlFor="acceptance-city" error={errors.cidade}>
             <input
               id="acceptance-city"
               value={values.cidade}
               onChange={(event) => update({ cidade: event.target.value })}
-              placeholder="Cidade"
-              className={inputClass}
+              placeholder="Sua cidade"
+              className={publicInputClass}
               autoComplete="address-level2"
               aria-invalid={Boolean(errors.cidade)}
             />
-          </Field>
+          </PublicField>
 
-          <Field label="WhatsApp (opcional)" htmlFor="acceptance-whatsapp" error={errors.whatsapp}>
+          <PublicField
+            label="WhatsApp (opcional)"
+            htmlFor="acceptance-whatsapp"
+            error={errors.whatsapp}
+          >
             <input
               id="acceptance-whatsapp"
               value={values.whatsapp}
               onChange={(event) => update({ whatsapp: event.target.value })}
               placeholder="(11) 99999-9999"
               inputMode="tel"
-              className={inputClass}
+              className={publicInputClass}
+              autoComplete="tel"
               aria-invalid={Boolean(errors.whatsapp)}
             />
-          </Field>
+          </PublicField>
         </div>
+      </FormSection>
 
-        <div className="rounded-xl border border-line bg-canvas/60 p-3">
-          <div className="flex items-center gap-2">
-            <Wallet className="size-4 text-muted" />
-            <p className="text-xs font-semibold text-ink">Entrada do ensaio</p>
-          </div>
+      <FormSection
+        step={2}
+        title="Uso de imagem"
+        description="Escolha se autoriza o uso profissional das suas fotos."
+        icon={Camera}
+      >
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="flex min-h-[56px] cursor-pointer items-center gap-3 rounded-2xl border-2 border-cyan-100 px-4 py-3 transition-colors has-[:checked]:border-cyan-400 has-[:checked]:bg-cyan-50">
+            <input
+              type="radio"
+              name="autoriza-uso-imagem"
+              checked={values.autorizaUsoImagem === true}
+              onChange={() => update({ autorizaUsoImagem: true })}
+              className="h-5 w-5 shrink-0 accent-cyan-600"
+            />
+            <Camera className="h-5 w-5 text-cyan-600" />
+            <span className="font-medium text-slate-700">AUTORIZO</span>
+          </label>
+          <label className="flex min-h-[56px] cursor-pointer items-center gap-3 rounded-2xl border-2 border-cyan-100 px-4 py-3 transition-colors has-[:checked]:border-cyan-400 has-[:checked]:bg-cyan-50">
+            <input
+              type="radio"
+              name="autoriza-uso-imagem"
+              checked={values.autorizaUsoImagem === false}
+              onChange={() => update({ autorizaUsoImagem: false })}
+              className="h-5 w-5 shrink-0 accent-cyan-600"
+            />
+            <CameraOff className="h-5 w-5 text-slate-500" />
+            <span className="font-medium text-slate-700">NÃO AUTORIZO</span>
+          </label>
+        </div>
+        <p className="text-sm leading-relaxed text-slate-500">
+          Ao autorizar, as imagens poderão ser utilizadas para fins profissionais e
+          promocionais do estúdio (redes sociais, portfólio, website e materiais
+          publicitários).
+        </p>
+      </FormSection>
 
-          <div className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
+      <FormSection
+        step={3}
+        title="Entrada e comprovante"
+        description="Confira os valores e anexe o comprovante quando necessário."
+        icon={Wallet}
+      >
+        <div className="rounded-2xl bg-gradient-to-r from-cyan-50 to-teal-50 p-4">
+          <div className="grid grid-cols-2 gap-3 text-sm">
             <div>
-              <p className="text-muted">Valor da entrada</p>
-              <p className="font-semibold text-ink">
+              <p className="text-xs text-slate-500">Valor da entrada</p>
+              <p className="font-semibold text-cyan-950">
                 {formatBRL(contrato.valorEntrada)} ({contrato.percentualEntrada}%)
               </p>
             </div>
             <div>
-              <p className="text-muted">Saldo restante</p>
-              <p className="font-semibold text-ink">{formatBRL(contrato.saldoRestante)}</p>
+              <p className="text-xs text-slate-500">Saldo restante</p>
+              <p className="font-semibold text-cyan-950">{formatBRL(contrato.saldoRestante)}</p>
             </div>
           </div>
 
           {contrato.snapshot.estudio.chavePix ? (
-            <p className="mt-2 text-[11px] text-muted">
-              Pix: <span className="font-medium text-ink">{contrato.snapshot.estudio.chavePix}</span>
+            <p className="mt-3 text-sm text-slate-600">
+              Pix:{' '}
+              <span className="font-semibold text-cyan-950">
+                {contrato.snapshot.estudio.chavePix}
+              </span>
             </p>
           ) : null}
 
           {contrato.snapshot.estudio.instrucoesPagamento ? (
-            <p className="mt-1 text-[10px] leading-relaxed text-muted">
+            <p className="mt-1 text-xs leading-relaxed text-slate-500">
               {contrato.snapshot.estudio.instrucoesPagamento}
             </p>
           ) : null}
-
-          {requiresProof ? (
-            <div className="mt-3">
-              <label
-                htmlFor="acceptance-proof"
-                className="flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-line bg-surface px-3 py-4 text-center transition hover:border-brand-300 hover:bg-brand-50/30"
-              >
-                <Upload className="size-5 text-muted" />
-                <span className="mt-1 text-[11px] font-medium text-ink">
-                  Anexar comprovante de pagamento
-                </span>
-                <span className="text-[10px] text-muted">Imagem ou PDF até 10 MB</span>
-                <input
-                  id="acceptance-proof"
-                  type="file"
-                  accept={PROOF_ACCEPT}
-                  onChange={(event) => handleFileChange(event.target.files?.[0] ?? null)}
-                  className="sr-only"
-                />
-              </label>
-
-              {proof ? (
-                <p className="mt-1.5 flex items-center gap-1.5 text-[10px] text-muted">
-                  <Paperclip className="size-3" />
-                  {proof.name} · {Math.round(proof.size / 1024)} KB
-                </p>
-              ) : null}
-
-              {errors.comprovante ? (
-                <p role="alert" className="mt-1.5 text-xs font-medium text-red-600">
-                  {errors.comprovante}
-                </p>
-              ) : null}
-            </div>
-          ) : (
-            <p className="mt-2 rounded-lg bg-emerald-50 px-2 py-1.5 text-[10px] text-emerald-700">
-              {contrato.statusEntrada === 'confirmado'
-                ? 'Entrada já confirmada pelo estúdio.'
-                : 'Este ensaio não possui entrada a pagar.'}
-            </p>
-          )}
         </div>
 
-        <label className="flex cursor-pointer items-start gap-2 rounded-xl border border-line bg-canvas/60 p-3">
-          <input
-            type="checkbox"
-            checked={values.aceite}
-            onChange={(event) => update({ aceite: event.target.checked })}
-            className="mt-0.5 size-4 rounded border-line accent-brand-600"
-          />
-          <span className="text-[11px] leading-relaxed text-ink">
-            Li e aceito os termos do contrato {contrato.numero}. Confirmo que os dados
-            acima são verdadeiros.
-          </span>
-        </label>
+        {requiresProof ? (
+          <div>
+            <label
+              htmlFor="acceptance-proof"
+              className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-cyan-200 bg-cyan-50/50 px-3 py-5 text-center transition hover:border-cyan-400 hover:bg-cyan-50"
+            >
+              <Upload className="size-5 text-cyan-600" />
+              <span className="mt-1 text-sm font-medium text-cyan-950">
+                Anexar comprovante de pagamento
+              </span>
+              <span className="text-xs text-slate-500">Imagem ou PDF até 10 MB</span>
+              <input
+                id="acceptance-proof"
+                type="file"
+                accept={PROOF_ACCEPT}
+                onChange={(event) => handleFileChange(event.target.files?.[0] ?? null)}
+                className="sr-only"
+              />
+            </label>
 
-        <label className="flex cursor-pointer items-start gap-2 rounded-xl border border-line bg-canvas/60 p-3">
-          <input
-            type="checkbox"
-            checked={values.autorizaUsoImagem ?? false}
-            onChange={(event) =>
-              update({ autorizaUsoImagem: event.target.checked })
-            }
-            className="mt-0.5 size-4 rounded border-line accent-brand-600"
-          />
-          <span className="text-[11px] leading-relaxed text-ink">
-            Autorizo o uso das minhas imagens para portfólio, site e redes sociais
-            do estúdio (opcional).
-          </span>
-        </label>
+            {proof ? (
+              <p className="mt-1.5 flex items-center gap-1.5 text-xs text-slate-500">
+                <Paperclip className="size-3" />
+                {proof.name} · {Math.round(proof.size / 1024)} KB
+              </p>
+            ) : null}
 
-        {errors.aceite ? (
-          <p role="alert" className="text-xs font-medium text-red-600">
-            {errors.aceite}
-          </p>
-        ) : null}
+            {errors.comprovante ? (
+              <p role="alert" className="mt-1.5 text-xs font-medium text-rose-600">
+                {errors.comprovante}
+              </p>
+            ) : null}
+          </div>
+        ) : (
+          <div className="flex items-start gap-2 rounded-2xl bg-emerald-50 p-3 text-sm text-emerald-800">
+            <Receipt className="mt-0.5 size-4 shrink-0" />
+            <p>
+              {comprovanteEmAnalise
+                ? 'Comprovante em análise pelo estúdio.'
+                : contrato.statusEntrada === 'confirmado'
+                  ? 'Entrada já confirmada pelo estúdio.'
+                  : contrato.statusEntrada === 'isento'
+                    ? 'Este ensaio não possui entrada a pagar.'
+                    : 'Entrada já recebida pelo estúdio.'}
+            </p>
+          </div>
+        )}
+      </FormSection>
 
-        {error ? (
-          <p role="alert" className="rounded-lg bg-red-50 px-2.5 py-2 text-xs font-medium text-red-700">
-            {error}
-          </p>
-        ) : null}
+      <label className="flex cursor-pointer items-start gap-3 rounded-2xl bg-white/95 p-4 shadow-sm ring-1 ring-cyan-100">
+        <input
+          type="checkbox"
+          checked={values.aceite}
+          onChange={(event) => update({ aceite: event.target.checked })}
+          className="mt-0.5 size-4 shrink-0 rounded border-cyan-200 accent-cyan-600"
+          aria-invalid={Boolean(errors.aceite)}
+        />
+        <span className="text-sm leading-relaxed text-slate-700">
+          Li e aceito os termos do contrato {contrato.numero}. Confirmo que os dados
+          acima são verdadeiros.
+        </span>
+      </label>
 
-        <Button type="submit" fullWidth disabled={submitting}>
-          <CheckCircle2 className="size-4" />
-          {submitting ? 'Registrando aceite…' : 'Aceitar contrato'}
-        </Button>
-
-        <p className={cn('text-center text-[10px] leading-relaxed text-muted')}>
-          Este é um aceite eletrônico com registro de nome, documento, cidade, data e
-          hash do conteúdo.
+      {errors.aceite ? (
+        <p role="alert" className="text-xs font-medium text-rose-600">
+          {errors.aceite}
         </p>
+      ) : null}
+
+      {error ? (
+        <div
+          ref={errorRef}
+          tabIndex={-1}
+          role="alert"
+          className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
+        >
+          {error}
+        </div>
+      ) : null}
+
+      <div className="sticky bottom-0 z-10 -mx-4 bg-gradient-to-t from-cyan-50 via-cyan-50/95 to-transparent px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-4 backdrop-blur sm:-mx-6 sm:px-6">
+        <button type="submit" disabled={submitting} className={publicCtaClass}>
+          <CheckCircle2 className="h-5 w-5" />
+          {submitting ? 'Registrando aceite…' : 'Aceitar contrato'}
+        </button>
       </div>
+
+      <p className="pb-2 text-center text-xs leading-relaxed text-cyan-900/60">
+        Este é um aceite eletrônico com registro de nome, documento, cidade, data e hash
+        do conteúdo.
+      </p>
     </form>
   )
 }
