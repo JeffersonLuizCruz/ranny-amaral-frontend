@@ -51,23 +51,23 @@ export function AppointmentDrawer() {
         }
 
         addToast(result.contract ? 'Ensaio e contrato atualizados.' : 'Ensaio atualizado.')
-      } else {
-        const result = await createBookingWithContract(draft)
-
-        if (result.contract) {
-          addToast('Ensaio criado. Contrato em rascunho.', {
-            actionLabel: 'Abrir contrato',
-            onAction: () => navigate(`/contratos/${result.contract?.id}`),
-            duration: 8_000,
-          })
-        } else {
-          addToast('Ensaio criado, mas nenhum modelo de contrato ativo foi encontrado.')
-        }
+        setSelectedDate(toDateKey(new Date(draft.dataHoraInicio)))
+        closeDrawer()
+        navigate('/agenda')
+        return
       }
 
+      const result = await createBookingWithContract(draft)
+
       setSelectedDate(toDateKey(new Date(draft.dataHoraInicio)))
-      closeDrawer()
       navigate('/agenda')
+      openAppointmentDrawer(result.appointment.id, 'view')
+
+      addToast(
+        result.contract
+          ? 'Ensaio criado. Copie o link do contrato e envie ao cliente.'
+          : 'Ensaio criado, mas nenhum modelo de contrato ativo foi encontrado.',
+      )
     } catch (error) {
       addToast(mensagemDeErro(error))
     }

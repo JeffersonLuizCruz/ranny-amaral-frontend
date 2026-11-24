@@ -2,13 +2,15 @@ import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { Contrato } from '@/domain/contracts'
 import type { AgendamentoEnsaio, Cliente, PacoteFotografico } from '@/domain/types'
 
-const { addToast, createGallery, clientesById, pacotesById } = vi.hoisted(() => ({
+const { addToast, createGallery, clientesById, pacotesById, contratos } = vi.hoisted(() => ({
   addToast: vi.fn(),
   createGallery: vi.fn().mockResolvedValue(undefined),
   clientesById: new Map<string, Cliente>(),
   pacotesById: new Map<string, PacoteFotografico>(),
+  contratos: [] as Contrato[],
 }))
 
 vi.mock('@/features/appointments/lib/lookups', () => ({
@@ -16,8 +18,8 @@ vi.mock('@/features/appointments/lib/lookups', () => ({
 }))
 
 vi.mock('@/features/contracts/store/contractStore', () => ({
-  useContractStore: (selector: (state: { contratos: never[] }) => unknown) =>
-    selector({ contratos: [] }),
+  useContractStore: (selector: (state: { contratos: Contrato[] }) => unknown) =>
+    selector({ contratos }),
 }))
 
 vi.mock('@/features/galleries/store/galleryStore', () => ({
@@ -95,10 +97,28 @@ function renderDetalhes(appointment: AgendamentoEnsaio) {
   )
 }
 
+function contratoRascunho(): Contrato {
+  return {
+    id: 'ct-1',
+    numero: 'CT-2026-0001',
+    agendamentoId: 'a1',
+    statusAceite: 'rascunho',
+    statusEntrada: 'pendente',
+    statusSaldoFinal: 'pendente',
+    valorEntrada: 300,
+    percentualEntrada: 30,
+    saldoRestante: 700,
+    valorRecebido: 0,
+    valorPendente: 1000,
+    pagamento: { valor: 300, percentual: 30, status: 'pendente' },
+  } as unknown as Contrato
+}
+
 describe('AppointmentDetails', () => {
   beforeEach(() => {
     clientesById.clear()
     pacotesById.clear()
+    contratos.length = 0
   })
 
   it('exibe o link de WhatsApp do cliente com mensagem pronta', () => {
@@ -125,6 +145,17 @@ describe('AppointmentDetails', () => {
 
     expect(
       screen.getByText(/Inclui R\$\s*50,00 de deslocamento repassado/),
+    ).toBeInTheDocument()
+  })
+
+  it('destaca o link do contrato quando está em rascunho', () => {
+    contratos.push(contratoRascunho())
+
+    renderDetalhes(agendamento())
+
+    expect(screen.getByText('Contrato em rascunho')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Copiar link do contrato/ }),
     ).toBeInTheDocument()
   })
 

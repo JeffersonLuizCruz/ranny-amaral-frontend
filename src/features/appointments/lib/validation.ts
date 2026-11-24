@@ -19,7 +19,7 @@ import {
   toDateKey,
 } from '@/shared/lib/date'
 import { parseCurrencyInput } from '@/shared/lib/currency'
-import { formatWhatsApp, isValidWhatsApp } from '@/shared/lib/whatsapp'
+import { formatWhatsApp } from '@/shared/lib/whatsapp'
 
 export interface AppointmentFormValues {
   clienteId: string
@@ -51,9 +51,7 @@ export type AppointmentFormErrors = Partial<
     | 'valorAcordado'
     | 'taxaDeslocamento'
     | 'percentualEntrada'
-    | 'valorEntrada'
-    | 'contatoNome'
-    | 'contatoWhatsapp',
+    | 'valorEntrada',
     string
   >
 >
@@ -78,7 +76,7 @@ export function createEmptyAppointmentValues(
     data: toDateKey(safeDate),
     horaInicio: safeTime,
     duracaoMinutos: '60',
-    local: 'Estúdio',
+    local: '',
     status: 'reservado',
     valorAcordado: '',
     taxaDeslocamento: '',
@@ -145,14 +143,6 @@ export function validateAppointmentForm(values: AppointmentFormValues): {
   if (!local) errors.local = 'Informe o local do ensaio.'
 
   const contatoWhatsapp = values.contatoWhatsapp.trim()
-  if (contatoWhatsapp && !isValidWhatsApp(contatoWhatsapp)) {
-    errors.contatoWhatsapp = 'Use um WhatsApp com DDD (10 ou 11 dígitos).'
-  }
-
-  const contatoNome = values.contatoNome.trim()
-  if (!values.clienteId && !contatoNome && !contatoWhatsapp) {
-    errors.contatoNome = 'Selecione um cliente ou informe um contato da reserva.'
-  }
 
   const valor = parseCurrencyInput(values.valorAcordado)
   if (!values.valorAcordado.trim() || valor < 0) {

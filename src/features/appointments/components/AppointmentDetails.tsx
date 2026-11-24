@@ -154,6 +154,22 @@ export function AppointmentDetails({
         )}
       </div>
 
+      {contrato?.statusAceite === 'rascunho' ? (
+        <div className="rounded-xl border border-brand-200 bg-brand-50/60 p-3">
+          <p className="flex items-center gap-2 text-xs font-semibold text-ink">
+            <FileSignature className="size-4 text-brand-700" />
+            Contrato em rascunho
+          </p>
+          <p className="mt-1 text-[11px] text-muted">
+            Copie o link e envie ao cliente para preencher os dados e aceitar.
+          </p>
+          <Button size="sm" className="mt-2" onClick={handleCopyContractLink}>
+            <FileSignature className="size-3.5" />
+            Copiar link do contrato
+          </Button>
+        </div>
+      ) : null}
+
       <div className="space-y-3.5 text-sm">
         <DetailRow icon={CalendarDays}>
           {formatAppointmentDate(appointment.dataHoraInicio, appointment.dataHoraFim)}

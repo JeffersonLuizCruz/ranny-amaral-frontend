@@ -68,8 +68,6 @@ export function origemLabel(origem: ClienteOrigem): string {
   return ORIGEM_OPTIONS.find((option) => option.value === origem)?.label ?? 'Outro'
 }
 
-export const LOCAL_PRESETS = ['Estúdio', 'Externo', 'Domicílio', 'Outro'] as const
-
 /** Paleta sugerida para os pacotes. */
 export const PACKAGE_COLORS = [
   '#7C3AED',

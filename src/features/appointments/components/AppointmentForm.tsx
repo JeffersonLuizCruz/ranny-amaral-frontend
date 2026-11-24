@@ -11,7 +11,6 @@ import {
   Wallet,
 } from 'lucide-react'
 
-import { LOCAL_PRESETS } from '@/domain/constants'
 import {
   calcularPercentualEntrada,
   calcularSaldoRestante,
@@ -34,7 +33,6 @@ import {
   fromDateKey,
 } from '@/shared/lib/date'
 import { useStudioStore } from '@/features/contracts/store/studioStore'
-import { ClientPicker } from '@/features/clients/components/ClientPicker'
 import { PackagePicker } from '@/features/packages/components/PackagePicker'
 import { usePackageStore } from '@/features/packages/store/packageStore'
 import {
@@ -285,44 +283,6 @@ export function AppointmentForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-      <Field label="Cliente existente (opcional)">
-        <ClientPicker
-          value={values.clienteId}
-          onChange={(clienteId) => update({ clienteId })}
-        />
-        <p className="mt-1 text-[11px] text-muted">
-          Se não houver cliente, o contrato criará o cadastro no aceite.
-        </p>
-      </Field>
-
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Contato da reserva" htmlFor="appointment-contact-name" error={errors.contatoNome}>
-          <input
-            id="appointment-contact-name"
-            value={values.contatoNome}
-            onChange={(event) => update({ contatoNome: event.target.value })}
-            placeholder="Nome de quem reservou"
-            className={inputClass}
-            aria-invalid={Boolean(errors.contatoNome)}
-          />
-        </Field>
-        <Field
-          label="WhatsApp do contato"
-          htmlFor="appointment-contact-whatsapp"
-          error={errors.contatoWhatsapp}
-        >
-          <input
-            id="appointment-contact-whatsapp"
-            value={values.contatoWhatsapp}
-            onChange={(event) => update({ contatoWhatsapp: event.target.value })}
-            placeholder="(11) 99999-9999"
-            inputMode="tel"
-            className={inputClass}
-            aria-invalid={Boolean(errors.contatoWhatsapp)}
-          />
-        </Field>
-      </div>
-
       <Field label="Pacote fotográfico">
         <PackagePicker
           value={values.pacoteId}
@@ -434,23 +394,6 @@ export function AppointmentForm({
       ) : null}
 
       <Field label="Local do ensaio" htmlFor="appointment-local" error={errors.local}>
-        <div className="mb-2 flex flex-wrap gap-1.5">
-          {LOCAL_PRESETS.map((preset) => (
-            <button
-              key={preset}
-              type="button"
-              onClick={() => update({ local: preset })}
-              className={cn(
-                'rounded-full px-2.5 py-1 text-[11px] font-medium ring-1 transition',
-                values.local === preset
-                  ? 'bg-brand-50 text-brand-700 ring-brand-200'
-                  : 'bg-surface text-muted ring-line hover:bg-slate-50 hover:text-ink',
-              )}
-            >
-              {preset}
-            </button>
-          ))}
-        </div>
         <div className="relative">
           <MapPin className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" />
           <input

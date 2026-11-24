@@ -10,6 +10,7 @@ function valores(overrides: Partial<AppointmentFormValues> = {}): AppointmentFor
   return {
     ...createEmptyAppointmentValues('2026-12-10', '10:00', 'cli-1', 30),
     pacoteId: 'pkg-1',
+    local: 'Estúdio Teste',
     valorAcordado: '250',
     taxaDeslocamento: '50',
     taxaDeslocamentoRepassada: true,
@@ -63,5 +64,24 @@ describe('validateAppointmentForm com taxa de deslocamento', () => {
 
     expect(resultado.draft).toBeUndefined()
     expect(resultado.errors.taxaDeslocamento).toBe('Informe uma taxa válida.')
+  })
+})
+
+describe('validateAppointmentForm sem cliente', () => {
+  it('aceita ensaio sem cliente e sem contato', () => {
+    const resultado = validateAppointmentForm(
+      valores({ clienteId: '', contatoNome: '', contatoWhatsapp: '' }),
+    )
+
+    expect(resultado.errors).toEqual({})
+    expect(resultado.draft?.clienteId).toBeUndefined()
+    expect(resultado.draft?.contato).toBeUndefined()
+  })
+
+  it('exige o local do ensaio', () => {
+    const resultado = validateAppointmentForm(valores({ local: '  ' }))
+
+    expect(resultado.draft).toBeUndefined()
+    expect(resultado.errors.local).toBe('Informe o local do ensaio.')
   })
 })
