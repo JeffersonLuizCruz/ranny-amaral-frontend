@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Contrato } from '@/domain/contracts'
@@ -87,6 +87,7 @@ function agendamento(
 function renderDetalhes(
   appointment: AgendamentoEnsaio,
   onCancelar: (motivo: string) => Promise<void> = vi.fn().mockResolvedValue(undefined),
+  onClose: () => void = vi.fn(),
 ) {
   return render(
     <MemoryRouter>
@@ -96,7 +97,7 @@ function renderDetalhes(
         onDelete={vi.fn()}
         onStatusChange={vi.fn()}
         onCancelar={onCancelar}
-        onClose={vi.fn()}
+        onClose={onClose}
       />
     </MemoryRouter>,
   )
@@ -218,5 +219,61 @@ describe('AppointmentDetails', () => {
 
     expect(screen.getByText('Cliente desistiu do ensaio')).toBeInTheDocument()
     expect(screen.getByText(/Equipe do estúdio/)).toBeInTheDocument()
+  })
+
+  it('abre a ficha do cliente ao clicar no nome', async () => {
+    const user = userEvent.setup()
+    const onClose = vi.fn()
+    clientesById.set('c1', cliente())
+
+    render(
+      <MemoryRouter initialEntries={['/agenda']}>
+        <Routes>
+          <Route
+            path="/agenda"
+            element={
+              <AppointmentDetails
+                appointment={agendamento()}
+                onEdit={vi.fn()}
+                onDelete={vi.fn()}
+                onStatusChange={vi.fn()}
+                onCancelar={vi.fn().mockResolvedValue(undefined)}
+                onClose={onClose}
+              />
+            }
+          />
+          <Route
+            path="/clientes/:clienteId"
+            element={<h1>Ficha do cliente</h1>}
+          />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    const link = screen.getByRole('link', {
+      name: 'Abrir ficha de Mariana Silva',
+    })
+    expect(link.getAttribute('href')).toBe('/clientes/c1')
+
+    await user.click(link)
+
+    expect(
+      screen.getByRole('heading', { name: 'Ficha do cliente' }),
+    ).toBeInTheDocument()
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('não linka a ficha quando o ensaio não tem cliente cadastrado', () => {
+    renderDetalhes(
+      agendamento({
+        clienteId: undefined,
+        contato: { nome: 'Joana Reserva', whatsapp: '(11) 90000-0000' },
+      }),
+    )
+
+    expect(screen.getByText('Joana Reserva')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('link', { name: /Abrir ficha/ }),
+    ).not.toBeInTheDocument()
   })
 })

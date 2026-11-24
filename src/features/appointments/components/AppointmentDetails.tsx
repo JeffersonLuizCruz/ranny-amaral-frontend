@@ -4,6 +4,7 @@ import {
   ArrowUpRight,
   Ban,
   CalendarDays,
+  ChevronRight,
   Clock,
   FileSignature,
   FileText,
@@ -154,7 +155,20 @@ export function AppointmentDetails({
         </div>
 
         <h3 className="mt-2.5 text-xl font-semibold leading-snug text-ink">
-          {contatoNome ?? 'Reserva sem cliente'}
+          {cliente ? (
+            <Link
+              to={`/clientes/${cliente.id}`}
+              state={{ origem: 'agenda' }}
+              onClick={onClose}
+              aria-label={`Abrir ficha de ${cliente.nome}`}
+              className="group inline-flex items-center gap-1 rounded-sm underline-offset-4 transition hover:text-brand-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+            >
+              {cliente.nome}
+              <ChevronRight className="size-4 shrink-0 text-muted transition group-hover:translate-x-0.5 group-hover:text-brand-700" />
+            </Link>
+          ) : (
+            contatoNome ?? 'Reserva sem cliente'
+          )}
         </h3>
 
         {contatoWhatsapp ? (

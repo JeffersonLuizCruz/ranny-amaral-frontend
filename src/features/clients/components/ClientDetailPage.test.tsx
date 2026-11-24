@@ -112,9 +112,9 @@ vi.mock('@/features/galleries/api/galeriasApi', () => ({
   listarGalerias: estado.listarGalerias,
 }))
 
-function renderPage() {
+function renderPage(state?: { origem: 'agenda' }) {
   return render(
-    <MemoryRouter initialEntries={['/clientes/c1']}>
+    <MemoryRouter initialEntries={[{ pathname: '/clientes/c1', state }]}>
       <Routes>
         <Route path="/clientes/:clienteId" element={<ClientDetailPage />} />
       </Routes>
@@ -149,12 +149,30 @@ describe('ClientDetailPage', () => {
     expect(screen.getByText('Histórico')).toBeInTheDocument()
   })
 
-  it('não repete o hero com o nome do cliente', async () => {
+  it('exibe o nome do cliente no cabeçalho da ficha', async () => {
     renderPage()
 
     await screen.findByText('Financeiro')
     expect(
-      screen.queryByRole('heading', { name: 'Mariana Silva' }),
+      screen.getByRole('heading', { level: 1, name: 'Mariana Silva' }),
+    ).toBeInTheDocument()
+  })
+
+  it('oferece voltar para a agenda quando a ficha é aberta a partir do ensaio', async () => {
+    renderPage({ origem: 'agenda' })
+
+    const link = await screen.findByRole('link', {
+      name: /Voltar para a agenda/,
+    })
+    expect(link.getAttribute('href')).toBe('/agenda')
+  })
+
+  it('não oferece voltar para a agenda em acesso direto à ficha', async () => {
+    renderPage()
+
+    await screen.findByText('Financeiro')
+    expect(
+      screen.queryByRole('link', { name: /Voltar para a agenda/ }),
     ).not.toBeInTheDocument()
   })
 

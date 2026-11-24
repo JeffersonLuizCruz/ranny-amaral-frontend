@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
+  ArrowLeft,
   CalendarDays,
   ChevronRight,
   Clock,
@@ -10,7 +11,7 @@ import {
   Wallet,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import { ACEITE_STATUS_META } from '@/domain/contracts'
 import { origemLabel, STATUS_META } from '@/domain/constants'
@@ -62,6 +63,9 @@ function formatarDataHora(iso?: string): string {
 export function ClientDetailPage() {
   const { clienteId = '' } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
+  const veioDaAgenda =
+    (location.state as { origem?: 'agenda' } | null)?.origem === 'agenda'
   const cliente = useClientStore((state) =>
     state.clientes.find((item) => item.id === clienteId),
   )
@@ -158,7 +162,20 @@ export function ClientDetailPage() {
   return (
     <div className="thin-scrollbar h-full overflow-y-auto bg-canvas">
       <div className="mx-auto max-w-6xl space-y-5 p-4 sm:p-6">
-        <h1 className="sr-only">Ficha do cliente</h1>
+        <header className="min-w-0">
+          {veioDaAgenda ? (
+            <Link
+              to="/agenda"
+              className="inline-flex items-center gap-1 rounded-sm text-xs font-medium text-muted transition hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+            >
+              <ArrowLeft className="size-3.5" />
+              Voltar para a agenda
+            </Link>
+          ) : null}
+          <h1 className="mt-1 truncate text-xl font-semibold tracking-tight text-ink">
+            {cliente.nome}
+          </h1>
+        </header>
 
         <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <Kpi
