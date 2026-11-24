@@ -70,6 +70,9 @@ interface AgendamentoDto {
   valorAcordado: number
   taxaDeslocamento: number | null
   taxaDeslocamentoRepassada: boolean | null
+  cancelamentoMotivo: string | null
+  canceladoEm: string | null
+  canceladoPor: string | null
   valorEntrada: number
   percentualEntrada: number
   saldoRestante: number
@@ -168,6 +171,9 @@ function toAgendamento(dto: AgendamentoDto): AgendamentoEnsaio {
     valorAcordado: dto.valorAcordado,
     taxaDeslocamento: dto.taxaDeslocamento ?? 0,
     taxaDeslocamentoRepassada: Boolean(dto.taxaDeslocamentoRepassada),
+    cancelamentoMotivo: dto.cancelamentoMotivo ?? undefined,
+    canceladoEm: dto.canceladoEm ?? undefined,
+    canceladoPor: dto.canceladoPor ?? undefined,
     valorEntrada: dto.valorEntrada,
     percentualEntrada: dto.percentualEntrada,
     saldoRestante: dto.saldoRestante,
@@ -299,6 +305,14 @@ export async function alterarStatusAgendamento(
   status: AgendamentoStatus,
 ): Promise<AgendamentoEnsaio> {
   const dto = await http.patch<AgendamentoDto>(`/agenda/${id}/status`, { status })
+  return toAgendamento(dto)
+}
+
+export async function cancelarAgendamento(
+  id: string,
+  motivo: string,
+): Promise<AgendamentoEnsaio> {
+  const dto = await http.post<AgendamentoDto>(`/agenda/${id}/cancelar`, { motivo })
   return toAgendamento(dto)
 }
 

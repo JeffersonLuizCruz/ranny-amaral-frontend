@@ -11,6 +11,7 @@ import {
   atualizarAgendamento,
   atualizarPagamentoEntrada,
   atualizarPagamentoFinal,
+  cancelarAgendamento,
   criarAgendamento,
   excluirAgendamento,
   listarAgendamentos,
@@ -50,6 +51,7 @@ interface AppointmentState {
   updateAppointment: (id: string, draft: AgendamentoDraft) => Promise<void>
   deleteAppointment: (id: string) => Promise<void>
   updateStatus: (id: string, status: AgendamentoStatus) => Promise<void>
+  cancelarEnsaio: (id: string, motivo: string) => Promise<void>
   setDepositStatus: (id: string, status: PagamentoStatus) => Promise<void>
   setPaymentEntrada: (id: string, pagamento: PagamentoEntrada) => Promise<void>
   setPaymentFinal: (id: string, pagamento: PagamentoSaldo) => Promise<void>
@@ -154,6 +156,16 @@ export const useAppointmentStore = create<AppointmentState>()((set, get) => ({
   updateStatus: async (id, status) => {
     try {
       const atualizado = await alterarStatusAgendamento(id, status)
+      set((state) => ({ appointments: substituir(state.appointments, atualizado), erro: null }))
+    } catch (error) {
+      set({ erro: mensagemDeErro(error) })
+      throw error
+    }
+  },
+
+  cancelarEnsaio: async (id, motivo) => {
+    try {
+      const atualizado = await cancelarAgendamento(id, motivo)
       set((state) => ({ appointments: substituir(state.appointments, atualizado), erro: null }))
     } catch (error) {
       set({ erro: mensagemDeErro(error) })

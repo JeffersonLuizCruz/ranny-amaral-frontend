@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { ReactNode } from 'react'
 import {
   ArrowUpRight,
+  Ban,
   CalendarDays,
   Clock,
   FileSignature,
@@ -46,6 +47,7 @@ interface AppointmentDetailsProps {
   onEdit: () => void
   onDelete: () => void
   onStatusChange: (status: AgendamentoStatus) => void
+  onCancelar: (motivo: string) => Promise<void>
   onClose: () => void
 }
 
@@ -54,6 +56,7 @@ export function AppointmentDetails({
   onEdit,
   onDelete,
   onStatusChange,
+  onCancelar,
   onClose,
 }: AppointmentDetailsProps) {
   const { clientesById, pacotesById } = useCrmLookups()
@@ -78,6 +81,9 @@ export function AppointmentDetails({
       item.agendamentoId === appointment.id,
   )
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const [cancelando, setCancelando] = useState(false)
+  const [motivoCancelamento, setMotivoCancelamento] = useState('')
+  const [enviandoCancelamento, setEnviandoCancelamento] = useState(false)
   const entradaStatus = contrato?.statusEntrada ?? appointment.statusEntrada
   const entradaLiquidada = contrato?.entradaQuitada ?? appointment.entradaQuitada
   const saldoLiquidado = contrato?.saldoQuitado ?? appointment.saldoQuitado
@@ -111,6 +117,25 @@ export function AppointmentDetails({
           ? error.message
           : 'Não foi possível copiar o link do contrato.',
       )
+    }
+  }
+
+  const podeCancelar =
+    appointment.status === 'reservado' || appointment.status === 'confirmado'
+
+  const handleCancelar = async () => {
+    const motivo = motivoCancelamento.trim()
+    if (!motivo) return
+
+    setEnviandoCancelamento(true)
+    try {
+      await onCancelar(motivo)
+      setCancelando(false)
+      setMotivoCancelamento('')
+    } catch {
+      // O drawer exibe a mensagem de erro retornada pela API.
+    } finally {
+      setEnviandoCancelamento(false)
     }
   }
 
@@ -271,6 +296,93 @@ export function AppointmentDetails({
           ) : null}
         </div>
       </div>
+
+      {appointment.status === 'cancelado' ? (
+        <div className="rounded-xl border border-red-200 bg-red-50/60 p-3">
+          <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-red-700">
+            <Ban className="size-4" />
+            Cancelamento
+          </p>
+          {appointment.cancelamentoMotivo ? (
+            <p className="mt-1 whitespace-pre-line text-xs text-ink">
+              {appointment.cancelamentoMotivo}
+            </p>
+          ) : (
+            <p className="mt-1 text-[11px] text-muted">
+              Justificativa não registrada.
+            </p>
+          )}
+          {appointment.canceladoEm ? (
+            <p className="mt-1 text-[11px] text-muted">
+              {appointment.canceladoPor ?? 'Equipe do estúdio'} ·{' '}
+              {new Date(appointment.canceladoEm).toLocaleString('pt-BR')}
+            </p>
+          ) : null}
+        </div>
+      ) : podeCancelar ? (
+        <div className="rounded-xl border border-dashed border-red-200 p-3">
+          {cancelando ? (
+            <div className="space-y-2">
+              <label
+                htmlFor="motivo-cancelamento"
+                className="block text-[11px] font-semibold uppercase tracking-wide text-muted"
+              >
+                Justificativa do cancelamento
+              </label>
+              <textarea
+                id="motivo-cancelamento"
+                value={motivoCancelamento}
+                onChange={(event) => setMotivoCancelamento(event.target.value)}
+                rows={3}
+                maxLength={1000}
+                placeholder="Ex.: cliente pediu para remarcar por motivo de saúde."
+                className="w-full rounded-lg border border-line bg-surface p-2 text-sm text-ink placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-red-200"
+              />
+              <div className="flex justify-end gap-2">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={enviandoCancelamento}
+                  onClick={() => {
+                    setCancelando(false)
+                    setMotivoCancelamento('')
+                  }}
+                >
+                  Voltar
+                </Button>
+                <Button
+                  size="sm"
+                  variant="danger"
+                  disabled={!motivoCancelamento.trim() || enviandoCancelamento}
+                  onClick={handleCancelar}
+                >
+                  Confirmar cancelamento
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted">
+                  Cancelamento
+                </p>
+                <p className="text-[11px] text-muted">
+                  Cancele o ensaio registrando a justificativa.
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                onClick={() => setCancelando(true)}
+              >
+                <Ban className="size-4" />
+                Cancelar ensaio
+              </Button>
+            </div>
+          )}
+        </div>
+      ) : null}
 
       <div className="rounded-xl border border-line p-3">
         <div className="flex items-center gap-2">

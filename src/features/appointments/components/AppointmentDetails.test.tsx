@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -83,7 +84,10 @@ function agendamento(
   }
 }
 
-function renderDetalhes(appointment: AgendamentoEnsaio) {
+function renderDetalhes(
+  appointment: AgendamentoEnsaio,
+  onCancelar: (motivo: string) => Promise<void> = vi.fn().mockResolvedValue(undefined),
+) {
   return render(
     <MemoryRouter>
       <AppointmentDetails
@@ -91,6 +95,7 @@ function renderDetalhes(appointment: AgendamentoEnsaio) {
         onEdit={vi.fn()}
         onDelete={vi.fn()}
         onStatusChange={vi.fn()}
+        onCancelar={onCancelar}
         onClose={vi.fn()}
       />
     </MemoryRouter>,
@@ -170,5 +175,48 @@ describe('AppointmentDetails', () => {
     expect(
       screen.queryByRole('link', { name: /Conversar no WhatsApp/ }),
     ).not.toBeInTheDocument()
+  })
+
+  it('cancela o ensaio enviando a justificativa', async () => {
+    const onCancelar = vi.fn().mockResolvedValue(undefined)
+    const user = userEvent.setup()
+
+    renderDetalhes(agendamento(), onCancelar)
+
+    await user.click(screen.getByRole('button', { name: /Cancelar ensaio/ }))
+    await user.type(
+      screen.getByLabelText('Justificativa do cancelamento'),
+      'Cliente pediu para remarcar',
+    )
+    await user.click(
+      screen.getByRole('button', { name: 'Confirmar cancelamento' }),
+    )
+
+    expect(onCancelar).toHaveBeenCalledWith('Cliente pediu para remarcar')
+    expect(
+      screen.queryByLabelText('Justificativa do cancelamento'),
+    ).not.toBeInTheDocument()
+  })
+
+  it('não oferece cancelamento para ensaio realizado', () => {
+    renderDetalhes(agendamento({ status: 'realizado' }))
+
+    expect(
+      screen.queryByRole('button', { name: /Cancelar ensaio/ }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('exibe a justificativa registrada no cancelamento', () => {
+    renderDetalhes(
+      agendamento({
+        status: 'cancelado',
+        cancelamentoMotivo: 'Cliente desistiu do ensaio',
+        canceladoEm: '2026-01-02T10:00:00.000Z',
+        canceladoPor: 'Equipe do estúdio',
+      }),
+    )
+
+    expect(screen.getByText('Cliente desistiu do ensaio')).toBeInTheDocument()
+    expect(screen.getByText(/Equipe do estúdio/)).toBeInTheDocument()
   })
 })

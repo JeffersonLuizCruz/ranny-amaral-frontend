@@ -22,6 +22,7 @@ export function AppointmentDrawer() {
   const appointments = useAppointmentStore((state) => state.appointments)
   const deleteAppointment = useAppointmentStore((state) => state.deleteAppointment)
   const updateStatus = useAppointmentStore((state) => state.updateStatus)
+  const cancelarEnsaio = useAppointmentStore((state) => state.cancelarEnsaio)
   const contracts = useContractStore((state) => state.contratos)
   const deleteContract = useContractStore((state) => state.deleteContract)
   const addToast = useToastStore((state) => state.addToast)
@@ -104,6 +105,18 @@ export function AppointmentDrawer() {
     }
   }
 
+  const handleCancelar = async (motivo: string) => {
+    if (!appointment) return
+
+    try {
+      await cancelarEnsaio(appointment.id, motivo)
+      addToast('Ensaio cancelado com justificativa.')
+    } catch (error) {
+      addToast(mensagemDeErro(error))
+      throw error
+    }
+  }
+
   return (
     <Drawer
       open={open}
@@ -145,6 +158,7 @@ export function AppointmentDrawer() {
           onEdit={() => openAppointmentDrawer(appointment.id, 'edit')}
           onDelete={handleDelete}
           onStatusChange={handleStatusChange}
+          onCancelar={handleCancelar}
           onClose={closeDrawer}
         />
       ) : null}

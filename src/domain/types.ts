@@ -104,6 +104,12 @@ export interface AgendamentoEnsaio {
   taxaDeslocamento?: number
   /** `true` quando a taxa foi repassada ao cliente. */
   taxaDeslocamentoRepassada?: boolean
+  /** Justificativa registrada quando o ensaio é cancelado. */
+  cancelamentoMotivo?: string
+  /** ISO 8601 string (UTC) do cancelamento. */
+  canceladoEm?: string
+  /** Quem registrou o cancelamento. */
+  canceladoPor?: string
   valorEntrada: number
   percentualEntrada: number
   saldoRestante: number
