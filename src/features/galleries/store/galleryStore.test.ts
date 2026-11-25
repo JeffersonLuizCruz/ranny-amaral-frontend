@@ -3,11 +3,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MidiaGaleria } from '@/domain/galleries'
 import type { Pagina } from '@/shared/api/types'
 
-const { listarMidias, buscarGaleria, enviarVersaoEditada } = vi.hoisted(() => ({
-  listarMidias: vi.fn(),
-  buscarGaleria: vi.fn(),
-  enviarVersaoEditada: vi.fn(),
-}))
+const { listarMidias, buscarGaleria, enviarVersaoEditada, reprocessarPendentes } =
+  vi.hoisted(() => ({
+    listarMidias: vi.fn(),
+    buscarGaleria: vi.fn(),
+    enviarVersaoEditada: vi.fn(),
+    reprocessarPendentes: vi.fn(),
+  }))
 
 vi.mock('@/features/galleries/api/galeriasApi', () => ({
   atualizarGaleriaNaLista: (_galerias: unknown[], atualizada: unknown) => [atualizada],
@@ -22,6 +24,8 @@ vi.mock('@/features/galleries/api/galeriasApi', () => ({
   publicarSelecao: vi.fn(),
   reabrirSelecao: vi.fn(),
   removerMidia: vi.fn(),
+  reprocessarMidia: vi.fn(),
+  reprocessarPendentes,
   revogarEntrega: vi.fn(),
 }))
 
@@ -102,6 +106,28 @@ describe('galleryStore', () => {
       'm2',
       'm3',
     ])
+  })
+
+  it('reenfileira pendentes e recarrega a galeria', async () => {
+    buscarGaleria.mockResolvedValue({
+      galeria: {
+        id: 'g1',
+        agendamentoId: 'a1',
+        status: 'em_selecao',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      },
+      links: [],
+      historico: [],
+    })
+    listarMidias.mockResolvedValue(pagina([], 0, 0))
+    reprocessarPendentes.mockResolvedValue({ quantidade: 3 })
+
+    const quantidade = await useGalleryStore.getState().reprocessarPendentes('g1')
+
+    expect(reprocessarPendentes).toHaveBeenCalledWith('g1')
+    expect(buscarGaleria).toHaveBeenCalledWith('g1')
+    expect(quantidade).toBe(3)
   })
 
   it('envia várias versões editadas e recarrega a galeria uma única vez', async () => {

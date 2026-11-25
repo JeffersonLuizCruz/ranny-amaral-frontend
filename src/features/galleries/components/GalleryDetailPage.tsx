@@ -12,6 +12,7 @@ import {
   Images,
   Link2,
   Pencil,
+  RefreshCw,
   RotateCcw,
   Sparkles,
   Upload,
@@ -65,6 +66,7 @@ export function GalleryDetailPage() {
   const carregarGaleria = useGalleryStore((state) => state.carregarGaleria)
   const removeMedia = useGalleryStore((state) => state.removeMedia)
   const reprocessarMidia = useGalleryStore((state) => state.reprocessarMidia)
+  const reprocessarPendentes = useGalleryStore((state) => state.reprocessarPendentes)
   const publishSelection = useGalleryStore((state) => state.publishSelection)
   const reopenSelection = useGalleryStore((state) => state.reopenSelection)
   const confirmExtras = useGalleryStore((state) => state.confirmExtras)
@@ -161,6 +163,11 @@ export function GalleryDetailPage() {
   const fotos = midias.filter((midia) => midia.tipo === 'foto')
   const videos = midias.filter((midia) => midia.tipo === 'video')
   const processadas = midias.filter((midia) => midia.processamentoStatus === 'disponivel')
+  const pendentesReprocessamento = fotos.filter(
+    (midia) =>
+      midia.processamentoStatus === 'processando' ||
+      midia.processamentoStatus === 'falha',
+  )
   const podeEditarMidias = ['aguardando_upload', 'em_selecao'].includes(galeria.status)
   const podeEditarVersao = [
     'aguardando_upload',
@@ -341,6 +348,21 @@ export function GalleryDetailPage() {
     )
   }
 
+  const reprocessarLote = async () => {
+    if (pendentesReprocessamento.length === 0) return
+    const confirmado = window.confirm(
+      `Reprocessar ${pendentesReprocessamento.length} foto(s) presas em processamento ou com falha?`,
+    )
+    if (!confirmado) return
+    try {
+      const quantidade = await reprocessarPendentes(galeria.id)
+      addToast(`${quantidade} foto(s) reenfileirada(s) para processamento.`)
+      await carregarGaleria(galeria.id).catch(() => undefined)
+    } catch (error) {
+      addToast(mensagemDeErro(error))
+    }
+  }
+
   return (
     <div className="thin-scrollbar h-full overflow-y-auto bg-canvas">
       <div className="border-b border-line bg-surface px-4 py-4 sm:px-6">
@@ -455,6 +477,13 @@ export function GalleryDetailPage() {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
+              {pendentesReprocessamento.length > 0 ? (
+                <Button variant="secondary" onClick={() => void reprocessarLote()}>
+                  <RefreshCw className="size-4" />
+                  Reprocessar {pendentesReprocessamento.length}{' '}
+                  {pendentesReprocessamento.length === 1 ? 'pendente' : 'pendentes'}
+                </Button>
+              ) : null}
               {podeEditarMidias ? (
                 <>
                   <GalleryMediaUploader

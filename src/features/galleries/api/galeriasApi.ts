@@ -365,6 +365,15 @@ export async function reprocessarMidia(
   return toMidia(dto)
 }
 
+/** Reenfileira todas as fotos presas em processamento ou com falha. */
+export async function reprocessarPendentes(
+  galeriaId: string,
+): Promise<{ quantidade: number }> {
+  return http.post<{ quantidade: number }>(
+    `/galerias/${galeriaId}/midias/reprocessar-pendentes`,
+  )
+}
+
 export async function publicarSelecao(galeriaId: string): Promise<LinkDto> {
   return http.post<LinkDto>(`/galerias/${galeriaId}/selecao/publicar`)
 }

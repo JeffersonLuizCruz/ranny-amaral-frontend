@@ -21,6 +21,7 @@ import {
   reabrirSelecao,
   removerMidia,
   reprocessarMidia as reprocessarMidiaApi,
+  reprocessarPendentes as reprocessarPendentesApi,
   renovarLink as renovarLinkApi,
   revogarEntrega,
   revogarLiberacao as revogarLiberacaoApi,
@@ -71,6 +72,7 @@ interface GalleryState {
   removeVersaoEditada: (id: string, midiaId: string) => Promise<void>
   removeMedia: (id: string, midiaId: string) => Promise<void>
   reprocessarMidia: (id: string, midiaId: string) => Promise<void>
+  reprocessarPendentes: (id: string) => Promise<number>
   publishSelection: (id: string) => Promise<string>
   reopenSelection: (id: string) => Promise<string>
   confirmExtras: (id: string, forma: 'pix' | 'dinheiro') => Promise<void>
@@ -287,6 +289,12 @@ export const useGalleryStore = create<GalleryState>()((set, get) => ({
     set((state) => ({
       midias: state.midias.map((item) => (item.id === midia.id ? midia : item)),
     }))
+  },
+
+  reprocessarPendentes: async (id) => {
+    const resultado = await reprocessarPendentesApi(id)
+    await get().carregarGaleria(id)
+    return resultado.quantidade
   },
 
   publishSelection: async (id) => {

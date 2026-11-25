@@ -93,6 +93,7 @@ describe('GalleryDetailPage', () => {
       carregarGaleria: vi.fn().mockResolvedValue(null),
       removeMedia: vi.fn(),
       reprocessarMidia: vi.fn(),
+      reprocessarPendentes: vi.fn().mockResolvedValue(2),
       publishSelection: vi.fn(),
       reopenSelection: vi.fn(),
       confirmExtras: vi.fn(),
@@ -203,8 +204,57 @@ describe('GalleryDetailPage', () => {
     expect(alterarFinalidade).toHaveBeenCalledWith('g1', 'foto-edicao', 'pronta')
   })
 
-  it('esconde o histórico para o perfil gestor', () => {
-    authState.usuario = { role: 'gestor' }
+  it('oferece reprocessamento em lote quando há fotos presas ou com falha', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    Object.assign(mockState, {
+      galeriaAtual: {
+        galeria: galeria({ status: 'em_selecao' }),
+        links: [],
+        historico: [],
+      },
+      midias: [
+        midia({
+          id: 'foto-falha',
+          nomeArquivo: 'falha.jpg',
+          numero: 1,
+          processamentoStatus: 'falha',
+        }),
+        midia({
+          id: 'foto-processando',
+          nomeArquivo: 'processando.jpg',
+          numero: 2,
+          processamentoStatus: 'processando',
+        }),
+        midia({ id: 'foto-ok', nomeArquivo: 'ok.jpg', numero: 3 }),
+      ],
+    })
+
+    renderPage()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reprocessar 2 pendentes' }))
+
+    await waitFor(() => expect(mockState.reprocessarPendentes).toHaveBeenCalledWith('g1'))
+    expect(addToast).toHaveBeenCalledWith('2 foto(s) reenfileirada(s) para processamento.')
+  })
+
+  it('não mostra o reprocessamento em lote quando não há pendências', () => {
+    Object.assign(mockState, {
+      galeriaAtual: {
+        galeria: galeria({ status: 'em_selecao' }),
+        links: [],
+        historico: [],
+      },
+      midias: [midia()],
+    })
+
+    renderPage()
+
+    expect(
+      screen.queryByRole('button', { name: /Reprocessar .*pendente/i }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('esconde o histórico para o perfil gestor', () => {    authState.usuario = { role: 'gestor' }
     Object.assign(mockState, {
       galeriaAtual: {
         galeria: galeria(),
