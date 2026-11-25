@@ -354,6 +354,17 @@ export async function removerMidia(galeriaId: string, midiaId: string): Promise<
   await http.delete(`/galerias/${galeriaId}/midias/${midiaId}`)
 }
 
+/** Pede ao backend para refazer os derivados (thumb/web) de uma foto. */
+export async function reprocessarMidia(
+  galeriaId: string,
+  midiaId: string,
+): Promise<MidiaGaleria> {
+  const dto = await http.post<MidiaDto>(
+    `/galerias/${galeriaId}/midias/${midiaId}/reprocessar`,
+  )
+  return toMidia(dto)
+}
+
 export async function publicarSelecao(galeriaId: string): Promise<LinkDto> {
   return http.post<LinkDto>(`/galerias/${galeriaId}/selecao/publicar`)
 }

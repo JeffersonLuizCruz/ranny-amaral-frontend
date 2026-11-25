@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { fireEvent, render, screen } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { MidiaGaleria } from '@/domain/galleries'
 import { GalleryMediaGrid } from '@/features/galleries/components/GalleryMediaGrid'
@@ -48,5 +48,29 @@ describe('GalleryMediaGrid', () => {
     )
 
     expect(screen.getByText('007').closest('div')).toHaveClass('ring-2')
+  })
+
+  it('oferece reprocessamento quando a mídia falhou', () => {
+    const onReprocessar = vi.fn()
+    const falha = midia({
+      processamentoStatus: 'falha',
+      erroProcessamento: 'duplicate key value violates unique constraint',
+    })
+
+    render(<GalleryMediaGrid midias={[falha]} onReprocessar={onReprocessar} />)
+
+    expect(screen.getByText('Falha ao processar')).toBeInTheDocument()
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Reprocessar foto.jpg' }),
+    )
+    expect(onReprocessar).toHaveBeenCalledWith(falha)
+  })
+
+  it('não oferece reprocessamento quando a mídia está disponível', () => {
+    render(<GalleryMediaGrid midias={[midia()]} onReprocessar={vi.fn()} />)
+
+    expect(
+      screen.queryByRole('button', { name: 'Reprocessar foto.jpg' }),
+    ).not.toBeInTheDocument()
   })
 })

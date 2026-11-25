@@ -64,6 +64,7 @@ export function GalleryDetailPage() {
   const carregando = useGalleryStore((state) => state.carregandoDetalhe)
   const carregarGaleria = useGalleryStore((state) => state.carregarGaleria)
   const removeMedia = useGalleryStore((state) => state.removeMedia)
+  const reprocessarMidia = useGalleryStore((state) => state.reprocessarMidia)
   const publishSelection = useGalleryStore((state) => state.publishSelection)
   const reopenSelection = useGalleryStore((state) => state.reopenSelection)
   const confirmExtras = useGalleryStore((state) => state.confirmExtras)
@@ -108,15 +109,28 @@ export function GalleryDetailPage() {
   useEffect(() => {
     if (!processando) return
     let tentativas = 0
-    const timer = window.setInterval(() => {
-      tentativas += 1
-      if (tentativas > 20) {
-        window.clearInterval(timer)
-        return
-      }
-      void carregarGaleria(galeriaId).catch(() => undefined)
-    }, 3000)
-    return () => window.clearInterval(timer)
+    let cancelado = false
+    let timer: number | undefined
+
+    const agendar = () => {
+      if (cancelado) return
+      // Mantém o acompanhamento sem parar em silêncio: as primeiras rodadas são
+      // rápidas e depois espaçam para não sobrecarregar a API.
+      const espera = tentativas < 10 ? 3000 : 15000
+      timer = window.setTimeout(() => {
+        tentativas += 1
+        if (document.visibilityState === 'visible') {
+          void carregarGaleria(galeriaId).catch(() => undefined)
+        }
+        agendar()
+      }, espera)
+    }
+
+    agendar()
+    return () => {
+      cancelado = true
+      if (timer) window.clearTimeout(timer)
+    }
   }, [processando, carregarGaleria, galeriaId])
 
   if (carregando && !detalhe) {
@@ -320,6 +334,13 @@ export function GalleryDetailPage() {
     await executar(() => removeMedia(galeria.id, midia.id), 'Mídia removida.')
   }
 
+  const reprocessar = async (midia: MidiaGaleria) => {
+    await executar(
+      () => reprocessarMidia(galeria.id, midia.id),
+      'Reprocessamento solicitado.',
+    )
+  }
+
   return (
     <div className="thin-scrollbar h-full overflow-y-auto bg-canvas">
       <div className="border-b border-line bg-surface px-4 py-4 sm:px-6">
@@ -487,6 +508,7 @@ export function GalleryDetailPage() {
               onChangeFinalidade={
                 podeEditarMidias ? (midia) => alternarFinalidade(midia) : undefined
               }
+              onReprocessar={(midia) => void reprocessar(midia)}
             />
             {restantesMidias > 0 ? (
               <div className="mt-3 flex justify-center lg:hidden">

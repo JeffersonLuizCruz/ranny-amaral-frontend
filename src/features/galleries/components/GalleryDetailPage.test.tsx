@@ -92,6 +92,7 @@ describe('GalleryDetailPage', () => {
       carregandoDetalhe: false,
       carregarGaleria: vi.fn().mockResolvedValue(null),
       removeMedia: vi.fn(),
+      reprocessarMidia: vi.fn(),
       publishSelection: vi.fn(),
       reopenSelection: vi.fn(),
       confirmExtras: vi.fn(),

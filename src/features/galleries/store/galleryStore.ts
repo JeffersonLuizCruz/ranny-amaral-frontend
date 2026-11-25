@@ -20,6 +20,7 @@ import {
   publicarSelecao,
   reabrirSelecao,
   removerMidia,
+  reprocessarMidia as reprocessarMidiaApi,
   renovarLink as renovarLinkApi,
   revogarEntrega,
   revogarLiberacao as revogarLiberacaoApi,
@@ -69,6 +70,7 @@ interface GalleryState {
   ) => Promise<UploadEditadaLoteResultado[]>
   removeVersaoEditada: (id: string, midiaId: string) => Promise<void>
   removeMedia: (id: string, midiaId: string) => Promise<void>
+  reprocessarMidia: (id: string, midiaId: string) => Promise<void>
   publishSelection: (id: string) => Promise<string>
   reopenSelection: (id: string) => Promise<string>
   confirmExtras: (id: string, forma: 'pix' | 'dinheiro') => Promise<void>
@@ -141,7 +143,28 @@ export const useGalleryStore = create<GalleryState>()((set, get) => ({
     set({ carregandoDetalhe: true, erro: null })
     try {
       const detalhe = await buscarGaleria(id)
-      const midias = await listarTodasMidias(id)
+      const novas = await listarTodasMidias(id)
+      // O polling de processamento reassina as URLs a cada rodada; preservar as
+      // URLs já carregadas evita rebaixar todos os thumbs a cada 3 segundos.
+      const anteriores = new Map(get().midias.map((midia) => [midia.id, midia]))
+      const midias = novas.map((midia) => {
+        const anterior = anteriores.get(midia.id)
+        if (
+          !anterior ||
+          anterior.processamentoStatus !== 'disponivel' ||
+          midia.processamentoStatus !== 'disponivel' ||
+          anterior.status !== midia.status
+        ) {
+          return midia
+        }
+        return {
+          ...midia,
+          thumbUrl: anterior.thumbUrl ?? midia.thumbUrl,
+          webUrl: anterior.webUrl ?? midia.webUrl,
+          originalUrl: anterior.originalUrl ?? midia.originalUrl,
+          editadaUrl: anterior.editadaUrl ?? midia.editadaUrl,
+        }
+      })
       set({
         galeriaAtual: detalhe,
         midias,
@@ -257,6 +280,13 @@ export const useGalleryStore = create<GalleryState>()((set, get) => ({
   removeMedia: async (id, midiaId) => {
     await removerMidia(id, midiaId)
     set((state) => ({ midias: state.midias.filter((item) => item.id !== midiaId) }))
+  },
+
+  reprocessarMidia: async (id, midiaId) => {
+    const midia = await reprocessarMidiaApi(id, midiaId)
+    set((state) => ({
+      midias: state.midias.map((item) => (item.id === midia.id ? midia : item)),
+    }))
   },
 
   publishSelection: async (id) => {

@@ -1,4 +1,5 @@
 import {
+  AlertTriangle,
   Check,
   Download,
   Film,
@@ -24,6 +25,7 @@ interface GalleryMediaGridProps {
   onDownload?: (midia: MidiaGaleria) => void
   onEdit?: (midia: MidiaGaleria) => void
   onChangeFinalidade?: (midia: MidiaGaleria) => void
+  onReprocessar?: (midia: MidiaGaleria) => void
   emptyLabel?: string
   watermark?: boolean
   watermarkText?: string
@@ -40,6 +42,7 @@ export function GalleryMediaGrid({
   onDownload,
   onEdit,
   onChangeFinalidade,
+  onReprocessar,
   emptyLabel = 'Nenhuma mídia enviada ainda.',
   watermark = false,
   watermarkText,
@@ -68,6 +71,7 @@ export function GalleryMediaGrid({
           onDownload={onDownload}
           onEdit={onEdit}
           onChangeFinalidade={onChangeFinalidade}
+          onReprocessar={onReprocessar}
           watermark={watermark}
           watermarkText={watermarkText}
           numerarFotos={numerarFotos}
@@ -87,6 +91,7 @@ function GalleryMediaTile({
   onDownload,
   onEdit,
   onChangeFinalidade,
+  onReprocessar,
   watermark,
   watermarkText,
   numerarFotos,
@@ -100,6 +105,7 @@ function GalleryMediaTile({
   onDownload?: (midia: MidiaGaleria) => void
   onEdit?: (midia: MidiaGaleria) => void
   onChangeFinalidade?: (midia: MidiaGaleria) => void
+  onReprocessar?: (midia: MidiaGaleria) => void
   watermark?: boolean
   watermarkText?: string
   numerarFotos?: boolean
@@ -152,6 +158,18 @@ function GalleryMediaTile({
             {isVideo ? <Film className="size-6" /> : <ImageOff className="size-6" />}
           </span>
         )}
+
+        {midia.processamentoStatus === 'falha' ? (
+          <span
+            title={midia.erroProcessamento ?? 'Falha ao processar a mídia'}
+            className="pointer-events-none absolute inset-0 grid place-items-center bg-red-950/50 text-white"
+          >
+            <span className="flex flex-col items-center gap-1 px-2 text-center">
+              <AlertTriangle className="size-5" />
+              <span className="text-[9px] font-medium">Falha ao processar</span>
+            </span>
+          </span>
+        ) : null}
 
         {watermark && !midia.previaMarcada ? (
           <span
@@ -218,6 +236,20 @@ function GalleryMediaTile({
         <span className="min-w-0 flex-1 truncate text-[9px] font-medium text-white/90">
           {midia.nomeArquivo}
         </span>
+        {midia.processamentoStatus === 'falha' && onReprocessar ? (
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation()
+              onReprocessar(midia)
+            }}
+            aria-label={`Reprocessar ${midia.nomeArquivo}`}
+            title={midia.erroProcessamento ?? 'Reprocessar mídia'}
+            className="grid size-6 shrink-0 place-items-center rounded-full bg-white/90 text-amber-700 transition hover:bg-white"
+          >
+            <RefreshCw className="size-3" />
+          </button>
+        ) : null}
         {isVideo && url ? (
           <a
             href={url}
