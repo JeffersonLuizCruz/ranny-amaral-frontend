@@ -20,6 +20,7 @@ import {
   publicarSelecao,
   reabrirSelecao,
   removerMidia,
+  removerMidias,
   reprocessarMidia as reprocessarMidiaApi,
   reprocessarPendentes as reprocessarPendentesApi,
   renovarLink as renovarLinkApi,
@@ -28,6 +29,7 @@ import {
   type GaleriaDetalhe,
   type GaleriasFiltros,
   type LiberarLoteResultado,
+  type RemoverMidiasResultado,
 } from '@/features/galleries/api/galeriasApi'
 import { enviarMidia, enviarVersaoEditada, removerVersaoEditada } from '@/features/galleries/api/galeriaUploadApi'
 import type {
@@ -71,6 +73,7 @@ interface GalleryState {
   ) => Promise<UploadEditadaLoteResultado[]>
   removeVersaoEditada: (id: string, midiaId: string) => Promise<void>
   removeMedia: (id: string, midiaId: string) => Promise<void>
+  removeMedias: (id: string, midiaIds: string[]) => Promise<RemoverMidiasResultado>
   reprocessarMidia: (id: string, midiaId: string) => Promise<void>
   reprocessarPendentes: (id: string) => Promise<number>
   publishSelection: (id: string) => Promise<string>
@@ -100,6 +103,7 @@ function ordenar(galerias: GaleriaEnsaio[]): GaleriaEnsaio[] {
 }
 
 const TAMANHO_PAGINA_MIDIAS = 100
+const LIMITE_REMOCAO_LOTE = 500
 
 /**
  * Carrega todas as páginas de mídias.
@@ -282,6 +286,29 @@ export const useGalleryStore = create<GalleryState>()((set, get) => ({
   removeMedia: async (id, midiaId) => {
     await removerMidia(id, midiaId)
     set((state) => ({ midias: state.midias.filter((item) => item.id !== midiaId) }))
+    await get().carregarGaleria(id).catch(() => undefined)
+  },
+
+  removeMedias: async (id, midiaIds) => {
+    let quantidadeRemovida = 0
+    let quantidadeIgnorada = 0
+    let bytesLiberados = 0
+    try {
+      for (let inicio = 0; inicio < midiaIds.length; inicio += LIMITE_REMOCAO_LOTE) {
+        const parte = midiaIds.slice(inicio, inicio + LIMITE_REMOCAO_LOTE)
+        const resultado = await removerMidias(id, parte)
+        quantidadeRemovida += resultado.quantidadeRemovida
+        quantidadeIgnorada += resultado.quantidadeIgnorada
+        bytesLiberados += resultado.bytesLiberados
+      }
+    } finally {
+      const removidos = new Set(midiaIds)
+      set((state) => ({
+        midias: state.midias.filter((item) => !removidos.has(item.id)),
+      }))
+      await get().carregarGaleria(id).catch(() => undefined)
+    }
+    return { quantidadeRemovida, quantidadeIgnorada, bytesLiberados }
   },
 
   reprocessarMidia: async (id, midiaId) => {

@@ -16,6 +16,7 @@ import {
   RefreshCw,
   RotateCcw,
   Sparkles,
+  Trash2,
   Upload,
   Wallet,
 } from 'lucide-react'
@@ -38,8 +39,10 @@ import { ExpurgoDialog } from '@/features/storage/components/ExpurgoDialog'
 import { GalleryStatusBadges } from '@/features/galleries/components/GalleryStatusBadges'
 import { GalleryMediaGrid } from '@/features/galleries/components/GalleryMediaGrid'
 import { GalleryMediaUploader } from '@/features/galleries/components/GalleryMediaUploader'
+import { GalleryMediaRemoveDialog } from '@/features/galleries/components/GalleryMediaRemoveDialog'
 import { GalleryEditedVersionDialog } from '@/features/galleries/components/GalleryEditedVersionDialog'
 import { GalleryEditedBatchUploadDialog } from '@/features/galleries/components/GalleryEditedBatchUploadDialog'
+import { FOTO_ACCEPT, VIDEO_ACCEPT } from '@/features/galleries/lib/mediaFile'
 import { formatarNumeroFoto } from '@/features/galleries/lib/format'
 import {
   menorValorFotoExtra,
@@ -67,6 +70,7 @@ export function GalleryDetailPage() {
   const carregando = useGalleryStore((state) => state.carregandoDetalhe)
   const carregarGaleria = useGalleryStore((state) => state.carregarGaleria)
   const removeMedia = useGalleryStore((state) => state.removeMedia)
+  const removeMedias = useGalleryStore((state) => state.removeMedias)
   const reprocessarMidia = useGalleryStore((state) => state.reprocessarMidia)
   const reprocessarPendentes = useGalleryStore((state) => state.reprocessarPendentes)
   const publishSelection = useGalleryStore((state) => state.publishSelection)
@@ -87,6 +91,10 @@ export function GalleryDetailPage() {
   const addToast = useToastStore((state) => state.addToast)
   const isAdmin = useAuthStore((state) => state.usuario?.role === 'admin')
   const [editando, setEditando] = useState<MidiaGaleria | null>(null)
+  const [midiaParaRemover, setMidiaParaRemover] = useState<MidiaGaleria | null>(null)
+  const [removendoMidia, setRemovendoMidia] = useState(false)
+  const [removerLoteOpen, setRemoverLoteOpen] = useState(false)
+  const [removendoLote, setRemovendoLote] = useState(false)
   const [loteEditadasOpen, setLoteEditadasOpen] = useState(false)
   const [baixandoSelecao, setBaixandoSelecao] = useState(false)
   const [reprocessandoLote, setReprocessandoLote] = useState(false)
@@ -340,9 +348,39 @@ export function GalleryDetailPage() {
     )
   }
 
-  const remover = async (midia: MidiaGaleria) => {
-    if (!window.confirm(`Remover "${midia.nomeArquivo}"?`)) return
-    await executar(() => removeMedia(galeria.id, midia.id), 'Mídia removida.')
+  const confirmarRemocao = async () => {
+    if (!midiaParaRemover || removendoMidia) return
+    setRemovendoMidia(true)
+    try {
+      await removeMedia(galeria.id, midiaParaRemover.id)
+      addToast('Mídia removida.')
+      setMidiaParaRemover(null)
+    } catch (error) {
+      addToast(mensagemDeErro(error))
+    } finally {
+      setRemovendoMidia(false)
+    }
+  }
+
+  const confirmarRemocaoLote = async () => {
+    if (removendoLote || fotos.length === 0) return
+    setRemovendoLote(true)
+    try {
+      const resultado = await removeMedias(
+        galeria.id,
+        fotos.map((midia) => midia.id),
+      )
+      const liberado =
+        resultado.bytesLiberados > 0
+          ? ` (${formatBytes(resultado.bytesLiberados)} liberados)`
+          : ''
+      addToast(`${resultado.quantidadeRemovida} foto(s) removida(s)${liberado}.`)
+      setRemoverLoteOpen(false)
+    } catch (error) {
+      addToast(mensagemDeErro(error))
+    } finally {
+      setRemovendoLote(false)
+    }
   }
 
   const reprocessar = async (midia: MidiaGaleria) => {
@@ -472,8 +510,8 @@ export function GalleryDetailPage() {
                 Mídias
               </h3>
               <p className="mt-0.5 text-[11px] text-muted">
-                {fotos.length} fotos · {videos.length} vídeos · {processadas.length}{' '}
-                processadas
+                {fotos.length} fotos · {videos.length} vídeos enviados ·{' '}
+                {galeria.videosInclusos ?? 0} inclusos · {processadas.length} processadas
                 {fotosSelecionadas.length > 0
                   ? ` · ${fotosProntas.length}/${fotosSelecionadas.length} prontas · ${filaEdicao.length} para editar${
                       emProcessamento.length > 0
@@ -481,6 +519,10 @@ export function GalleryDetailPage() {
                         : ''
                     }`
                   : ''}
+              </p>
+              <p className="mt-1 text-[10px] text-muted">
+                Fotos: JPEG/PNG/WebP até 50 MB. Vídeos: MP4/MOV até 500 MB, entregues
+                como original, sem edição.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -508,18 +550,51 @@ export function GalleryDetailPage() {
                 <>
                   <GalleryMediaUploader
                     galleryId={galeria.id}
-                    label="Enviar para edição"
+                    label="Enviar fotos"
                     finalidade="edicao"
+                    tipo="foto"
+                    accept={FOTO_ACCEPT}
+                  />
+                  <GalleryMediaUploader
+                    galleryId={galeria.id}
+                    label="Enviar vídeo"
+                    finalidade="edicao"
+                    tipo="video"
+                    accept={VIDEO_ACCEPT}
+                    disabled={(galeria.videosInclusos ?? 0) <= 0}
                   />
                   <GalleryMediaUploader
                     galleryId={galeria.id}
                     label="Enviar já editadas"
                     finalidade="pronta"
+                    tipo="foto"
+                    accept={FOTO_ACCEPT}
                   />
+                  {fotos.length > 0 ? (
+                    <Button
+                      variant="danger"
+                      onClick={() => setRemoverLoteOpen(true)}
+                      disabled={removendoLote}
+                    >
+                      {removendoLote ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="size-4" />
+                      )}
+                      Remover todas as fotos ({fotos.length})
+                    </Button>
+                  ) : null}
                 </>
               ) : null}
             </div>
           </div>
+
+          {podeEditarMidias && (galeria.videosInclusos ?? 0) <= 0 ? (
+            <p className="mt-2 rounded-xl bg-amber-50 px-3 py-2 text-[11px] text-amber-800 ring-1 ring-amber-200">
+              Esta galeria não tem vídeo incluso no pacote; o envio de vídeo está
+              desabilitado.
+            </p>
+          ) : null}
 
           <div className="mt-3 flex flex-wrap gap-1.5">
             {filtrosMidias.map((filtro) => (
@@ -545,7 +620,9 @@ export function GalleryDetailPage() {
               midias={midiasVisiveis}
               selectedIds={selecionadas}
               numerarFotos
-              onRemove={podeEditarMidias ? (midia) => void remover(midia) : undefined}
+              onRemove={
+                podeEditarMidias ? (midia) => setMidiaParaRemover(midia) : undefined
+              }
               onEdit={
                 podeEditarVersao
                   ? (midia) => {
@@ -1251,6 +1328,33 @@ export function GalleryDetailPage() {
           </section>
         ) : null}
       </div>
+
+      {midiaParaRemover ? (
+        <GalleryMediaRemoveDialog
+          open
+          midias={[midiaParaRemover]}
+          selecaoRascunho={
+            podeEditarMidias && detalhe.selecao?.status === 'rascunho'
+          }
+          removendo={removendoMidia}
+          onClose={() => setMidiaParaRemover(null)}
+          onConfirm={() => void confirmarRemocao()}
+        />
+      ) : null}
+
+      {removerLoteOpen ? (
+        <GalleryMediaRemoveDialog
+          open
+          midias={fotos}
+          lote
+          selecaoRascunho={
+            podeEditarMidias && detalhe.selecao?.status === 'rascunho'
+          }
+          removendo={removendoLote}
+          onClose={() => setRemoverLoteOpen(false)}
+          onConfirm={() => void confirmarRemocaoLote()}
+        />
+      ) : null}
 
       {editando ? (
         <GalleryEditedVersionDialog

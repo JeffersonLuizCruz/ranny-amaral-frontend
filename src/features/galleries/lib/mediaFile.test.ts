@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  FOTO_ACCEPT,
+  VIDEO_ACCEPT,
   mediaTipoFromFile,
   validateEditedFile,
+  validateFotoFile,
   validateMediaFile,
+  validateVideoFile,
 } from '@/features/galleries/lib/mediaFile'
 
 function arquivo(tamanho: number, tipo: string): File {
@@ -34,6 +38,27 @@ describe('mediaFile', () => {
 
   it('rejeita tipo desconhecido', () => {
     expect(validateMediaFile(arquivo(10, 'application/zip'))).toContain('JPEG')
+  })
+
+  it('separa os accepts de foto e vídeo', () => {
+    expect(FOTO_ACCEPT).not.toContain('video/')
+    expect(VIDEO_ACCEPT).not.toContain('image/')
+  })
+
+  it('aceita vídeo MP4/MOV até 500 MB', () => {
+    expect(validateVideoFile(arquivo(500 * 1024 * 1024, 'video/mp4'))).toBeNull()
+    expect(validateVideoFile(arquivo(10, 'video/quicktime'))).toBeNull()
+  })
+
+  it('rejeita vídeo inválido e imagem no envio de vídeo', () => {
+    expect(validateVideoFile(arquivo(10, 'image/jpeg'))).toContain('MP4')
+    expect(validateVideoFile(arquivo(500 * 1024 * 1024 + 1, 'video/mp4'))).toContain(
+      '500 MB',
+    )
+  })
+
+  it('rejeita vídeo no envio de fotos', () => {
+    expect(validateFotoFile(arquivo(10, 'video/mp4'))).toContain('JPEG')
   })
 
   it.each(['image/jpeg', 'image/png', 'image/webp'])(

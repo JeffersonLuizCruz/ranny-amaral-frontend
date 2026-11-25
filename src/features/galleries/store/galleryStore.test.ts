@@ -3,13 +3,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MidiaGaleria } from '@/domain/galleries'
 import type { Pagina } from '@/shared/api/types'
 
-const { listarMidias, buscarGaleria, enviarVersaoEditada, reprocessarPendentes } =
-  vi.hoisted(() => ({
-    listarMidias: vi.fn(),
-    buscarGaleria: vi.fn(),
-    enviarVersaoEditada: vi.fn(),
-    reprocessarPendentes: vi.fn(),
-  }))
+const {
+  listarMidias,
+  buscarGaleria,
+  enviarVersaoEditada,
+  reprocessarPendentes,
+  removerMidias,
+} = vi.hoisted(() => ({
+  listarMidias: vi.fn(),
+  buscarGaleria: vi.fn(),
+  enviarVersaoEditada: vi.fn(),
+  reprocessarPendentes: vi.fn(),
+  removerMidias: vi.fn(),
+}))
 
 vi.mock('@/features/galleries/api/galeriasApi', () => ({
   atualizarGaleriaNaLista: (_galerias: unknown[], atualizada: unknown) => [atualizada],
@@ -24,6 +30,7 @@ vi.mock('@/features/galleries/api/galeriasApi', () => ({
   publicarSelecao: vi.fn(),
   reabrirSelecao: vi.fn(),
   removerMidia: vi.fn(),
+  removerMidias,
   reprocessarMidia: vi.fn(),
   reprocessarPendentes,
   revogarEntrega: vi.fn(),
@@ -191,5 +198,34 @@ describe('galleryStore', () => {
 
     expect(resultados.filter((resultado) => resultado.ok)).toHaveLength(1)
     expect(resultados.filter((resultado) => !resultado.ok)).toHaveLength(1)
+  })
+
+  it('remove um lote de fotos e recarrega a galeria', async () => {
+    buscarGaleria.mockResolvedValue({
+      galeria: {
+        id: 'g1',
+        agendamentoId: 'a1',
+        status: 'em_selecao',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      },
+      links: [],
+      historico: [],
+    })
+    listarMidias.mockResolvedValue(pagina([midia('m3')], 0, 1))
+    removerMidias.mockResolvedValue({
+      quantidadeRemovida: 2,
+      quantidadeIgnorada: 0,
+      bytesLiberados: 4096,
+    })
+    useGalleryStore.setState({ midias: [midia('m1'), midia('m2'), midia('m3')] })
+
+    const resultado = await useGalleryStore
+      .getState()
+      .removeMedias('g1', ['m1', 'm2'])
+
+    expect(removerMidias).toHaveBeenCalledWith('g1', ['m1', 'm2'])
+    expect(resultado.quantidadeRemovida).toBe(2)
+    expect(useGalleryStore.getState().midias.map((item) => item.id)).toEqual(['m3'])
   })
 })

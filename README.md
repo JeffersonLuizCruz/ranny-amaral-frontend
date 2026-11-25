@@ -113,7 +113,12 @@ aguardando_upload → em_selecao → selecao_enviada → em_edicao → entregue
 - Cada foto recebe um número estável exibido no grid público e no detalhe do staff; o mesmo número nomeia
   o arquivo no ZIP de edição.
 - Fotos: o cliente precisa selecionar pelo menos a quantidade inclusa, sem máximo.
-- Vídeos: opcionais, até a quantidade inclusa; não há vídeo extra.
+- Vídeos: opcionais, até a quantidade inclusa; não há vídeo extra. O detalhe do staff tem botões
+  separados **Enviar fotos** e **Enviar vídeo**; sem vídeo incluso no pacote, o envio de vídeo fica
+  desabilitado.
+- O staff pode remover fotos individualmente ou com **Remover todas as fotos (N)** enquanto a galeria
+  está em `aguardando_upload`/`em_selecao`. O lote pede confirmação digitando `REMOVER`, apaga as
+  versões editadas e derivados e não afeta os vídeos.
 - Fotos acima do incluso geram pedido de extras.
 - O staff pode reabrir a seleção mesmo com extras já pagos ou isentos; o novo pedido cobra apenas o delta.
 - Fotos e vídeos já entregues ficam bloqueados no link público: o cliente só pode acrescentar novas mídias.

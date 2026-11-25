@@ -13,6 +13,7 @@ vi.mock('@/shared/api/httpClient', () => ({
 import {
   listarGalerias,
   prepararDownloadSelecao,
+  removerMidias,
   urlZipPublico,
 } from '@/features/galleries/api/galeriasApi'
 
@@ -71,6 +72,28 @@ describe('listarGalerias', () => {
 
     expect(get).toHaveBeenCalledWith('/galerias?baixada=true&pagina=0&tamanho=12')
     expect(pagina.itens[0].zipBaixadoEm).toBe('2026-11-10T12:00:00.000Z')
+  })
+})
+
+describe('removerMidias', () => {
+  beforeEach(() => {
+    post.mockReset()
+  })
+
+  it('envia o lote de fotos para o endpoint de remoção', async () => {
+    const resposta = {
+      quantidadeRemovida: 2,
+      quantidadeIgnorada: 0,
+      bytesLiberados: 2048,
+    }
+    post.mockResolvedValue(resposta)
+
+    await expect(removerMidias('galeria-1', ['foto-1', 'foto-2'])).resolves.toEqual(
+      resposta,
+    )
+    expect(post).toHaveBeenCalledWith('/galerias/galeria-1/midias/remover', {
+      midiaIds: ['foto-1', 'foto-2'],
+    })
   })
 })
 

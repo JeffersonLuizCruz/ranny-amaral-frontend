@@ -10,19 +10,29 @@ import { useGalleryStore } from '@/features/galleries/store/galleryStore'
 import {
   MEDIA_ACCEPT,
   mediaTipoFromFile,
+  validateFotoFile,
   validateMediaFile,
+  validateVideoFile,
 } from '@/features/galleries/lib/mediaFile'
+
+type TipoAceito = 'foto' | 'video' | 'todos'
 
 interface GalleryMediaUploaderProps {
   galleryId: string
   label?: string
   finalidade?: MidiaFinalidade
+  tipo?: TipoAceito
+  accept?: string
+  disabled?: boolean
 }
 
 export function GalleryMediaUploader({
   galleryId,
   label,
   finalidade = 'edicao',
+  tipo = 'todos',
+  accept = MEDIA_ACCEPT,
+  disabled = false,
 }: GalleryMediaUploaderProps) {
   const uploadMidia = useGalleryStore((state) => state.uploadMidia)
   const addToast = useToastStore((state) => state.addToast)
@@ -40,28 +50,37 @@ export function GalleryMediaUploader({
     try {
       for (let index = 0; index < files.length; index += 1) {
         const file = files[index]
-        const erro = validateMediaFile(file)
+        const erro =
+          tipo === 'foto'
+            ? validateFotoFile(file)
+            : tipo === 'video'
+              ? validateVideoFile(file)
+              : validateMediaFile(file)
         if (erro) {
           addToast(`${file.name}: ${erro}`)
           continue
         }
 
-        const tipo = mediaTipoFromFile(file)
-        if (finalidade === 'pronta' && tipo === 'video') {
+        const tipoArquivo = mediaTipoFromFile(file)
+        if (tipo !== 'todos' && tipoArquivo !== tipo) {
+          addToast(`${file.name}: este botão aceita somente ${tipo === 'foto' ? 'fotos' : 'vídeos'}.`)
+          continue
+        }
+        if (finalidade === 'pronta' && tipoArquivo === 'video') {
           addToast(`${file.name}: vídeos não entram como foto pronta.`)
           continue
         }
 
         setCurrentName(file.name)
         setProgress(undefined)
-        await uploadMidia(galleryId, file, tipo, finalidade, {
+        await uploadMidia(galleryId, file, tipoArquivo, finalidade, {
           onProgress: setProgress,
         })
         enviados += 1
       }
 
       if (enviados > 0) {
-        addToast(`${enviados} mídia(s) enviada(s) e processada(s).`)
+        addToast(`${enviados} mídia(s) enviada(s).`)
       }
     } catch (error) {
       addToast(
@@ -80,7 +99,7 @@ export function GalleryMediaUploader({
       <input
         ref={inputRef}
         type="file"
-        accept={MEDIA_ACCEPT}
+        accept={accept}
         multiple
         className="hidden"
         onChange={(event) => void handleFiles(event.target.files)}
@@ -89,7 +108,7 @@ export function GalleryMediaUploader({
       <Button
         variant="secondary"
         onClick={() => inputRef.current?.click()}
-        disabled={uploading}
+        disabled={disabled || uploading}
       >
         {uploading ? (
           <Loader2 className="size-4 animate-spin" />

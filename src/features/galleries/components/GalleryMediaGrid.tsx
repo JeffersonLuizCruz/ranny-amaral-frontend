@@ -195,7 +195,7 @@ function GalleryMediaTile({
         {isVideo ? (
           <span className="absolute bottom-1.5 left-1.5 inline-flex items-center gap-1 rounded-full bg-black/60 px-1.5 py-0.5 text-[9px] font-medium text-white">
             <Film className="size-2.5" />
-            vídeo
+            vídeo original
           </span>
         ) : null}
 

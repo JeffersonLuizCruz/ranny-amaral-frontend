@@ -350,8 +350,23 @@ export async function listarMidias(
   return { ...dto, itens: dto.itens.map(toMidia) }
 }
 
+export interface RemoverMidiasResultado {
+  quantidadeRemovida: number
+  quantidadeIgnorada: number
+  bytesLiberados: number
+}
+
 export async function removerMidia(galeriaId: string, midiaId: string): Promise<void> {
   await http.delete(`/galerias/${galeriaId}/midias/${midiaId}`)
+}
+
+export async function removerMidias(
+  galeriaId: string,
+  midiaIds: string[],
+): Promise<RemoverMidiasResultado> {
+  return http.post<RemoverMidiasResultado>(`/galerias/${galeriaId}/midias/remover`, {
+    midiaIds,
+  })
 }
 
 /** Pede ao backend para refazer os derivados (thumb/web) de uma foto. */

@@ -85,13 +85,30 @@ describe('GalleryDetailPage', () => {
       value: undefined,
       configurable: true,
     })
+    Object.defineProperty(HTMLDialogElement.prototype, 'showModal', {
+      value() {
+        this.setAttribute('open', '')
+      },
+      configurable: true,
+    })
+    Object.defineProperty(HTMLDialogElement.prototype, 'close', {
+      value() {
+        this.removeAttribute('open')
+      },
+      configurable: true,
+    })
     Object.keys(mockState).forEach((key) => delete mockState[key])
     Object.assign(mockState, {
       galeriaAtual: null,
       midias: [],
       carregandoDetalhe: false,
       carregarGaleria: vi.fn().mockResolvedValue(null),
-      removeMedia: vi.fn(),
+      removeMedia: vi.fn().mockResolvedValue(undefined),
+      removeMedias: vi.fn().mockResolvedValue({
+        quantidadeRemovida: 2,
+        quantidadeIgnorada: 0,
+        bytesLiberados: 2048,
+      }),
       reprocessarMidia: vi.fn(),
       reprocessarPendentes: vi.fn().mockResolvedValue(2),
       publishSelection: vi.fn(),
@@ -496,6 +513,106 @@ describe('GalleryDetailPage', () => {
 
     fireEvent.click(within(prontas).getByRole('button', { name: 'Mostrar menos' }))
     expect(within(prontas).queryByText(/foto-11\.jpg/)).not.toBeInTheDocument()
+  })
+
+  it('confirma a remoção individual pelo modal', async () => {
+    Object.assign(mockState, {
+      galeriaAtual: {
+        galeria: galeria({ status: 'em_selecao', videosInclusos: 1 }),
+        links: [],
+        historico: [],
+      },
+      midias: [
+        midia({
+          id: 'video-1',
+          tipo: 'video',
+          nomeArquivo: 'video.mp4',
+          mimeType: 'video/mp4',
+          numero: 1,
+        }),
+      ],
+    })
+
+    renderPage()
+
+    fireEvent.click(screen.getByLabelText('Remover video.mp4'))
+    expect(screen.getByText('Remover vídeo?')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remover' }))
+
+    await waitFor(() =>
+      expect(mockState.removeMedia).toHaveBeenCalledWith('g1', 'video-1'),
+    )
+    expect(addToast).toHaveBeenCalledWith('Mídia removida.')
+  })
+
+  it('remove todas as fotos com confirmação digitada', async () => {
+    const fotos = [
+      midia({ id: 'foto-1', nomeArquivo: 'foto-1.jpg', numero: 1 }),
+      midia({ id: 'foto-2', nomeArquivo: 'foto-2.jpg', numero: 2 }),
+    ]
+    Object.assign(mockState, {
+      galeriaAtual: {
+        galeria: galeria({ status: 'em_selecao', videosInclusos: 1 }),
+        links: [],
+        historico: [],
+      },
+      midias: fotos,
+    })
+
+    renderPage()
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Remover todas as fotos (2)' }),
+    )
+    expect(screen.getByText('Remover todas as fotos?')).toBeInTheDocument()
+
+    const confirmar = screen.getByRole('button', { name: 'Remover 2 foto(s)' })
+    expect(confirmar).toBeDisabled()
+
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'REMOVER' } })
+    expect(confirmar).not.toBeDisabled()
+    fireEvent.click(confirmar)
+
+    await waitFor(() =>
+      expect(mockState.removeMedias).toHaveBeenCalledWith('g1', ['foto-1', 'foto-2']),
+    )
+    expect(addToast).toHaveBeenCalledWith('2 foto(s) removida(s) (2 KB liberados).')
+  })
+
+  it('desabilita o envio de vídeo quando a galeria não tem vídeo incluso', () => {
+    Object.assign(mockState, {
+      galeriaAtual: {
+        galeria: galeria({ status: 'em_selecao', videosInclusos: 0 }),
+        links: [],
+        historico: [],
+      },
+      midias: [midia()],
+    })
+
+    renderPage()
+
+    expect(screen.getByRole('button', { name: 'Enviar vídeo' })).toBeDisabled()
+    expect(
+      screen.getByText(/Esta galeria não tem vídeo incluso/),
+    ).toBeInTheDocument()
+  })
+
+  it('não mostra remoção em lote fora dos status editáveis', () => {
+    Object.assign(mockState, {
+      galeriaAtual: {
+        galeria: galeria({ status: 'em_edicao' }),
+        links: [],
+        historico: [],
+      },
+      midias: [midia()],
+    })
+
+    renderPage()
+
+    expect(
+      screen.queryByRole('button', { name: /Remover todas as fotos/ }),
+    ).not.toBeInTheDocument()
   })
 
   it('mostra o histórico para o perfil admin', () => {
