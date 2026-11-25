@@ -254,6 +254,28 @@ describe('GalleryDetailPage', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('não oferece o lote enquanto o processamento está dentro do prazo normal', () => {
+    Object.assign(mockState, {
+      galeriaAtual: {
+        galeria: galeria({ status: 'em_selecao' }),
+        links: [],
+        historico: [],
+      },
+      midias: [
+        midia({
+          processamentoStatus: 'processando',
+          uploadedAt: new Date().toISOString(),
+        }),
+      ],
+    })
+
+    renderPage()
+
+    expect(
+      screen.queryByRole('button', { name: /Reprocessar .*pendente/i }),
+    ).not.toBeInTheDocument()
+  })
+
   it('esconde o histórico para o perfil gestor', () => {    authState.usuario = { role: 'gestor' }
     Object.assign(mockState, {
       galeriaAtual: {

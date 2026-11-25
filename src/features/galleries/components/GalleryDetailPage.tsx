@@ -11,6 +11,7 @@ import {
   HardDrive,
   Images,
   Link2,
+  Loader2,
   Pencil,
   RefreshCw,
   RotateCcw,
@@ -49,6 +50,7 @@ const LIMITE_GRADE_MOBILE = 24
 const PASSO_GRADE = 48
 const LIMITE_LISTA = 10
 const PASSO_LISTA = 20
+const LIMITE_PROCESSAMENTO_MS = 2 * 60 * 1000
 
 function formatDateTime(value?: string): string {
   if (!value) return '—'
@@ -87,6 +89,7 @@ export function GalleryDetailPage() {
   const [editando, setEditando] = useState<MidiaGaleria | null>(null)
   const [loteEditadasOpen, setLoteEditadasOpen] = useState(false)
   const [baixandoSelecao, setBaixandoSelecao] = useState(false)
+  const [reprocessandoLote, setReprocessandoLote] = useState(false)
   const [expurgoOpen, setExpurgoOpen] = useState(false)
   const [filtroMidias, setFiltroMidias] = useState<
     'todas' | 'edicao' | 'prontas' | 'liberadas'
@@ -163,11 +166,12 @@ export function GalleryDetailPage() {
   const fotos = midias.filter((midia) => midia.tipo === 'foto')
   const videos = midias.filter((midia) => midia.tipo === 'video')
   const processadas = midias.filter((midia) => midia.processamentoStatus === 'disponivel')
-  const pendentesReprocessamento = fotos.filter(
-    (midia) =>
-      midia.processamentoStatus === 'processando' ||
-      midia.processamentoStatus === 'falha',
-  )
+  const pendentesReprocessamento = fotos.filter((midia) => {
+    if (midia.processamentoStatus === 'falha') return true
+    if (midia.processamentoStatus !== 'processando') return false
+    const inicio = new Date(midia.uploadedAt).getTime()
+    return Number.isFinite(inicio) && Date.now() - inicio > LIMITE_PROCESSAMENTO_MS
+  })
   const podeEditarMidias = ['aguardando_upload', 'em_selecao'].includes(galeria.status)
   const podeEditarVersao = [
     'aguardando_upload',
@@ -349,17 +353,20 @@ export function GalleryDetailPage() {
   }
 
   const reprocessarLote = async () => {
-    if (pendentesReprocessamento.length === 0) return
+    if (pendentesReprocessamento.length === 0 || reprocessandoLote) return
     const confirmado = window.confirm(
       `Reprocessar ${pendentesReprocessamento.length} foto(s) presas em processamento ou com falha?`,
     )
     if (!confirmado) return
+    setReprocessandoLote(true)
     try {
       const quantidade = await reprocessarPendentes(galeria.id)
       addToast(`${quantidade} foto(s) reenfileirada(s) para processamento.`)
       await carregarGaleria(galeria.id).catch(() => undefined)
     } catch (error) {
       addToast(mensagemDeErro(error))
+    } finally {
+      setReprocessandoLote(false)
     }
   }
 
@@ -478,10 +485,23 @@ export function GalleryDetailPage() {
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {pendentesReprocessamento.length > 0 ? (
-                <Button variant="secondary" onClick={() => void reprocessarLote()}>
-                  <RefreshCw className="size-4" />
-                  Reprocessar {pendentesReprocessamento.length}{' '}
-                  {pendentesReprocessamento.length === 1 ? 'pendente' : 'pendentes'}
+                <Button
+                  variant="secondary"
+                  onClick={() => void reprocessarLote()}
+                  disabled={reprocessandoLote}
+                >
+                  {reprocessandoLote ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="size-4" />
+                  )}
+                  {reprocessandoLote
+                    ? 'Reprocessando…'
+                    : `Reprocessar ${pendentesReprocessamento.length} ${
+                        pendentesReprocessamento.length === 1
+                          ? 'pendente'
+                          : 'pendentes'
+                      }`}
                 </Button>
               ) : null}
               {podeEditarMidias ? (
