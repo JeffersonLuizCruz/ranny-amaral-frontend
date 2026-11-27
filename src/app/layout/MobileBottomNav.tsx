@@ -1,4 +1,4 @@
-import { CalendarDays, Images, LayoutDashboard, Menu, Package, Users } from 'lucide-react'
+import { CalendarDays, FileSignature, Images, LayoutDashboard, Menu, Package } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 
 import { useAgendaStore } from '@/features/agenda/store/agendaStore'
@@ -8,7 +8,7 @@ const ITEMS = [
   { to: '/', label: 'Início', icon: LayoutDashboard, end: true },
   { to: '/agenda', label: 'Agenda', icon: CalendarDays, end: false },
   { to: '/pacotes', label: 'Pacotes', icon: Package, end: false },
-  { to: '/clientes', label: 'Clientes', icon: Users, end: false },
+  { to: '/contratos', label: 'Contratos', icon: FileSignature, end: false },
   { to: '/galerias', label: 'Galerias', icon: Images, end: false },
 ]
 
