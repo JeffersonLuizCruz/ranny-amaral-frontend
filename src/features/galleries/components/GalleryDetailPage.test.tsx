@@ -117,12 +117,9 @@ describe('GalleryDetailPage', () => {
       waiveExtras: vi.fn(),
       releaseEditing: vi.fn(),
       publishDelivery: vi.fn(),
+      entregarAoCliente: vi.fn().mockResolvedValue({ token: 'tok-entrega' }),
       revokeDelivery: vi.fn(),
-      liberarProntas: vi.fn(),
-      liberarLote: vi.fn(),
-      revogarLiberacao: vi.fn(),
       renovarLink: vi.fn(),
-      definirAutoLiberacao: vi.fn(),
       alterarFinalidade,
       uploadMidia: vi.fn(),
     })
@@ -182,10 +179,7 @@ describe('GalleryDetailPage', () => {
     expect(screen.getByText(/Pacote Promocional/)).toBeInTheDocument()
     expect(screen.getByText('Fila de edição')).toBeInTheDocument()
     expect(screen.getByText('1 aguardando edição · 3 de 4 fotos prontas')).toBeInTheDocument()
-    expect(screen.getByText('Prontas para baixar')).toBeInTheDocument()
-    expect(screen.getByText('3 pronta(s) · 1 liberada(s) · 2 aguardando liberação')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Enviar editadas em lote (1)' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Liberar prontas (2)' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Todas (5)' })).toHaveAttribute(
       'aria-pressed',
       'true',
@@ -199,6 +193,50 @@ describe('GalleryDetailPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Para edição (2)' }))
     expect(screen.getByText('foto-fora.jpg')).toBeInTheDocument()
+  })
+
+  it('entrega ao cliente pelo card em uma única ação', async () => {
+    const prontaA = midia({
+      id: 'pronta-a',
+      nomeArquivo: 'pronta-a.jpg',
+      numero: 1,
+      finalidade: 'pronta',
+    })
+    const prontaB = midia({
+      id: 'pronta-b',
+      nomeArquivo: 'pronta-b.jpg',
+      numero: 2,
+      finalidade: 'pronta',
+    })
+
+    Object.assign(mockState, {
+      galeriaAtual: {
+        galeria: galeria({ status: 'em_edicao' }),
+        links: [],
+        selecao: {
+          status: 'enviada',
+          fotoIds: ['pronta-a', 'pronta-b'],
+          videoIds: [],
+          fotosExtras: 0,
+          valorExtras: 0,
+          enviadaEm: '2026-01-01T00:00:00.000Z',
+        },
+        historico: [],
+      },
+      midias: [prontaA, prontaB],
+    })
+
+    renderPage()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Entregar ao cliente' }))
+
+    const dialogo = screen.getByRole('dialog')
+    fireEvent.click(
+      within(dialogo).getByRole('button', { name: 'Entregar ao cliente' }),
+    )
+
+    expect(await screen.findByText('Entrega publicada')).toBeInTheDocument()
+    expect(mockState.entregarAoCliente).toHaveBeenCalledWith('g1')
   })
 
   it('permite corrigir a finalidade antes da seleção', () => {
@@ -319,7 +357,7 @@ describe('GalleryDetailPage', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('copia o link do cliente pela barra fixa do topo', async () => {
+  it('copia o link do cliente pelo bloco do topo', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined)
     Object.defineProperty(navigator, 'clipboard', {
       value: { writeText },
@@ -373,7 +411,7 @@ describe('GalleryDetailPage', () => {
     expect(addToast).toHaveBeenCalledWith('Link do cliente copiado.')
   })
 
-  it('publica a seleção pela barra quando ainda não há link', () => {
+  it('publica a seleção pelo bloco do link quando ainda não há link', () => {
     Object.assign(mockState, {
       galeriaAtual: {
         galeria: galeria({ status: 'em_selecao' }),
@@ -391,7 +429,7 @@ describe('GalleryDetailPage', () => {
     expect(mockState.publishSelection).toHaveBeenCalledWith('g1')
   })
 
-  it('posiciona a barra do link antes das mídias', () => {
+  it('posiciona o bloco do link antes das mídias', () => {
     Object.assign(mockState, {
       galeriaAtual: {
         galeria: galeria({ status: 'em_selecao', tokenGaleria: 'tok-123' }),
@@ -409,6 +447,115 @@ describe('GalleryDetailPage', () => {
     expect(
       barra.compareDocumentPosition(midias) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy()
+  })
+
+  it('abre o link do cliente em outra aba', () => {
+    Object.assign(mockState, {
+      galeriaAtual: {
+        galeria: galeria({ status: 'em_selecao', tokenGaleria: 'tok-123' }),
+        links: [],
+        historico: [],
+      },
+      midias: [],
+    })
+
+    renderPage()
+
+    const link = screen.getByRole('link', { name: 'Abrir link do cliente' })
+    expect(link).toHaveAttribute(
+      'href',
+      `${window.location.origin}/galeria/tok-123`,
+    )
+    expect(link).toHaveAttribute('target', '_blank')
+  })
+
+  it('mantém uma única ação de copiar o link na página', () => {
+    Object.assign(mockState, {
+      galeriaAtual: {
+        galeria: galeria({ status: 'em_edicao', tokenGaleria: 'tok-123' }),
+        links: [],
+        selecao: {
+          status: 'enviada',
+          fotoIds: ['pronta-a'],
+          videoIds: [],
+          fotosExtras: 0,
+          valorExtras: 0,
+          enviadaEm: '2026-01-01T00:00:00.000Z',
+        },
+        historico: [],
+      },
+      midias: [
+        midia({
+          id: 'pronta-a',
+          nomeArquivo: 'pronta-a.jpg',
+          finalidade: 'pronta',
+        }),
+      ],
+    })
+
+    renderPage()
+
+    expect(screen.getByLabelText('Entrega')).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: 'Copiar link' })).toHaveLength(1)
+  })
+
+  it('deixa renovar link e revogar entrega no menu do link', () => {
+    Object.assign(mockState, {
+      galeriaAtual: {
+        galeria: galeria({ status: 'entregue', tokenGaleria: 'tok-123' }),
+        links: [],
+        historico: [],
+      },
+      midias: [],
+    })
+
+    renderPage()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mais ações do link' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Renovar link' }))
+    expect(mockState.renovarLink).toHaveBeenCalledWith('g1')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mais ações do link' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Revogar entrega' }))
+    expect(mockState.revokeDelivery).toHaveBeenCalledWith('g1')
+  })
+
+  it('não expõe controles de entrega progressiva ao staff', () => {
+    Object.assign(mockState, {
+      galeriaAtual: {
+        galeria: galeria({ status: 'em_edicao', tokenGaleria: 'tok-123' }),
+        links: [],
+        selecao: {
+          status: 'enviada',
+          fotoIds: ['pronta-a'],
+          videoIds: [],
+          fotosExtras: 0,
+          valorExtras: 0,
+          enviadaEm: '2026-01-01T00:00:00.000Z',
+        },
+        historico: [],
+      },
+      midias: [
+        midia({
+          id: 'pronta-a',
+          nomeArquivo: 'pronta-a.jpg',
+          finalidade: 'pronta',
+          liberadaEm: '2026-01-02T00:00:00.000Z',
+        }),
+      ],
+    })
+
+    renderPage()
+
+    expect(screen.getByLabelText('Entrega')).toBeInTheDocument()
+    expect(screen.getByText('Já disponíveis')).toBeInTheDocument()
+    expect(screen.queryByText('Entrega progressiva')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /Liberar prontas/ }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('checkbox', { name: /auto/i }),
+    ).not.toBeInTheDocument()
   })
 
   it('limita as fotos no mobile e libera mais sob demanda', () => {
@@ -472,47 +619,6 @@ describe('GalleryDetailPage', () => {
 
     fireEvent.click(within(fila).getByRole('button', { name: 'Mostrar menos' }))
     expect(within(fila).queryByText(/foto-11\.jpg/)).not.toBeInTheDocument()
-  })
-
-  it('limita as prontas para baixar no mobile', () => {
-    const fotos = Array.from({ length: 12 }, (_, index) =>
-      midia({
-        id: `foto-${index}`,
-        nomeArquivo: `foto-${index}.jpg`,
-        numero: index + 1,
-        finalidade: 'pronta',
-      }),
-    )
-    Object.assign(mockState, {
-      galeriaAtual: {
-        galeria: galeria({ status: 'em_selecao' }),
-        links: [],
-        selecao: {
-          status: 'enviada',
-          fotoIds: fotos.map((foto) => foto.id),
-          videoIds: [],
-          fotosExtras: 0,
-          valorExtras: 0,
-        },
-        historico: [],
-      },
-      midias: fotos,
-    })
-
-    renderPage()
-
-    const prontas = screen
-      .getByText('Prontas para baixar')
-      .closest('section') as HTMLElement
-    expect(within(prontas).queryByText(/foto-11\.jpg/)).not.toBeInTheDocument()
-
-    fireEvent.click(
-      within(prontas).getByRole('button', { name: 'Ver mais (2 restantes)' }),
-    )
-    expect(within(prontas).getByText(/foto-11\.jpg/)).toBeInTheDocument()
-
-    fireEvent.click(within(prontas).getByRole('button', { name: 'Mostrar menos' }))
-    expect(within(prontas).queryByText(/foto-11\.jpg/)).not.toBeInTheDocument()
   })
 
   it('confirma a remoção individual pelo modal', async () => {

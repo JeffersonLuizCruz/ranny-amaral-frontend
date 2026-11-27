@@ -11,6 +11,7 @@ vi.mock('@/shared/api/httpClient', () => ({
 }))
 
 import {
+  entregarGaleria,
   listarGalerias,
   prepararDownloadSelecao,
   removerMidias,
@@ -94,6 +95,40 @@ describe('removerMidias', () => {
     expect(post).toHaveBeenCalledWith('/galerias/galeria-1/midias/remover', {
       midiaIds: ['foto-1', 'foto-2'],
     })
+  })
+})
+
+describe('entregarGaleria', () => {
+  beforeEach(() => {
+    post.mockReset()
+  })
+
+  it('libera e publica a entrega em uma única chamada', async () => {
+    post.mockResolvedValue({
+      link: {
+        id: 'link-1',
+        tipo: 'galeria',
+        token: 'tok-entrega',
+        status: 'ativo',
+        expiraEm: '2027-02-25T12:00:00.000Z',
+        visualizadaEm: null,
+        protocolo: null,
+      },
+      liberadasAgora: 2,
+      totalLiberado: 3,
+      totalSelecionado: 3,
+      jaPublicada: false,
+    })
+
+    await expect(entregarGaleria('galeria-1')).resolves.toEqual({
+      token: 'tok-entrega',
+      expiraEm: '2027-02-25T12:00:00.000Z',
+      liberadasAgora: 2,
+      totalLiberado: 3,
+      totalSelecionado: 3,
+      jaPublicada: false,
+    })
+    expect(post).toHaveBeenCalledWith('/galerias/galeria-1/entrega/entregar')
   })
 })
 

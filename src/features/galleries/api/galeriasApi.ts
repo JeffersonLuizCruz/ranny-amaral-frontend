@@ -422,6 +422,36 @@ export async function publicarEntrega(galeriaId: string): Promise<LinkDto> {
   return http.post<LinkDto>(`/galerias/${galeriaId}/entrega/publicar`)
 }
 
+export interface EntregaPublicada {
+  token: string
+  expiraEm?: string
+  liberadasAgora: number
+  totalLiberado: number
+  totalSelecionado: number
+  jaPublicada: boolean
+}
+
+interface EntregaDto {
+  link: LinkDto
+  liberadasAgora: number
+  totalLiberado: number
+  totalSelecionado: number
+  jaPublicada: boolean
+}
+
+/** Libera as midias prontas e publica a entrega em uma unica chamada. */
+export async function entregarGaleria(galeriaId: string): Promise<EntregaPublicada> {
+  const dto = await http.post<EntregaDto>(`/galerias/${galeriaId}/entrega/entregar`)
+  return {
+    token: dto.link.token,
+    expiraEm: dto.link.expiraEm,
+    liberadasAgora: dto.liberadasAgora,
+    totalLiberado: dto.totalLiberado,
+    totalSelecionado: dto.totalSelecionado,
+    jaPublicada: dto.jaPublicada,
+  }
+}
+
 export async function revogarEntrega(galeriaId: string): Promise<void> {
   await http.post(`/galerias/${galeriaId}/entrega/revogar`)
 }

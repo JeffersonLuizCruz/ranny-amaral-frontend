@@ -9,12 +9,14 @@ const {
   enviarVersaoEditada,
   reprocessarPendentes,
   removerMidias,
+  entregarGaleria,
 } = vi.hoisted(() => ({
   listarMidias: vi.fn(),
   buscarGaleria: vi.fn(),
   enviarVersaoEditada: vi.fn(),
   reprocessarPendentes: vi.fn(),
   removerMidias: vi.fn(),
+  entregarGaleria: vi.fn(),
 }))
 
 vi.mock('@/features/galleries/api/galeriasApi', () => ({
@@ -22,6 +24,7 @@ vi.mock('@/features/galleries/api/galeriasApi', () => ({
   buscarGaleria,
   confirmarExtras: vi.fn(),
   criarGaleria: vi.fn(),
+  entregarGaleria,
   isentarExtras: vi.fn(),
   liberarEdicao: vi.fn(),
   listarGalerias: vi.fn(),
@@ -227,5 +230,33 @@ describe('galleryStore', () => {
     expect(removerMidias).toHaveBeenCalledWith('g1', ['m1', 'm2'])
     expect(resultado.quantidadeRemovida).toBe(2)
     expect(useGalleryStore.getState().midias.map((item) => item.id)).toEqual(['m3'])
+  })
+
+  it('entrega ao cliente em uma ação e recarrega a galeria', async () => {
+    buscarGaleria.mockResolvedValue({
+      galeria: {
+        id: 'g1',
+        agendamentoId: 'a1',
+        status: 'entregue',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      },
+      links: [],
+      historico: [],
+    })
+    listarMidias.mockResolvedValue(pagina([], 0, 0))
+    entregarGaleria.mockResolvedValue({
+      token: 'tok-entrega',
+      liberadasAgora: 2,
+      totalLiberado: 3,
+      totalSelecionado: 3,
+      jaPublicada: false,
+    })
+
+    const resultado = await useGalleryStore.getState().entregarAoCliente('g1')
+
+    expect(entregarGaleria).toHaveBeenCalledWith('g1')
+    expect(resultado.token).toBe('tok-entrega')
+    expect(buscarGaleria).toHaveBeenCalledWith('g1')
   })
 })

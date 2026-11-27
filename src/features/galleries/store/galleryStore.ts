@@ -10,6 +10,7 @@ import {
   confirmarExtras,
   criarGaleria,
   definirAutoLiberacao as definirAutoLiberacaoApi,
+  entregarGaleria as entregarGaleriaApi,
   isentarExtras,
   liberarEdicao,
   liberarLote as liberarLoteApi,
@@ -28,6 +29,7 @@ import {
   revogarLiberacao as revogarLiberacaoApi,
   type GaleriaDetalhe,
   type GaleriasFiltros,
+  type EntregaPublicada,
   type LiberarLoteResultado,
   type RemoverMidiasResultado,
 } from '@/features/galleries/api/galeriasApi'
@@ -82,6 +84,7 @@ interface GalleryState {
   waiveExtras: (id: string) => Promise<void>
   releaseEditing: (id: string, motivo: string) => Promise<void>
   publishDelivery: (id: string) => Promise<string>
+  entregarAoCliente: (id: string) => Promise<EntregaPublicada>
   revokeDelivery: (id: string) => Promise<void>
   liberarLote: (id: string, midiaIds: string[]) => Promise<LiberarLoteResultado>
   liberarProntas: (id: string) => Promise<LiberarLoteResultado>
@@ -355,6 +358,12 @@ export const useGalleryStore = create<GalleryState>()((set, get) => ({
     const link = await publicarEntrega(id)
     await get().carregarGaleria(id)
     return link.token
+  },
+
+  entregarAoCliente: async (id) => {
+    const resultado = await entregarGaleriaApi(id)
+    await get().carregarGaleria(id)
+    return resultado
   },
 
   revokeDelivery: async (id) => {
