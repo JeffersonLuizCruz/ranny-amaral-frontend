@@ -1,15 +1,22 @@
-import { format } from 'date-fns'
+import { format, formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { Copy, FileSignature } from 'lucide-react'
+import { Copy, FileCheck2, FileSignature, MessageCircle } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import type { Contrato } from '@/domain/contracts'
+import { contratoComComprovanteEmAnalise } from '@/domain/contractQueues'
 import { Button } from '@/shared/components/ui/Button'
+import { mensagemDeErro } from '@/shared/api/errors'
 import { formatBRL } from '@/shared/lib/currency'
 import { formatAppointmentDate } from '@/shared/lib/date'
+import { isValidWhatsApp, whatsappLink } from '@/shared/lib/whatsapp'
 import { useToastStore } from '@/shared/store/toastStore'
 import { ContractStatusBadges } from '@/features/contracts/components/ContractStatusBadge'
-import { copyContractLink } from '@/features/contracts/lib/shareLink'
+import { copyContractLink, getContractLink } from '@/features/contracts/lib/shareLink'
+import {
+  mensagemLembreteContrato,
+  tipoLembreteContrato,
+} from '@/features/contracts/lib/whatsappReminder'
 
 interface ContractCardProps {
   contrato: Contrato
@@ -18,6 +25,12 @@ interface ContractCardProps {
 export function ContractCard({ contrato }: ContractCardProps) {
   const { snapshot } = contrato
   const addToast = useToastStore((state) => state.addToast)
+  const emAnalise = contratoComComprovanteEmAnalise(contrato)
+  const tipoLembrete = tipoLembreteContrato(contrato)
+  const whatsapp = snapshot.cliente.whatsapp
+  const podeLembrar = Boolean(
+    tipoLembrete && whatsapp && isValidWhatsApp(whatsapp),
+  )
 
   const handleCopyLink = async () => {
     try {
@@ -30,6 +43,37 @@ export function ContractCard({ contrato }: ContractCardProps) {
           ? error.message
           : 'Não foi possível copiar o link do contrato.',
       )
+    }
+  }
+
+  const handleWhatsApp = async () => {
+    if (!whatsapp || !isValidWhatsApp(whatsapp)) {
+      addToast('Cliente sem WhatsApp cadastrado.')
+      return
+    }
+
+    // Abre a aba antes do await para não ser bloqueada pelo navegador no celular.
+    const janela = window.open('about:blank', '_blank')
+    if (!janela) {
+      addToast('Permita pop-ups para abrir o WhatsApp.')
+      return
+    }
+
+    try {
+      const link = await getContractLink(contrato)
+      const mensagem = link ? mensagemLembreteContrato(contrato, link) : null
+
+      if (!link || !mensagem) {
+        janela.close()
+        addToast('Não foi possível gerar o lembrete.')
+        return
+      }
+
+      janela.location.replace(whatsappLink(whatsapp, mensagem))
+      janela.opener = null
+    } catch (error) {
+      janela.close()
+      addToast(mensagemDeErro(error))
     }
   }
 
@@ -59,6 +103,16 @@ export function ContractCard({ contrato }: ContractCardProps) {
           saldoStatus={contrato.statusSaldoFinal}
         />
       </div>
+
+      {emAnalise && contrato.pagamento.comprovante ? (
+        <p className="mt-1.5 text-[11px] text-muted">
+          Comprovante enviado{' '}
+          {formatDistanceToNow(
+            new Date(contrato.pagamento.comprovante.enviadoEm),
+            { addSuffix: true, locale: ptBR },
+          )}
+        </p>
+      ) : null}
 
       <div className="mt-3 border-t border-line pt-3">
         <p className="truncate text-sm font-medium text-ink">{snapshot.cliente.nome}</p>
@@ -94,6 +148,15 @@ export function ContractCard({ contrato }: ContractCardProps) {
       </div>
 
       <div className="mt-auto flex flex-wrap items-center gap-1.5 pt-4">
+        {emAnalise ? (
+          <Link
+            to={`/contratos/${contrato.id}#pagamento`}
+            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-full bg-brand-600 px-3 text-sm font-medium text-white transition hover:bg-brand-700"
+          >
+            <FileCheck2 className="size-3.5" />
+            Conferir comprovante
+          </Link>
+        ) : null}
         <Link
           to={`/contratos/${contrato.id}`}
           className="inline-flex h-9 items-center justify-center rounded-full bg-brand-50 px-3 text-sm font-medium text-brand-700 transition hover:bg-brand-100"
@@ -104,6 +167,12 @@ export function ContractCard({ contrato }: ContractCardProps) {
           <Copy className="size-3.5" />
           Copiar link
         </Button>
+        {podeLembrar ? (
+          <Button size="sm" variant="ghost" onClick={handleWhatsApp}>
+            <MessageCircle className="size-3.5" />
+            Lembrar no WhatsApp
+          </Button>
+        ) : null}
       </div>
     </article>
   )

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -54,27 +54,63 @@ describe('ContractsPage', () => {
     useAuthStore.setState({ usuario: montarUsuario('admin') })
   })
 
-  it('admin vê a busca e os filtros de aceite, entrada e saldo final', () => {
+  it('admin vê busca, filas e o botão de filtros avançados', () => {
     renderPage()
 
     expect(screen.getByLabelText('Buscar contrato')).toBeInTheDocument()
-    expect(screen.getByText('Aceite')).toBeInTheDocument()
-    expect(screen.getByText('Entrada')).toBeInTheDocument()
-    expect(screen.getByText('Saldo final')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Cliente não aceitou/ }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Falta pagar a entrada/ }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Comprovantes para aprovar/ }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Abrir filtros avançados/ }),
+    ).toBeInTheDocument()
   })
 
-  it('gestor vê a lista sem busca nem filtros e envia apenas a paginação', () => {
+  it('gestor vê as filas sem busca nem filtros avançados', () => {
     useAuthStore.setState({ usuario: montarUsuario('gestor') })
 
     renderPage()
 
     expect(screen.queryByLabelText('Buscar contrato')).not.toBeInTheDocument()
-    expect(screen.queryByText('Aceite')).not.toBeInTheDocument()
-    expect(screen.queryByText('Entrada')).not.toBeInTheDocument()
-    expect(screen.queryByText('Saldo final')).not.toBeInTheDocument()
     expect(
-      screen.getAllByRole('button', { name: /Novo ensaio/ }).length,
-    ).toBeGreaterThan(0)
-    expect(carregarPaginaContratos).toHaveBeenCalledWith({ pagina: 0, tamanho: 12 })
+      screen.getByRole('button', { name: /Cliente não aceitou/ }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Falta pagar a entrada/ }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Comprovantes para aprovar/ }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /Abrir filtros avançados/ }),
+    ).not.toBeInTheDocument()
+    expect(carregarPaginaContratos).toHaveBeenCalledWith({
+      pagina: 0,
+      tamanho: 12,
+    })
+  })
+
+  it('envia a fila selecionada para a API', async () => {
+    useAuthStore.setState({ usuario: montarUsuario('gestor') })
+
+    renderPage()
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /Comprovantes para aprovar/ }),
+    )
+
+    await waitFor(() => {
+      expect(carregarPaginaContratos).toHaveBeenLastCalledWith({
+        situacao: 'comprovante_em_analise',
+        pagina: 0,
+        tamanho: 12,
+      })
+    })
   })
 })

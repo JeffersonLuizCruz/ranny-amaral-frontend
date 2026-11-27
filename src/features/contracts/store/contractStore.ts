@@ -6,6 +6,7 @@ import type {
   ContratoDraft,
   ContratoPagamentoStatus,
 } from '@/domain/contracts'
+import type { ContratoSituacao } from '@/domain/contractQueues'
 import type { FormaPagamentoSaldo } from '@/domain/payments'
 import {
   atualizarContrato,
@@ -34,6 +35,7 @@ export interface FiltrosContratosPagina {
   statusAceite?: ContratoAceiteStatus
   statusEntrada?: ContratoPagamentoStatus
   statusSaldoFinal?: ContratoPagamentoStatus
+  situacao?: Exclude<ContratoSituacao, 'todos'>
   clienteId?: string
   agendamentoId?: string
   pagina?: number

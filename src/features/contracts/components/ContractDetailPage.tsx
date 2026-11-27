@@ -7,8 +7,8 @@ import {
   Wallet,
   XCircle,
 } from 'lucide-react'
-import { useEffect } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useEffect, useRef } from 'react'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import { financeIntegration } from '@/integrations/finance'
 import { whatsappReminders } from '@/integrations/whatsapp'
@@ -36,6 +36,8 @@ import { printContract } from '@/features/contracts/lib/print'
 export function ContractDetailPage() {
   const { contratoId = '' } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
+  const hashScrolled = useRef(false)
   const contratos = useContractStore((state) => state.contratos)
   const carregando = useContractStore((state) => state.carregando)
   const cancelContract = useContractStore((state) => state.cancelContract)
@@ -51,6 +53,14 @@ export function ContractDetailPage() {
       void recarregarContrato(contratoId).catch(() => undefined)
     }
   }, [contrato, contratoId, recarregarContrato])
+
+  useEffect(() => {
+    if (location.hash !== '#pagamento' || !contrato || hashScrolled.current) return
+    hashScrolled.current = true
+    document
+      .getElementById('pagamento')
+      ?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })
+  }, [contrato, location.hash])
 
   if (!contrato && carregando) {
     return (

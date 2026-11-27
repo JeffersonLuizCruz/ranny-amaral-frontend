@@ -10,6 +10,7 @@ import type {
   SolicitacaoAceite,
   SolicitacaoAceiteStatus,
 } from '@/domain/contracts'
+import type { ContratoSituacao } from '@/domain/contractQueues'
 import type {
   ComprovantePagamento,
   ComprovanteRejeicao,
@@ -338,6 +339,7 @@ export interface ContratosFiltros {
   statusAceite?: ContratoAceiteStatus
   statusEntrada?: ContratoPagamentoStatus
   statusSaldoFinal?: ContratoPagamentoStatus
+  situacao?: Exclude<ContratoSituacao, 'todos'>
   clienteId?: string
   agendamentoId?: string
   pagina?: number
@@ -353,6 +355,7 @@ export async function listarContratosPagina(
     statusAceite: filtros.statusAceite,
     statusEntrada: filtros.statusEntrada,
     statusSaldoFinal: filtros.statusSaldoFinal,
+    situacao: filtros.situacao,
     clienteId: filtros.clienteId,
     agendamentoId: filtros.agendamentoId,
     pagina: filtros.pagina,

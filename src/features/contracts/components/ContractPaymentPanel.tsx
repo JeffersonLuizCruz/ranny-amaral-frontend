@@ -90,7 +90,10 @@ export function ContractPaymentPanel({ contrato }: { contrato: Contrato }) {
   }
 
   return (
-    <section className="rounded-2xl border border-line bg-surface p-4 shadow-card">
+    <section
+      id="pagamento"
+      className="scroll-mt-24 rounded-2xl border border-line bg-surface p-4 shadow-card"
+    >
       <div className="flex items-start justify-between gap-2">
         <div>
           <h3 className="text-sm font-semibold text-ink">Pagamento da entrada</h3>

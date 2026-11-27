@@ -1,15 +1,20 @@
 import type { Contrato } from '@/domain/contracts'
 import { acceptanceAdapter } from '@/integrations/acceptance'
 import { listarLinks } from '@/features/contracts/api/contratosApi'
-import { buildAcceptanceUrl } from '@/features/contracts/lib/acceptance'
+import {
+  buildAcceptanceUrl,
+  isAcceptanceExpired,
+} from '@/features/contracts/lib/acceptance'
 
 export async function getContractLink(
   contrato: Contrato,
   expiresInDays = 7,
 ): Promise<string | null> {
   const links = await listarLinks(contrato.id)
-  const existente = links.find((item) =>
-    ['pendente', 'visualizada', 'aceita'].includes(item.status),
+  const existente = links.find(
+    (item) =>
+      ['pendente', 'visualizada', 'aceita'].includes(item.status) &&
+      !isAcceptanceExpired(item),
   )
 
   if (existente) return buildAcceptanceUrl(existente.token)
